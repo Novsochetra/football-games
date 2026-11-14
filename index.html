@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>No.10 Special Shots</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Chakra+Petch:wght@400;600&family=Silkscreen&display=swap">
+<style>
+  /* Layout: a stadium-night stage (16:9 canvas) with a review console underneath. Single dark look. */
+  :root {
+    --bg: #0b0814;
+    --panel: #141026;
+    --panel-2: #1b1633;
+    --line: #2c2548;
+    --fg: #f3eee6;
+    --muted: #9f98bd;
+    --red: #e2242b;
+    --gold: #fcb94c;
+    --blue: #3a52c4;
+    --font-display: "Anton", "Impact", "Arial Narrow Bold", sans-serif;
+    --font-body: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+    --font-pixel: "Silkscreen", "Courier New", monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  body {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.45;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 16px 28px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(30px, 5vw, 48px);
+    letter-spacing: 0.02em;
+    line-height: 1;
+    margin: 0;
+    transform: skewX(-10deg);
+    color: var(--fg);
+    text-shadow: 3px 3px 0 var(--red);
+  }
+  .tag {
+    font-family: var(--font-pixel);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--bg);
+    background: var(--gold);
+    padding: 3px 8px;
+  }
+  .sub { color: var(--muted); margin: 0; flex-basis: 100%; max-width: 68ch; }
+  #stage {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border: 2px solid var(--line);
+    box-shadow: 0 0 0 1px #000, 0 18px 60px rgba(226, 36, 43, 0.12);
+    overflow: hidden;
+  }
+  #view { width: 100%; height: 100%; display: block; image-rendering: auto; cursor: pointer; touch-action: manipulation; }
+  .loading {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-family: var(--font-pixel); color: var(--muted); letter-spacing: 0.1em;
+  }
+  body.ready .loading { display: none; }
+
+  .console {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+  }
+  .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+  .label {
+    font-family: var(--font-pixel);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    min-width: 64px;
+  }
+  button, .seg label {
+    font: 600 14px/1 var(--font-body);
+    color: var(--fg);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    padding: 9px 12px;
+    cursor: pointer;
+  }
+  button:hover, .seg label:hover { border-color: var(--muted); }
+  button:focus-visible, .seg input:focus-visible + label, input[type="range"]:focus-visible, .toggle input:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 2px;
+  }
+  .primary { background: var(--red); border-color: var(--red); color: #fff; }
+  .primary:hover { border-color: var(--gold); }
+  .seg { display: inline-flex; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label { margin-left: -1px; font-variant-numeric: tabular-nums; }
+  .seg input:checked + label { background: var(--blue); border-color: var(--blue); }
+  .chip { font-size: 13px; padding: 8px 10px; }
+  .chip.on { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+  .scrub { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; }
+  #scrub { width: 100%; min-width: 0; accent-color: var(--red); }
+  #time { font-family: var(--font-pixel); font-size: 12px; color: var(--gold); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #shotname { font-family: var(--font-pixel); font-size: 12px; color: var(--fg); }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--fg); font-size: 14px; cursor: pointer; }
+  .toggle input { accent-color: var(--red); width: 16px; height: 16px; }
+  .keys { color: var(--muted); font-size: 13px; margin: 0; }
+  kbd {
+    font-family: var(--font-pixel); font-size: 11px; color: var(--fg);
+    background: var(--panel-2); border: 1px solid var(--line); border-bottom-width: 2px; padding: 1px 5px;
+  }
+  @media (max-width: 560px) {
+    .scrub { grid-template-columns: 1fr; }
+    .label { min-width: 0; flex-basis: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">CRIMSON CRESCENT</h1>
+    <span class="tag" id="kind">BICYCLE KICK · No.10</span>
+    <p class="sub"><span id="blurb">Back to goal, No.10 flips upside down under a high cross.</span> Tap the pitch or press Space when the command window opens.</p>
+  </header>
+
+  <div id="stage">
+    <canvas id="view" aria-label="Game view: tap or press Space to confirm"></canvas>
+    <div class="loading">LOADING STADIUM…</div>
+  </div>
+
+  <section class="console" aria-label="Review controls">
+    <div class="row">
+      <span class="label">SPECIAL</span>
+      <div class="seg" id="specials" role="radiogroup" aria-label="Special shot to review"></div>
+    </div>
+    <div class="row">
+      <span class="label">PLAY</span>
+      <button id="btn-special" class="primary" type="button">Replay special (R)</button>
+      <button id="btn-kickoff" type="button">Kick-off (K)</button>
+      <button id="btn-pause" type="button" aria-pressed="false">Pause</button>
+      <button id="btn-step" type="button">Step frame (.)</button>
+    </div>
+    <div class="row">
+      <span class="label">SPEED</span>
+      <div class="seg" role="radiogroup" aria-label="Playback speed">
+        <input type="radio" name="speed" id="sp-010" value="0.1"><label for="sp-010">0.1×</label>
+        <input type="radio" name="speed" id="sp-025" value="0.25"><label for="sp-025">0.25×</label>
+        <input type="radio" name="speed" id="sp-050" value="0.5"><label for="sp-050">0.5×</label>
+        <input type="radio" name="speed" id="sp-100" value="1" checked><label for="sp-100">1×</label>
+      </div>
+      <label class="toggle"><input type="checkbox" id="opt-audio" checked> Sound</label>
+      <label class="toggle"><input type="checkbox" id="opt-fx" checked> Post FX</label>
+      <label class="toggle"><input type="checkbox" id="opt-auto"> Auto-confirm</label>
+    </div>
+    <div class="row">
+      <span class="label">SHOTS</span>
+      <div class="row" id="shots"></div>
+    </div>
+    <div class="scrub">
+      <span id="shotname">Field</span>
+      <input type="range" id="scrub" min="0" max="16" step="0.01" value="0" aria-label="Scrub the special-shot timeline">
+      <span id="time">—</span>
+    </div>
+    <p class="keys"><kbd>Space</kbd> confirm · <kbd>R</kbd> replay special · <kbd>1</kbd>–<kbd>8</kbd> jump to shot · <kbd>P</kbd> pause · <kbd>.</kbd> step · <kbd>K</kbd> kick-off</p>
+  </section>
+</div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "pixel-studio": {
+      "type": "http",
+      "url": "https://pixel-studio-production-31bc4ecf.up.railway.app/mcp",
+      "headers": {
+        "Authorization": "Bearer ${PIXEL_STUDIO_TOKEN:-proxy-injected}"
+      }
+    }
+  }
+}
