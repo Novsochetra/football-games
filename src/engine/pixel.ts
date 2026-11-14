@@ -222,8 +222,12 @@ const ballBufs = new Map<number, PixelBuffer>();
 /**
  * 'fire' = white-hot/orange (ZENITH METEOR); 'crimson' = silver core with crimson seams (CRIMSON CRESCENT);
  * 'cobalt' = ice core with cyan/cobalt panels and a navy outline (GALE HAMMER).
+ * 'blacklight' = the ball under ultraviolet light (SPOTLIGHT SOLO), at any heat: ivory white panels with lilac
+ * shading, uvDeep black panels and a plum outline.
+ * 'pearl' = MERIDIAN THREAD: at heat 0 the plain white ball (the glow lives in drawBall); with heat it warms to
+ * pearl panels with emerald patches and an ink outline (the pass never uses heat, so this is only a fallback).
  */
-export type BallPalette = 'fire' | 'crimson' | 'cobalt';
+export type BallPalette = 'fire' | 'crimson' | 'cobalt' | 'blacklight' | 'pearl';
 
 /**
  * Squash and stretch for renderBall (GALE HAMMER). sx/sy scale the ball's x/y semi-axes (1 = round;
@@ -242,6 +246,7 @@ const q02 = (v: number) => Math.round(v * 50) / 50;
 
 /** Colour of one ball pixel from its light term and whether it lies on a dark panel. */
 function ballColor(lam: number, patch: boolean, h: number, palette: BallPalette): RGB {
+  if (palette === 'blacklight') return blacklightColor(lam, patch);
   let col: RGB;
   if (patch) col = lam > 0.45 ? [74, 66, 104] : [30, 24, 44];
   else col = lam > 0.55 ? [255, 255, 255] : lam > 0.05 ? [222, 218, 234] : [146, 138, 178];
@@ -255,6 +260,10 @@ function ballColor(lam: number, patch: boolean, h: number, palette: BallPalette)
           ? patch
             ? [45, 82 + 50 * lam, 224]
             : lam > 0.4 ? [238, 251, 255] : lam > -0.1 ? [140, 220, 255] : [70, 150, 230]
+          : palette === 'pearl'
+            ? patch
+              ? [11, 143 + 40 * lam, 88]
+              : lam > 0.4 ? [251, 246, 234] : lam > -0.1 ? [214, 236, 222] : [150, 196, 170]
           : patch
             ? [255, 120 + 60 * lam, 40]
             : lam > 0.4 ? [255, 252, 226] : lam > -0.1 ? [255, 214, 120] : [255, 140, 52];
@@ -263,9 +272,16 @@ function ballColor(lam: number, patch: boolean, h: number, palette: BallPalette)
   return col;
 }
 
+/** SPOTLIGHT SOLO ball under ultraviolet light: the white panels glow ivory, the shading is lilac, the black panels uvDeep. */
+function blacklightColor(lam: number, patch: boolean): RGB {
+  if (patch) return lam > 0.45 ? [74, 44, 150] : [42, 22, 96];
+  return lam > 0.55 ? [255, 252, 240] : lam > 0.05 ? [246, 240, 223] : lam > -0.35 ? [201, 182, 255] : [150, 120, 230];
+}
+
 function ballOutline(h: number, palette: BallPalette) {
+  if (palette === 'blacklight') return pack(22, 10, 38);
   if (h <= 0.5) return OUTLINE;
-  return palette === 'crimson' ? pack(110, 10, 50) : palette === 'cobalt' ? pack(10, 18, 56) : pack(150, 30, 20);
+  return palette === 'crimson' ? pack(110, 10, 50) : palette === 'cobalt' ? pack(10, 18, 56) : palette === 'pearl' ? pack(13, 13, 20) : pack(150, 30, 20);
 }
 
 /**

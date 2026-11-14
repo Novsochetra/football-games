@@ -288,6 +288,211 @@ export function pixelText(
   ctx.restore();
 }
 
+// ---------------------------------------------------------------- SPOTLIGHT SOLO (stage lettering and HUD)
+
+/** The SPOTLIGHT SOLO palette as CSS colours (the same values as PAL in cinematic/solo/common.ts). */
+const SOLO_CSS = { uv: '#7A4DFF', lilac: '#C9B6FF', ivory: '#F6F0DF', uvDeep: '#2A1660', plum: '#160A26' } as const;
+
+export interface LampTitleOpts {
+  /** Draw the small lamp and its narrow cone above each lit group (default true). */
+  lamps?: boolean;
+  /** One frame of +20% brightness on the whole title at this time (the fourth click). */
+  flareAt?: number;
+  /** Overall alpha (default 1). */
+  alpha?: number;
+}
+
+/**
+ * Stage lettering that lights group by group on a drummer's count (SPOTLIGHT SOLO title, "1 ON 1").
+ * `groups` are laid out left to right as one line centred on x with its baseline on y (put the spaces in the
+ * groups: ['SPOT', 'LIGHT ', 'SO', 'LO']); group i lights at onTimes[i] (t = the same clock, seconds).
+ * - Unlit: a faint plum shape (uvDeep stroke at 30%).
+ * - Lit: ivory fill, 2 px ultraviolet stroke, 3 px plum outer stroke, under a small lamp that snaps on above it and
+ *   drops a narrow cone of light onto it; a violet echo copy slides 6 px left and fades over 0.2 s.
+ * Returns each group's centre x and width (for fx.echo / sparkles). Screen space, no camera.
+ */
+export function lampTitle(
+  ctx: CanvasRenderingContext2D, groups: readonly string[], x: number, y: number, size: number, t: number,
+  onTimes: readonly number[], o: LampTitleOpts = {},
+): { cx: number; w: number }[] {
+  ctx.save();
+  ctx.font = `${size}px ${TITLE_FONT}`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  ctx.lineJoin = 'round';
+  const widths = groups.map((g) => ctx.measureText(g).width);
+  const total = widths.reduce((a, b) => a + b, 0);
+  const out: { cx: number; w: number }[] = [];
+  let gx = x - total / 2;
+  const A = o.alpha ?? 1;
+  const flare = o.flareAt !== undefined && t >= o.flareAt && t < o.flareAt + 1 / 60;
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    const w = widths[i];
+    const vis = g.trimEnd();
+    const vw = ctx.measureText(vis).width;
+    out.push({ cx: gx + vw / 2, w: vw });
+    const lt = t - (onTimes[i] ?? Infinity);
+    if (!(lt >= 0)) {
+      ctx.globalAlpha = 0.3 * A;
+      ctx.strokeStyle = SOLO_CSS.uvDeep;
+      ctx.lineWidth = 2;
+      ctx.strokeText(vis, gx, y);
+    } else {
+      if (o.lamps ?? true) {
+        // The lamp: a small housing above the group with an ivory face, and its narrow cone onto the letters.
+        const lx = gx + vw / 2, ly = y - size * 1.12;
+        ctx.globalAlpha = A;
+        ctx.globalCompositeOperation = 'source-over';
+        drawGlow(ctx, glowOf([42, 22, 96]), lx, ly + 2, 12, 0.8 * A);
+        ctx.globalCompositeOperation = 'lighter';
+        const cone = ctx.createLinearGradient(0, ly, 0, y);
+        cone.addColorStop(0, 'rgba(246,240,223,0.22)');
+        cone.addColorStop(1, 'rgba(246,240,223,0.03)');
+        ctx.fillStyle = cone;
+        ctx.globalAlpha = A;
+        ctx.beginPath();
+        ctx.moveTo(lx - 3, ly + 3);
+        ctx.lineTo(lx + 3, ly + 3);
+        ctx.lineTo(lx + vw * 0.55, y + 4);
+        ctx.lineTo(lx - vw * 0.55, y + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = SOLO_CSS.plum;
+        ctx.fillRect(Math.round(lx - 6), Math.round(ly - 4), 12, 6);
+        ctx.fillStyle = lt < 2 / 60 ? '#ffffff' : SOLO_CSS.ivory;
+        ctx.fillRect(Math.round(lx - 4), Math.round(ly), 8, 2);
+      }
+      // Violet echo copy sliding 6 px left as it fades (behind the letters).
+      if (lt < 0.2) {
+        ctx.globalAlpha = 0.6 * (1 - lt / 0.2) * A;
+        ctx.fillStyle = SOLO_CSS.uv;
+        ctx.fillText(vis, gx - 6 * (lt / 0.2), y);
+      }
+      ctx.globalAlpha = A;
+      ctx.strokeStyle = SOLO_CSS.plum;
+      ctx.lineWidth = 10;
+      ctx.strokeText(vis, gx, y);
+      ctx.strokeStyle = SOLO_CSS.uv;
+      ctx.lineWidth = 4;
+      ctx.strokeText(vis, gx, y);
+      ctx.fillStyle = SOLO_CSS.ivory;
+      ctx.fillText(vis, gx, y);
+      if (lt < 1 / 60 || flare) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = (lt < 1 / 60 ? 0.35 : 0.2) * A;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(vis, gx, y);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+    gx += w;
+  }
+  ctx.restore();
+  return out;
+}
+
+/** Marquee tag timing (seconds): slide in 3 frames, hold 0.6 s, fade out 4 frames. */
+export const MARQUEE = { slideIn: 3 / 60, hold: 0.6, fadeOut: 4 / 60 } as const;
+
+/**
+ * SPOTLIGHT SOLO skill tag ("STEP-OVER", "SOLE LIFT", ...): ivory pixel-font text in a plum pill with a 1 px lilac
+ * border and six tiny lamp dots along its top edge that chase on 16ths. (x, y) = the pill's top-left at rest;
+ * t = seconds since the tag's beat (it slides in 12 px from the left, holds 0.6 s, fades out). Screen space.
+ */
+export function marqueeTag(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, t: number) {
+  const end = MARQUEE.slideIn + MARQUEE.hold + MARQUEE.fadeOut;
+  if (t < 0 || t >= end) return;
+  const k = ease.outCubic(clamp(t / MARQUEE.slideIn));
+  const a = t > MARQUEE.slideIn + MARQUEE.hold ? clamp((end - t) / MARQUEE.fadeOut) : clamp(t / MARQUEE.slideIn + 0.34);
+  ctx.save();
+  ctx.font = `12px ${PIXEL_FONT}`;
+  const tw = Math.ceil(ctx.measureText(text).width);
+  const w = tw + 20, h = 22;
+  const px = Math.round(x - 12 * (1 - k)), py = Math.round(y);
+  ctx.globalAlpha = a;
+  ctx.fillStyle = SOLO_CSS.plum;
+  ctx.fillRect(px, py, w, h);
+  ctx.strokeStyle = SOLO_CSS.lilac;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px + 0.5, py + 0.5, w - 1, h - 1);
+  // Six lamp dots chasing on 16ths along the top edge.
+  const lit = Math.floor(t / 0.1 + 1e-6) % 6;
+  for (let i = 0; i < 6; i++) {
+    const dx = Math.round(px + 6 + (i * (w - 14)) / 5);
+    ctx.fillStyle = i === lit ? SOLO_CSS.ivory : SOLO_CSS.uvDeep;
+    ctx.fillRect(dx, py - 1, 2, 2);
+  }
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = SOLO_CSS.uvDeep;
+  ctx.fillText(text, px + 11, py + 6);
+  ctx.fillStyle = SOLO_CSS.ivory;
+  ctx.fillText(text, px + 10, py + 5);
+  ctx.restore();
+}
+
+export interface FourCountOpts {
+  /** Overall alpha (the pads fade in when the spot lands). */
+  alpha?: number;
+  /** One frame where every lit pad flares ivory (OLÉ! 4). */
+  flareAt?: number;
+}
+
+/**
+ * The four-count HUD (SPOTLIGHT SOLO shots 2-6): four 12x12 lamp pads numbered 1-4 at top-right (x 566-622, y 16)
+ * on a plum pill. Pad i is unlit (uvDeep, lilac 1 px border, numeral at 40%) until litAt[i]; on that frame it flares
+ * ivory, then stays lit (ivory core, plum numeral, a violet glow over a uvDeep halo). Screen space.
+ */
+export function fourCount(ctx: CanvasRenderingContext2D, litAt: readonly number[], t: number, o: FourCountOpts = {}) {
+  const A = o.alpha ?? 1;
+  if (A <= 0) return;
+  ctx.save();
+  ctx.globalAlpha = 0.88 * A;
+  ctx.fillStyle = SOLO_CSS.plum;
+  ctx.fillRect(560, 11, 69, 22);
+  ctx.globalAlpha = A;
+  ctx.strokeStyle = SOLO_CSS.uvDeep;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(560.5, 11.5, 68, 21);
+  ctx.font = `8px ${PIXEL_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const all = o.flareAt !== undefined && t >= o.flareAt && t < o.flareAt + 1 / 60;
+  for (let i = 0; i < 4; i++) {
+    const x = 566 + i * 15, y = 16;
+    const lt = t - (litAt[i] ?? Infinity);
+    const lit = lt >= 0;
+    if (!lit) {
+      ctx.globalAlpha = A;
+      ctx.fillStyle = SOLO_CSS.uvDeep;
+      ctx.fillRect(x, y, 12, 12);
+      ctx.strokeStyle = SOLO_CSS.lilac;
+      ctx.strokeRect(x + 0.5, y + 0.5, 11, 11);
+      ctx.globalAlpha = 0.4 * A;
+      ctx.fillStyle = SOLO_CSS.lilac;
+      ctx.fillText(String(i + 1), x + 6, y + 2);
+      continue;
+    }
+    const flare = lt < 1 / 60 || all;
+    ctx.globalAlpha = A;
+    ctx.globalCompositeOperation = 'source-over';
+    drawGlow(ctx, glowOf([42, 22, 96]), x + 6, y + 6, 13, 0.9 * A);
+    drawGlow(ctx, glowOf([122, 77, 255]), x + 6, y + 6, 10, 0.6 * A);
+    ctx.globalAlpha = A;
+    ctx.fillStyle = flare ? '#ffffff' : SOLO_CSS.ivory;
+    ctx.fillRect(x, y, 12, 12);
+    if (!flare) {
+      ctx.strokeStyle = SOLO_CSS.lilac;
+      ctx.strokeRect(x + 0.5, y + 0.5, 11, 11);
+      ctx.fillStyle = SOLO_CSS.plum;
+      ctx.fillText(String(i + 1), x + 6, y + 2);
+    }
+  }
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------- Crescent (CRIMSON CRESCENT)
 
 /**
@@ -357,4 +562,483 @@ export function crescentPath(ctx: CanvasRenderingContext2D, cx: number, cy: numb
     ctx.lineTo(bx + Math.cos(a) * r, by + Math.sin(a) * r);
   }
   ctx.closePath();
+}
+
+// ---------------------------------------------------------------- Ink page (MERIDIAN THREAD)
+//
+// The manga-ink grade is done on the Canvas2D frame, never in the post shader: draw the environment, call
+// inkGrade(), then draw what keeps its colour (thread, ball, No.10, No.7, particles). Nothing here is used by
+// the other specials, and nothing is drawn unless a shot calls it.
+
+type InkRGB = [number, number, number];
+
+/** The ink-page colours (MERIDIAN THREAD's PAL.ink / PAL.paper / PAL.tone). */
+export const INK_PAGE = {
+  ink: [13, 13, 20] as InkRGB,
+  paper: [239, 231, 214] as InkRGB,
+  tone: [119, 113, 107] as InkRGB,
+};
+const css = (c: InkRGB) => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+const INK_CSS = css(INK_PAGE.ink), PAPER_CSS = css(INK_PAGE.paper);
+
+interface InkBuffers {
+  w: number;
+  h: number;
+  scratch: HTMLCanvasElement;
+  sctx: CanvasRenderingContext2D;
+  mask: HTMLCanvasElement;
+  mctx: CanvasRenderingContext2D;
+}
+let inkBufs: InkBuffers | null = null;
+const tonePats = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
+let toneTile: HTMLCanvasElement | null = null;
+
+function inkBuffers(w: number, h: number): InkBuffers {
+  if (inkBufs && inkBufs.w === w && inkBufs.h === h) return inkBufs;
+  const mk = () => {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return [c, c.getContext('2d')!] as const;
+  };
+  const [scratch, sctx] = mk();
+  const [mask, mctx] = mk();
+  inkBufs = { w, h, scratch, sctx, mask, mctx };
+  return inkBufs;
+}
+
+/** The grade's screentone: a 4x4 logical-px tile on a 45° lattice (2x2 tone dot + 1 px dots), white elsewhere. */
+function tonePattern(c: CanvasRenderingContext2D): CanvasPattern {
+  let p = tonePats.get(c);
+  if (p) return p;
+  if (!toneTile) {
+    toneTile = document.createElement('canvas');
+    toneTile.width = toneTile.height = 4;
+    const g = toneTile.getContext('2d')!;
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, 4, 4);
+    g.fillStyle = css(INK_PAGE.tone);
+    g.fillRect(0, 0, 2, 2);
+    g.fillRect(2, 2, 1, 1);
+  }
+  p = c.createPattern(toneTile, 'repeat')!;
+  tonePats.set(c, p);
+  return p;
+}
+
+function gradeOnto(c: CanvasRenderingContext2D, a: number, tone: number) {
+  const W = c.canvas.width, H = c.canvas.height, S = W / VW;
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  // 1. Saturation with a grey: the environment turns monochrome (luminance kept).
+  c.globalAlpha = a;
+  c.globalCompositeOperation = 'saturation';
+  c.fillStyle = 'rgb(128,128,128)';
+  c.fillRect(0, 0, W, H);
+  // 2. Multiply by paper: the whites go warm paper.
+  c.globalCompositeOperation = 'multiply';
+  c.fillStyle = PAPER_CSS;
+  c.fillRect(0, 0, W, H);
+  // 3. Multiply the screentone dots in (logical-px lattice, nearest-neighbour).
+  const ta = Math.min(1, 0.22 * a * tone);
+  if (ta > 0) {
+    c.globalAlpha = ta;
+    c.setTransform(S, 0, 0, S, 0, 0);
+    c.imageSmoothingEnabled = false;
+    c.fillStyle = tonePattern(c);
+    c.fillRect(0, 0, VW, VH);
+  }
+  c.restore();
+}
+
+/** Allocate the ink page's scratch, mask and tone pattern for the current canvas size (call from a shot's prepare()). */
+export function prepareInk(ctx: CanvasRenderingContext2D) {
+  inkBuffers(ctx.canvas.width, ctx.canvas.height);
+  tonePattern(ctx);
+  tonePattern(inkBufs!.sctx);
+}
+
+export interface InkRestore {
+  /** The thread polyline, in the CURRENT transform's coordinates (world or screen). */
+  pts: readonly TrailPt[];
+  /** Width of the fully restored (colour) band. */
+  w: number;
+  /** Width of the soft edge on each side (two wider, fainter strokes). Default w * 0.35 + 4. */
+  soft?: number;
+}
+
+/**
+ * The ink page (MERIDIAN THREAD's signature look). Drains everything drawn so far to manga ink and warm paper with
+ * screentone dots, at `amount` 0..1 (skipped entirely at 0). Respects the current clip (grade one manga panel).
+ *   1. a 'saturation' fill of mid-grey at `amount` (monochrome);
+ *   2. a 'multiply' fill of paper at `amount` (warm whites);
+ *   3. a 'multiply' of the cached screentone at 0.22 x amount x o.tone (o.tone 2 = the ink freeze's doubled dots).
+ * restore: the colour washing back ALONG the thread: the graded frame is built on a scratch canvas, the thread band
+ * (pts, w, soft edge) is cut out of it, and it is drawn back, so the band keeps the original colour. Use it in one shot
+ * only (shot 6): it copies the frame. Draw it once per frame, after the environment and before the thread, ball and
+ * players. Allocate with prepareInk() in prepare(); the buffers only reallocate when the canvas is resized.
+ */
+export function inkGrade(ctx: CanvasRenderingContext2D, amount: number, restore?: InkRestore, o: { tone?: number } = {}) {
+  const a = clamp(amount);
+  if (a <= 0) return;
+  const tone = o.tone ?? 1;
+  if (!restore || restore.pts.length < 2 || restore.w <= 0) {
+    gradeOnto(ctx, a, tone);
+    return;
+  }
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  const m = ctx.getTransform();
+  // Early out: once one segment's band (a convex capsule) holds all four canvas corners, the whole frame is back in
+  // colour and there is nothing left to grade (the end of the wash costs nothing).
+  {
+    const k = Math.min(Math.hypot(m.a, m.b), Math.hypot(m.c, m.d));
+    const half = (restore.w / 2) * k;
+    const P = restore.pts.map((p) => [m.a * p.x + m.c * p.y + m.e, m.b * p.x + m.d * p.y + m.f]);
+    const corners = [[0, 0], [W, 0], [0, H], [W, H]];
+    for (let i = 0; i + 1 < P.length; i++) {
+      const [ax, ay] = P[i], [bx, by] = P[i + 1];
+      const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-9;
+      const inside = corners.every(([cx, cy]) => {
+        const u = clamp(((cx - ax) * dx + (cy - ay) * dy) / L2);
+        return Math.hypot(cx - (ax + dx * u), cy - (ay + dy * u)) <= half;
+      });
+      if (inside) return;
+    }
+  }
+  const b = inkBuffers(W, H);
+  // Scratch = the frame, graded.
+  const s = b.sctx;
+  s.save();
+  s.setTransform(1, 0, 0, 1, 0, 0);
+  s.globalAlpha = 1;
+  s.globalCompositeOperation = 'copy';
+  s.drawImage(ctx.canvas, 0, 0);
+  s.restore();
+  gradeOnto(s, a, tone);
+  // Mask = the thread band with a soft edge.
+  const mc = b.mctx;
+  mc.save();
+  mc.setTransform(1, 0, 0, 1, 0, 0);
+  mc.globalCompositeOperation = 'source-over';
+  mc.clearRect(0, 0, W, H);
+  mc.setTransform(m);
+  mc.lineCap = 'round';
+  mc.lineJoin = 'round';
+  mc.strokeStyle = '#000';
+  const soft = restore.soft ?? restore.w * 0.35 + 4;
+  const path = () => {
+    mc.beginPath();
+    mc.moveTo(restore.pts[0].x, restore.pts[0].y);
+    for (let i = 1; i < restore.pts.length; i++) mc.lineTo(restore.pts[i].x, restore.pts[i].y);
+  };
+  for (const [w, al] of [[restore.w + soft * 2, 0.3], [restore.w + soft, 0.6], [restore.w, 1]] as const) {
+    mc.globalAlpha = al;
+    mc.lineWidth = w;
+    path();
+    mc.stroke();
+  }
+  mc.restore();
+  // Cut the band out of the graded copy and lay it back over the frame.
+  s.save();
+  s.setTransform(1, 0, 0, 1, 0, 0);
+  s.globalCompositeOperation = 'destination-out';
+  s.drawImage(b.mask, 0, 0);
+  s.restore();
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(b.scratch, 0, 0);
+  ctx.restore();
+}
+
+/**
+ * The ink freeze's one-frame negative: a 'difference' fill of paper over what is drawn so far (paper lines on ink).
+ * Call it after inkGrade(ctx, 1, undefined, { tone: 2 }) and before the players, on ONE frame (photosensitivity).
+ */
+export function inkNegative(ctx: CanvasRenderingContext2D, amount = 1) {
+  const a = clamp(amount);
+  if (a <= 0) return;
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = a;
+  ctx.globalCompositeOperation = 'difference';
+  ctx.fillStyle = PAPER_CSS;
+  ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  ctx.restore();
+}
+
+const toneCache = new Map<string, HTMLCanvasElement>();
+
+/**
+ * Cached halftone dots (a 45° lattice, `dot` px apart, pixel-crisp) filling `rect` (x, y, w, h in the current
+ * transform), drawn normal-blend in o.color (default ink) at `alpha`. o.corners 0..1: the dots only grow toward the
+ * four corners (0 = uniform dots; 0.6 = the cut-in's darkened corners). The pattern is rasterised once per size.
+ */
+export function screentone(
+  ctx: CanvasRenderingContext2D, rect: readonly [number, number, number, number], dot = 4, alpha = 0.5,
+  o: { color?: InkRGB; corners?: number } = {},
+) {
+  if (alpha <= 0) return;
+  const [x, y, w, h] = rect;
+  const W = Math.max(1, Math.round(w)), H = Math.max(1, Math.round(h));
+  const col = o.color ?? INK_PAGE.ink;
+  const corners = clamp(o.corners ?? 0);
+  const key = `${W}x${H}|${dot}|${corners}|${col.join(',')}`;
+  let cv = toneCache.get(key);
+  if (!cv) {
+    cv = document.createElement('canvas');
+    cv.width = W;
+    cv.height = H;
+    const g = cv.getContext('2d')!;
+    const img = g.createImageData(W, H);
+    const d = img.data;
+    const half = dot / 2;
+    for (let py = 0; py < H; py++)
+      for (let px = 0; px < W; px++) {
+        let k = 0.3;
+        if (corners > 0) {
+          const dx = (px + 0.5 - W / 2) / (W / 2), dy = (py + 0.5 - H / 2) / (H / 2);
+          const dist = Math.hypot(dx, dy) / Math.SQRT2;
+          k = 0.62 * clamp((dist - (1 - corners)) / corners);
+        }
+        const r = dot * k;
+        if (r <= 0.05) continue;
+        // Nearest lattice centre (rows half a dot apart, alternate rows shifted by half a dot).
+        const j0 = Math.round((py + 0.5) / half);
+        let best = 1e9;
+        for (let j = j0 - 1; j <= j0 + 1; j++) {
+          const cy = j * half;
+          const sh = (j & 1) * half;
+          const i = Math.round((px + 0.5 - sh) / dot);
+          const cx = i * dot + sh;
+          best = Math.min(best, Math.hypot(px + 0.5 - cx, py + 0.5 - cy));
+        }
+        if (best <= Math.max(0.5, r)) {
+          const q = (py * W + px) * 4;
+          d[q] = col[0];
+          d[q + 1] = col[1];
+          d[q + 2] = col[2];
+          d[q + 3] = 255;
+        }
+      }
+    g.putImageData(img, 0, 0);
+    toneCache.set(key, cv);
+    if (toneCache.size > 32) toneCache.delete(toneCache.keys().next().value as string);
+  }
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = clamp(alpha);
+  ctx.drawImage(cv, x, y, w, h);
+  ctx.restore();
+}
+
+/** A manga panel: a polygon (current transform), its content, its ink border and its paper gutter. */
+export interface MangaPanel {
+  poly: readonly (readonly [number, number])[];
+  /** Draws the content, already clipped to the panel (and offset by dx/dy). */
+  draw?: (ctx: CanvasRenderingContext2D, i: number, t: number) => void;
+  /** Ink border width (default 3; the freeze thickens it to 5). */
+  border?: number;
+  /** Paper margin painted round the border (default 3, so two abutting panels show a 6 px paper gutter). */
+  gutter?: number;
+  /** Panel background (default paper). */
+  fill?: string;
+  /** Offset (slam-in, pull-off, the 1 px shake). */
+  dx?: number;
+  dy?: number;
+  alpha?: number;
+}
+
+/** A w x h rectangle centred on (cx, cy), rotated `deg` degrees (the slanted manga panel), as a polygon. */
+export function panelPoly(cx: number, cy: number, w: number, h: number, deg = 0): [number, number][] {
+  const a = (deg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  return ([[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]] as const).map(
+    ([x, y]) => [cx + x * c - y * s, cy + x * s + y * c] as [number, number],
+  );
+}
+
+function polyPath(ctx: CanvasRenderingContext2D, poly: readonly (readonly [number, number])[]) {
+  ctx.beginPath();
+  poly.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+}
+
+/**
+ * Slanted manga panels with ink borders and paper gutters (the cut-in, the insets, the diptych). In order: each
+ * panel paints its paper gutter and background, its clipped content (draw), then its ink border, so a later panel's
+ * gutter cuts a clean paper gap into an earlier one.
+ */
+export function mangaPanels(ctx: CanvasRenderingContext2D, panels: readonly MangaPanel[], t = 0) {
+  panels.forEach((p, i) => {
+    if (p.poly.length < 3 || (p.alpha ?? 1) <= 0) return;
+    const border = p.border ?? 3, gutter = p.gutter ?? 3;
+    ctx.save();
+    ctx.globalAlpha = clamp(p.alpha ?? 1);
+    ctx.translate(p.dx ?? 0, p.dy ?? 0);
+    ctx.lineJoin = 'miter';
+    polyPath(ctx, p.poly);
+    if (gutter > 0) {
+      ctx.strokeStyle = PAPER_CSS;
+      ctx.lineWidth = border + gutter * 2;
+      ctx.stroke();
+    }
+    ctx.fillStyle = p.fill ?? PAPER_CSS;
+    ctx.fill();
+    if (p.draw) {
+      ctx.save();
+      ctx.clip();
+      p.draw(ctx, i, t);
+      ctx.restore();
+    }
+    polyPath(ctx, p.poly);
+    ctx.strokeStyle = INK_CSS;
+    ctx.lineWidth = border;
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+/**
+ * The panel freeze border (each needle eye): an ink border over `poly` that thickens 3 -> 5 px with `amount` 0..1,
+ * plus `kick` px (the 2 px kick on the first frames of the freeze).
+ */
+export function panelFreeze(ctx: CanvasRenderingContext2D, poly: readonly (readonly [number, number])[], amount: number, kick = 0) {
+  const a = clamp(amount);
+  if (a <= 0 && kick <= 0) return;
+  ctx.save();
+  ctx.lineJoin = 'miter';
+  polyPath(ctx, poly);
+  ctx.strokeStyle = INK_CSS;
+  ctx.lineWidth = 3 + 2 * a + kick;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/**
+ * A hand-lettered ink SFX ("SHK!", "KLAK!", "SWSH"): ink fill, paper outer stroke, each letter jittered a little
+ * (deterministic). o.pop 0..1 scales it in (1.6 -> 1, outBack). Keep size <= 28 px and away from the ball.
+ */
+export function inkSfx(
+  ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, rot = 0,
+  o: { alpha?: number; pop?: number; fill?: string; outer?: string } = {},
+) {
+  const pop = clamp(o.pop ?? 1);
+  const a = clamp((o.alpha ?? 1) * clamp(pop * 3));
+  if (a <= 0) return;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  const s = lerp(1.6, 1, ease.outBack(pop));
+  ctx.scale(s, s);
+  ctx.globalAlpha = a;
+  ctx.font = `${size}px ${TITLE_FONT}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  const chars = [...text];
+  const widths = chars.map((c) => ctx.measureText(c).width * 0.92);
+  const total = widths.reduce((p, q) => p + q, 0);
+  let cx = -total / 2;
+  const pass = (stroke: boolean) => {
+    cx = -total / 2;
+    chars.forEach((c, i) => {
+      const jr = Math.sin(i * 12.9898 + text.length * 3.1) * 0.12;
+      const jy = Math.sin(i * 78.233 + 1.7) * size * 0.06;
+      ctx.save();
+      ctx.translate(cx + widths[i] / 2, jy);
+      ctx.rotate(jr);
+      ctx.transform(1, 0, -0.14, 1, 0, 0);
+      if (stroke) {
+        ctx.strokeStyle = o.outer ?? PAPER_CSS;
+        ctx.lineWidth = Math.max(3, size * 0.22);
+        ctx.strokeText(c, 0, 0);
+      } else {
+        ctx.fillStyle = o.fill ?? INK_CSS;
+        ctx.fillText(c, 0, 0);
+      }
+      ctx.restore();
+      cx += widths[i];
+    });
+  };
+  pass(true);
+  pass(false);
+  ctx.restore();
+}
+
+/**
+ * Two curved manga motion marks round a spinning ball at (x, y) of radius r: tapered arcs (thick head, thin tail)
+ * at r x 1.45, half a turn apart, starting at angle `phase`, trailing against the spin. dir 1 = clockwise on screen.
+ * o.squash < 1 flattens them onto the ground plane; o.ink (default true) gives them the ink under-stroke.
+ */
+export function spinMarks(
+  ctx: CanvasRenderingContext2D, x: number, y: number, r: number, phase: number,
+  o: { color?: string; ink?: boolean; alpha?: number; squash?: number; len?: number; dir?: 1 | -1; width?: number } = {},
+) {
+  const a = clamp(o.alpha ?? 1);
+  if (a <= 0 || r <= 0) return;
+  const R = r * 1.45, len = o.len ?? 1.1, dir = o.dir ?? 1, sq = o.squash ?? 1;
+  const w = o.width ?? Math.max(1.5, r * 0.3);
+  const N = 14;
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.lineJoin = 'round';
+  for (const k of [0, 1]) {
+    const head = phase + k * Math.PI;
+    const L: [number, number][] = [], Rr: [number, number][] = [];
+    for (let i = 0; i <= N; i++) {
+      const u = i / N;
+      const ang = head - dir * len * u;
+      const hw = (w / 2) * Math.pow(1 - u, 0.8);
+      const c = Math.cos(ang), s = Math.sin(ang);
+      L.push([x + c * (R + hw), y + s * (R + hw) * sq]);
+      Rr.push([x + c * (R - hw), y + s * (R - hw) * sq]);
+    }
+    ctx.beginPath();
+    L.forEach(([px, py], i) => (i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)));
+    for (let i = Rr.length - 1; i >= 0; i--) ctx.lineTo(Rr[i][0], Rr[i][1]);
+    ctx.closePath();
+    if (o.ink !== false) {
+      ctx.strokeStyle = INK_CSS;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.fillStyle = o.color ?? 'rgb(47,224,138)';
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+/**
+ * The boot's swing arc: a translucent ink smear (normal blend, a ribbon tapering from the tail to `w` at the head =
+ * the last point) with three thin ink speed lines along it. alpha 0.35 in the brief.
+ */
+export function inkSmear(ctx: CanvasRenderingContext2D, pts: readonly TrailPt[], w: number, alpha: number, o: { lines?: number; color?: string } = {}) {
+  const n = pts.length;
+  if (n < 2 || alpha <= 0) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ribbon(ctx, pts as TrailPt[], 0, w, o.color ?? INK_CSS, alpha);
+  const lines = o.lines ?? 3;
+  ctx.strokeStyle = o.color ?? INK_CSS;
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  for (let k = 0; k < lines; k++) {
+    const off = lines === 1 ? 0 : (k / (lines - 1) - 0.5) * 2 * 0.62;
+    const i0 = Math.floor(n * (0.25 + 0.15 * k / Math.max(1, lines)));
+    ctx.globalAlpha = clamp(alpha * 1.8);
+    ctx.beginPath();
+    for (let i = i0; i < n; i++) {
+      const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      const l = Math.hypot(dx, dy) || 1;
+      dx /= l;
+      dy /= l;
+      const ww = (w / 2) * (i / (n - 1)) * off;
+      const px = pts[i].x - dy * ww, py = pts[i].y + dx * ww;
+      i === i0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }

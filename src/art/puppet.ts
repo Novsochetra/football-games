@@ -57,6 +57,20 @@ export const RIVAL_KIT_B: Kit = {
   hair: pal3(H(70, 60, 60), H(40, 32, 34), H(18, 12, 14)),
 };
 
+/** Defender C (SPOTLIGHT SOLO / MERIDIAN THREAD): the white kit, darker skin, black hair. */
+export const RIVAL_KIT_C: Kit = {
+  ...RIVAL_KIT,
+  skin: pal3(H(176, 118, 82), H(140, 92, 64), H(92, 58, 40)),
+  hair: pal3(H(52, 44, 48), H(28, 22, 26), H(12, 8, 10)),
+};
+
+/** Defender D (SPOTLIGHT SOLO / MERIDIAN THREAD): the white kit, fair skin, red hair. */
+export const RIVAL_KIT_D: Kit = {
+  ...RIVAL_KIT,
+  skin: pal3(H(255, 220, 190), H(236, 180, 146), H(176, 118, 92)),
+  hair: pal3(H(236, 128, 64), H(196, 84, 38), H(122, 46, 24)),
+};
+
 export const KEEPER_KIT: Kit = {
   skin: pal3(H(255, 214, 178), H(232, 172, 132), H(170, 110, 86)),
   hair: pal3(H(120, 120, 130), H(70, 70, 84), H(30, 30, 40)),
@@ -152,6 +166,33 @@ export const POSES = {
   // Defender block & blown away.
   blockJump: P({ torso: 6 * D, head: -10 * D, thighN: 30 * D, kneeN: 70 * D, footN: 20 * D, thighF: -10 * D, kneeF: 80 * D, armN: 150 * D, elbowN: 10 * D, armF: 130 * D, elbowF: 20 * D }),
   blown: P({ torso: -40 * D, head: 40 * D, thighN: 50 * D, kneeN: 30 * D, thighF: 100 * D, kneeF: 60 * D, armN: -150 * D, elbowN: 30 * D, armF: 160 * D, elbowF: 40 * D }),
+  // SPOTLIGHT SOLO defenders and keeper (joint angles only; falls stay comic, nothing hits a head).
+  // Jockeying side-on: low, knees soft, weight on the balls of the feet, arms out for balance.
+  jockey: P({ torso: 16 * D, head: -12 * D, thighN: 28 * D, kneeN: 52 * D, footN: -6 * D, thighF: -14 * D, kneeF: 38 * D, armN: 38 * D, elbowN: 34 * D, armF: -34 * D, elbowF: 40 * D }),
+  // Bites on the feint: a full-stretch lunge, the front leg reaching low, the back leg long behind.
+  lungeCommit: P({ torso: 30 * D, head: -18 * D, thighN: 74 * D, kneeN: 12 * D, footN: -10 * D, thighF: -42 * D, kneeF: 16 * D, footF: 20 * D, armN: 68 * D, elbowN: 12 * D, armF: -62 * D, elbowF: 22 * D }),
+  // Lands on one knee after the lunge (hip about 14 units lower than standing: the caller lowers h).
+  kneelStumble: P({ torso: 24 * D, head: -6 * D, thighN: 80 * D, kneeN: 88 * D, footN: 0, thighF: 2 * D, kneeF: 96 * D, footF: 30 * D, armN: 46 * D, elbowN: 40 * D, armF: 22 * D, elbowF: 34 * D }),
+  // Slide tackle along the turf, studs first: leaning far back, the lead leg straight along the ground, the other
+  // folded under, the trailing hand down for balance (hip near the ground: the caller lowers h).
+  slideTackle: P({ torso: -64 * D, head: 34 * D, thighN: 84 * D, kneeN: 0, footN: -24 * D, thighF: 42 * D, kneeF: 112 * D, footF: 10 * D, armN: 64 * D, elbowN: 30 * D, armF: -104 * D, elbowF: 8 * D }),
+  // Sliding on out, turning slowly (apply a slow spin): sprawled back, arms out.
+  slideSpin: P({ torso: -82 * D, head: 26 * D, thighN: 70 * D, kneeN: 20 * D, thighF: 50 * D, kneeF: 64 * D, armN: 120 * D, elbowN: 20 * D, armF: -120 * D, elbowF: 24 * D }),
+  // Comic full split, arms flung up (hip at the ground: the caller lowers h).
+  splitFreeze: P({ torso: 2 * D, head: -10 * D, thighN: 86 * D, kneeN: 0, footN: -10 * D, thighF: -86 * D, kneeF: 0, footF: 10 * D, armN: 160 * D, elbowN: 12 * D, armF: 150 * D, elbowF: 22 * D }),
+  // Toppled sideways onto one hip out of the split: leaning far back on the propping elbow, the near leg still
+  // stretched along the turf, the far knee up, the free arm flung up.
+  sideTopple: P({ torso: -62 * D, head: 22 * D, thighN: 82 * D, kneeN: 4 * D, footN: -10 * D, thighF: 58 * D, kneeF: 74 * D, armN: 104 * D, elbowN: 30 * D, armF: -112 * D, elbowF: 22 * D }),
+  // Seen from behind (silhouette): legs spread in the picture plane, an arch; arms out.
+  wideBlock: P({ torso: 0, head: 0, thighN: 32 * D, kneeN: 8 * D, thighF: -32 * D, kneeF: 8 * D, armN: 56 * D, elbowN: 14 * D, armF: -56 * D, elbowF: 14 * D }),
+  // Folded about 150 deg forward: the head hangs upside down between the knees, looking through his own legs.
+  lookThrough: P({ torso: 150 * D, head: 24 * D, thighN: 36 * D, kneeN: 10 * D, thighF: -36 * D, kneeF: 10 * D, armN: 8 * D, elbowN: 10 * D, armF: -8 * D, elbowF: 10 * D }),
+  // Sat back on his bottom, hands behind him.
+  sitBack: P({ torso: -16 * D, head: 12 * D, thighN: 84 * D, kneeN: 62 * D, thighF: 78 * D, kneeF: 74 * D, armN: -42 * D, elbowN: 10 * D, armF: -52 * D, elbowF: 10 * D }),
+  // Face-down at the end of the slide, arms stretched ahead.
+  faceDown: P({ torso: 0, head: -24 * D, thighN: 4 * D, kneeN: 22 * D, thighF: -6 * D, kneeF: 34 * D, armN: 162 * D, elbowN: 18 * D, armF: 146 * D, elbowF: 30 * D, spin: 1.5 }),
+  // Keeper crouched wide for the one-on-one: low, legs spread, arms spread low.
+  gkSpread: P({ torso: 16 * D, head: -12 * D, thighN: 42 * D, kneeN: 52 * D, footN: -8 * D, thighF: -32 * D, kneeF: 46 * D, armN: 76 * D, elbowN: 10 * D, armF: 62 * D, elbowF: 12 * D }),
   // Bicycle kick (CRIMSON CRESCENT). Authored facing right; the hero faces AWAY from goal
   // (facing -1 on the field), so negative spin tips him backward over his own head.
   bikePlant: P({ torso: -14 * D, head: -34 * D, thighN: 10 * D, kneeN: 40 * D, thighF: -10 * D, kneeF: 30 * D, armN: 40 * D, elbowN: 30 * D, armF: -40 * D, elbowF: 30 * D }),
@@ -175,6 +216,22 @@ export const POSES = {
   flinch: P({ torso: -16 * D, head: 28 * D, thighN: 34 * D, kneeN: 62 * D, footN: 10 * D, thighF: -12 * D, kneeF: 22 * D, armN: 148 * D, elbowN: 62 * D, armF: 128 * D, elbowF: 74 * D }),
   // Keeper swept off his feet by the pressure ring: body tilted back, legs taken from under him.
   gkSwept: P({ torso: -30 * D, head: 24 * D, thighN: 64 * D, kneeN: 18 * D, footN: -10 * D, thighF: 46 * D, kneeF: 34 * D, armN: 118 * D, elbowN: 24 * D, armF: 64 * D, elbowF: 40 * D, spin: -0.45 }),
+  // MERIDIAN THREAD defenders (beaten by the disguise, never blasted; no slide tackle: that is SPOTLIGHT SOLO's).
+  // Poke tackle: standing (far) leg planted and bent, the near leg swept low and long across the ball's line, toe reaching.
+  pokeTackle: P({ torso: -12 * D, head: 22 * D, thighN: 78 * D, kneeN: 4 * D, footN: -14 * D, thighF: -16 * D, kneeF: 38 * D, footF: 6 * D, armN: -46 * D, elbowN: 30 * D, armF: 70 * D, elbowF: 24 * D }),
+  // Full-stretch lunge commit (the scissors): play lungeL facing +1 and lungeR facing -1 so the pair mirror exactly.
+  lungeL: P({ torso: 26 * D, head: 4 * D, thighN: 70 * D, kneeN: 8 * D, footN: -8 * D, thighF: -30 * D, kneeF: 56 * D, footF: 10 * D, armN: -30 * D, elbowN: 40 * D, armF: 64 * D, elbowF: 30 * D }),
+  lungeR: P({ torso: 26 * D, head: 4 * D, thighN: 70 * D, kneeN: 8 * D, footN: -8 * D, thighF: -30 * D, kneeF: 56 * D, footF: 10 * D, armN: -30 * D, elbowN: 40 * D, armF: 64 * D, elbowF: 30 * D }),
+  // Overbalanced after the clack: pitching forward, legs crossing, arms flung up.
+  stumble: P({ torso: 38 * D, head: -24 * D, thighN: -14 * D, kneeN: 54 * D, footN: 10 * D, thighF: 36 * D, kneeF: 22 * D, armN: 124 * D, elbowN: 30 * D, armF: -58 * D, elbowF: 40 * D }),
+  // Stretching block (D4's heel): a wide split, the near leg stretched far forward, the trailing heel left behind.
+  stretchBlock: P({ torso: 30 * D, head: -8 * D, thighN: 66 * D, kneeN: 4 * D, footN: -16 * D, thighF: -46 * D, kneeF: 18 * D, footF: 22 * D, armN: 40 * D, elbowN: 20 * D, armF: -70 * D, elbowF: 20 * D }),
+  // Sprawled onto his hip after the poke (draw the hip lower: h < 0).
+  sprawl: P({ torso: -20 * D, head: 30 * D, thighN: 84 * D, kneeN: 30 * D, footN: -10 * D, thighF: 44 * D, kneeF: 72 * D, armN: -64 * D, elbowN: 30 * D, armF: 104 * D, elbowF: 20 * D, spin: -1.15 }),
+  // On his backside, facing the wrong way (hands on the turf behind him).
+  sitWrongWay: P({ torso: -18 * D, head: 12 * D, thighN: 86 * D, kneeN: 64 * D, footN: -6 * D, thighF: 78 * D, kneeF: 88 * D, armN: -44 * D, elbowN: 0, armF: -32 * D, elbowF: 10 * D }),
+  // The gag: head tipped up and one arm pointing up and away, toward the far side where the ball never went.
+  lookFar: P({ torso: -6 * D, head: -26 * D, thighN: 6 * D, kneeN: 6 * D, thighF: -6 * D, kneeF: 8 * D, armN: 142 * D, elbowN: 4 * D, armF: 12 * D, elbowF: 30 * D }),
 };
 
 // Skeleton dimensions (units; standing hero ~100u tall).

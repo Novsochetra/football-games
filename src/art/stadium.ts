@@ -200,8 +200,62 @@ export function buildStadium(seed = 7): Stadium {
   return { crowd, crowdNear, tower, pitch, stars, flashes, moon, cloud };
 }
 
+/** SPOTLIGHT SOLO stage options for drawFieldBackdrop (all optional; omitted = the normal lit stadium). */
+export interface FieldBackdropOpts {
+  /**
+   * Per floodlight tower (left to right, world x 120 / 620 / 1120 / 1620): true or 1 = lit, false or 0 = the lamp
+   * grid goes dark and its glow is gone; a number in between scales the glow (fade a dying bank over 3 frames).
+   */
+  towers?: (boolean | number)[];
+  /** Strength of the steady twinkling phone lights in the stands (0 = none). Prefer drawPhoneLights after a stage dim. */
+  phones?: number;
+}
+
+const TOWER_X = [120, 620, 1120, 1620];
+const towerLevel = (o: FieldBackdropOpts, tx: number) => {
+  const v = o.towers?.[TOWER_X.indexOf(tx)];
+  return v === undefined || v === true ? 1 : v === false ? 0 : clamp(v);
+};
+const darkTowers = new WeakMap<Stadium, HTMLCanvasElement>();
+/** The floodlight tower with its lamp grid switched off (built once). */
+function darkTower(st: Stadium): HTMLCanvasElement {
+  let cv = darkTowers.get(st);
+  if (!cv) {
+    const [c, g] = mk(st.tower.width, st.tower.height);
+    g.drawImage(st.tower, 0, 0);
+    g.fillStyle = '#2a2440';
+    for (let r = 0; r < 4; r++) for (let k = 0; k < 5; k++) g.fillRect(5 + k * 7, 5 + r * 6, 5, 4);
+    darkTowers.set(st, (cv = c));
+  }
+  return cv;
+}
+
+/**
+ * SPOTLIGHT SOLO: about 60 steady phone lights across the dark stands (the camera-flash positions, crowd parallax
+ * 0.25), each twinkling slowly (±30%), ivory and lilac. Light sources: draw them AFTER the stage dim layer.
+ * World transform (the field camera) applied; `a` = strength 0..1.
+ */
+export function drawPhoneLights(ctx: CanvasRenderingContext2D, st: Stadium, camX: number, time: number, a = 1) {
+  if (a <= 0) return;
+  const cx = camX * 0.25 - 220;
+  const prev = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < Math.min(60, st.flashes.length); i++) {
+    const f = st.flashes[i];
+    const x = Math.round(f.x + cx), y = Math.round(FIELD.horizon - 110 + f.y);
+    const k = clamp(a * (1 + 0.3 * Math.sin(time * (0.9 + (i % 5) * 0.17) + f.t * 6.1)));
+    const c: [number, number, number] = i % 3 === 0 ? [201, 182, 255] : [246, 240, 223];
+    drawGlow(ctx, glowOf(c), x + 0.5, y + 0.5, 3, 0.35 * k);
+    ctx.globalAlpha = k;
+    ctx.fillStyle = i % 3 === 0 ? '#C9B6FF' : '#F6F0DF';
+    ctx.fillRect(x, y, 1, 1);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = prev;
+}
+
 /** Draw the side-view field world (stands, lights, pitch). Camera transform already applied. */
-export function drawFieldBackdrop(ctx: CanvasRenderingContext2D, st: Stadium, camX: number, camY: number, time: number) {
+export function drawFieldBackdrop(ctx: CanvasRenderingContext2D, st: Stadium, camX: number, camY: number, time: number, opts: FieldBackdropOpts = {}) {
   const left = camX - 400, right = camX + 400;
   // Sky
   const sky = ctx.createLinearGradient(0, camY - 260, 0, FIELD.horizon);
@@ -224,7 +278,7 @@ export function drawFieldBackdrop(ctx: CanvasRenderingContext2D, st: Stadium, ca
   for (const tx of [120, 620, 1120, 1620]) {
     const x = tx + camX * 0.5 - 300;
     if (x < left - 60 || x > right + 60) continue;
-    ctx.drawImage(st.tower, Math.round(x), -40);
+    ctx.drawImage(towerLevel(opts, tx) > 0.5 ? st.tower : darkTower(st), Math.round(x), -40);
   }
   // Crowd (parallax 0.25)
   const cx = camX * 0.25 - 220;
@@ -241,12 +295,15 @@ export function drawFieldBackdrop(ctx: CanvasRenderingContext2D, st: Stadium, ca
     const x = f.x + cx;
     drawGlow(ctx, glowSprite('white', 0), x, FIELD.horizon - 110 + f.y, 6, 1 - ph / 0.12);
   }
+  if (opts.phones) drawPhoneLights(ctx, st, camX, time, opts.phones);
   // Lamp glows
   for (const tx of [120, 620, 1120, 1620]) {
     const x = tx + camX * 0.5 - 300 + 20;
     if (x < left - 120 || x > right + 120) continue;
-    drawGlow(ctx, glowOf([255, 250, 220]), x, -26, 70, 0.55);
-    drawGlow(ctx, glowOf([255, 255, 255]), x, -26, 26, 0.9);
+    const lv = towerLevel(opts, tx);
+    if (lv <= 0) continue;
+    drawGlow(ctx, glowOf([255, 250, 220]), x, -26, 70, 0.55 * lv);
+    drawGlow(ctx, glowOf([255, 255, 255]), x, -26, 26, 0.9 * lv);
   }
   ctx.globalCompositeOperation = 'source-over';
 

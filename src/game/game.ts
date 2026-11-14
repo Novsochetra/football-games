@@ -4,6 +4,7 @@ import type { Env } from '../cinematic/timeline';
 import { Cinematic } from '../cinematic/timeline';
 import { Field } from './field';
 import { SPECIALS, specialById, type SpecialDef, type SpecialId } from '../cinematic/specials';
+import { gauntletLaunch, gauntletLaunched, gauntletLaunching } from './gauntlet';
 
 export type Phase = 'field' | 'special';
 
@@ -58,14 +59,22 @@ export class Game {
   confirm() {
     this.env.sfx.unlock();
     if (this.phase === 'field') {
+      if (this.def.scenario === 'gauntlet' && this.field.mode === 'command' && this.field.cmdT > 0.25) {
+        // SPOTLIGHT SOLO: the 0.15 s launch bridge (sticks, the pool snaps tight, every light to black); update() unleashes.
+        if (!gauntletLaunching(this.field)) gauntletLaunch(this.field, this.env);
+        return;
+      }
       if (this.field.mode === 'command' && this.field.cmdT > 0.25) {
         this.env.sfx.blip(990);
         this.unleash(0);
       } else if (this.field.mode === 'result') {
         this.kickoff();
+      } else if (this.field.mode === 'intro' && this.def.scenario === 'gauntlet') {
+        // Skip ahead to just before the command window (it opens at x 860).
+        this.field.hero.x = Math.max(this.field.hero.x, 850);
       } else if (this.field.mode === 'intro') {
-        // Skip ahead to the command window (the long shot opens it at 30 m, x 880).
-        this.field.hero.x = Math.max(this.field.hero.x, this.def.scenario === 'longshot' ? 879 : 924);
+        // Skip ahead to the command window (the long shot opens it at 30 m, x 880; the through ball at x 900).
+        this.field.hero.x = Math.max(this.field.hero.x, this.def.scenario === 'longshot' ? 879 : this.def.scenario === 'through' ? 899 : 924);
       }
     }
   }
@@ -75,11 +84,13 @@ export class Game {
     if (this.phase === 'field') {
       this.field.update(dt);
       if (this.autoplay && this.field.mode === 'command' && this.field.cmdT > 1.2) this.unleash(0);
+      if (this.phase === 'field' && this.def.scenario === 'gauntlet' && gauntletLaunched(this.field)) this.unleash(0);
     } else {
       this.special.step(dt);
       if (this.special.done) {
         this.phase = 'field';
-        this.field.showResult();
+        if (this.def.result === 'breakthrough') this.field.showBreakthrough();
+        else this.field.showResult();
         this.onPhase?.('field');
       }
     }

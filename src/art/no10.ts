@@ -7,6 +7,13 @@
 //   - back frames -> the hand-drawn No.10 sprite, back-lit (a navy overlay);
 //   - Glance G4 -> the face crop of the hand-drawn sprite (G1);
 //   - Celebrate -> Strike F10, then the Jump strip.
+// MERIDIAN THREAD (pass) frames, same rule (a library frame, else a studio stand-in, else hand-drawn art):
+//   - Trivela T3-T9 -> the Strike frame that reads closest (F5a, F5b, F6, F7, F9, F10), then the Jump strip;
+//   - Approach AP1/AP3 -> Run R4 / Approach AP2;
+//   - Carry B1-B4 and Scan S1-S3 (back) -> Carry, then Stand Back a/b, then the back-lit sprite;
+//   - Point P1-P3b (front) -> Stand Front a/b, then the hand-drawn sprite (a front view, drawn plain);
+//   - Glance G2/G3 -> Glance G1, then the hand-drawn face crop.
+// Back, front and face strips are also found by their exact export stem ('Carry', 'StandBack', 'Glance', ...).
 
 import type { Env } from '../cinematic/timeline';
 import { boxFilter, drawAnim, drawAnimBoxed, findAnim, findFrame, type AnimDraw, type StudioAnim } from './studioAnim';
@@ -20,7 +27,7 @@ interface Ref {
   frames: string[];
 }
 interface Def {
-  view: 'side' | 'back' | 'face';
+  view: 'side' | 'back' | 'face' | 'front';
   refs: Ref[];
   /** Jump-strip stand-in (frame name, then index if the name changed). */
   jump: [string, number];
@@ -37,6 +44,19 @@ const TAKEOFF: [string, number] = ['take-off', 3], LEAP: [string, number] = ['le
 const FLOAT: [string, number] = ['rise float', 6];
 const F10: Ref = { anim: 'Strike', view: 'side', frames: ['F10'] };
 const STAND_A = ['a', 'Sa', 'B10a', 'S1', 'Stand a'], STAND_B = ['b', 'Sb', 'B10b', 'S2', 'Stand b'];
+
+// MERIDIAN THREAD helpers. findAnim's 'side' patterns include the bare stem, so `exact` finds a strip exported under
+// its own name ('Carry.json', 'StandBack.json', 'Glance.json') whatever view it shows.
+const exact = (anim: string, frames: string[]): Ref => ({ anim, view: 'side', frames });
+const viewRefs = (anims: string[], view: StripView, frames: string[]): Ref[] => anims.flatMap((a) => [{ anim: a, view, frames }, exact(a, frames)]);
+const STANDBACK_A = exact('StandBack', ['a']), STANDBACK_B = exact('StandBack', ['b']);
+const STANDFRONT_A = exact('StandFront', ['a']), STANDFRONT_B = exact('StandFront', ['b']);
+const strikeRef = (...frames: string[]): Ref => ({ anim: 'Strike', view: 'side', frames });
+const carry = (f: string) => viewRefs(['Carry', 'CarryBack'], 'back', [f]);
+const backPass = (anims: string[], f: string, more: Ref[]): Def => ({ view: 'back', refs: [...viewRefs(anims, 'back', [f]), ...more], jump: LOAD });
+const frontPass = (f: string, more: Ref[]): Def => ({ view: 'front', refs: [...viewRefs(['Point', 'PointFront'], 'front', [f]), ...more], jump: LOAD });
+const facePass = (f: string, more: Ref[]): Def => ({ view: 'face', refs: [...viewRefs(['Glance'], 'face', [f]), ...more], jump: LOAD });
+const trivela = (f: string, jump: [string, number], more: Ref[]): Def => side('Trivela', [f], jump, more);
 
 /** Every No.10 frame the new specials schedule, by library ID. */
 export const NO10 = {
@@ -74,6 +94,38 @@ export const NO10 = {
   D1: side('Dribble', ['F1', 'D1'], PUSH), D2: side('Dribble', ['F2', 'D2'], LOAD), D3: side('Dribble', ['F3', 'D3'], LOAD),
   D4: side('Dribble', ['F4', 'D4'], PUSH), D5: side('Dribble', ['F5', 'D5'], PUSH), D6: side('Dribble', ['F6', 'D6'], LOAD),
   D7: side('Dribble', ['F7', 'D7'], LOAD), D8: side('Dribble', ['F8', 'D8'], PUSH),
+
+  // ---- MERIDIAN THREAD (pass): MOTION_LIBRARY §3.2, §3.3, §3.6-§3.8 ----
+  // Glance G2 (pupils to his left) and G3 (+ smirk): face crops on the 48x26 grid.
+  G2: facePass('G2', viewRefs(['Glance'], 'face', ['G1'])),
+  G3: facePass('G3', [...viewRefs(['Glance'], 'face', ['G2']), ...viewRefs(['Glance'], 'face', ['G1'])]),
+  // Approach: AP1 = last stride, head away (c R toe-tip); AP3 = the bound, head away (p).
+  AP1: side('Approach', ['AP1'], PUSH, [{ anim: 'Run', view: 'side', frames: ['R4'] }]),
+  AP3: side('Approach', ['AP3'], KNEE, [{ anim: 'Approach', view: 'side', frames: ['AP2'] }]),
+  // Trivela T3-T9 (outside of the right boot; T3->T7 share the left toe pixel).
+  T3: trivela('T3', CROUCH, [strikeRef('F5a', 'F5')]),
+  T4: trivela('T4', CROUCH, [strikeRef('F5b', 'F5a', 'F5')]),
+  T5: trivela('T5', PUSH, [strikeRef('F6')]),
+  T6: trivela('T6', TAKEOFF, [strikeRef('F7')]),
+  T7: trivela('T7', KNEE, [strikeRef('F9')]),
+  T8a: trivela('T8a', LOAD, [strikeRef('F10')]),
+  T8b: trivela('T8b', LOAD, [{ anim: 'Trivela', view: 'side', frames: ['T8a'] }, strikeRef('F10')]),
+  T9: trivela('T9', LOAD, [strikeRef('F10')]),
+  // Carry B1-B4 (back, looping 12 fps; ball at the right toe on B1).
+  B1: backPass(['Carry', 'CarryBack'], 'B1', [STANDBACK_A]),
+  B2: backPass(['Carry', 'CarryBack'], 'B2', [STANDBACK_B]),
+  B3: backPass(['Carry', 'CarryBack'], 'B3', [STANDBACK_A]),
+  B4: backPass(['Carry', 'CarryBack'], 'B4', [STANDBACK_B]),
+  // Scan S1, S2a, S2b, S3 (variants of Carry B1, B2, S2a, B4).
+  S1: backPass(['Scan', 'ScanBack'], 'S1', [...carry('B1'), STANDBACK_A]),
+  S2a: backPass(['Scan', 'ScanBack'], 'S2a', [...carry('B2'), STANDBACK_B]),
+  S2b: backPass(['Scan', 'ScanBack'], 'S2b', [...viewRefs(['Scan', 'ScanBack'], 'back', ['S2a']), ...carry('B2'), STANDBACK_A]),
+  S3: backPass(['Scan', 'ScanBack'], 'S3', [...carry('B4'), STANDBACK_B]),
+  // Point P1-P3b (front, the diptych; drawn full-body, cropped chest-up by the shot).
+  P1: frontPass('P1', [STANDFRONT_A]),
+  P2: frontPass('P2', [STANDFRONT_A]),
+  P3a: frontPass('P3a', [STANDFRONT_B]),
+  P3b: frontPass('P3b', [...viewRefs(['Point', 'PointFront'], 'front', ['P3a']), STANDFRONT_B]),
 } satisfies Record<string, Def>;
 
 export type No10Key = keyof typeof NO10;
@@ -135,10 +187,12 @@ export function no10Anchor(env: Env, key: No10Key, name?: string): [number, numb
     if (name === 'eyeL') return [hero.eyes[0][0] - r.x + 0.5, hero.eyes[0][1] - r.y + 0.5];
     return [r.w / 2, r.h / 2];
   }
-  if (d.view === 'back') {
+  if (d.view === 'back' || d.view === 'front') {
     if (name === 'center' || name === 'com') return [hero.w / 2, hero.h / 2];
     if (name === 'pelvis') return [hero.footX, hero.footY - 40];
     if (name === 'head') return [hero.footX, 18];
+    if (name === 'eye' && d.view === 'front') return [hero.eyes[1][0] + 0.5, hero.eyes[1][1] + 0.5];
+    if (name === 'tip' && d.view === 'front') return [hero.footX + 20, hero.footY - 44];
     return [hero.footX, hero.footY];
   }
   const jm = heroJump();
@@ -212,6 +266,9 @@ export function drawNo10(env: Env, key: No10Key, x: number, y: number, scale: nu
     ctx.drawImage(hero.img, -ax, -ay);
     ctx.globalAlpha = (o.alpha ?? 1) * 0.62;
     ctx.drawImage(hero.tinted([10, 18, 56]), -ax, -ay);
+  } else if (d.view === 'front') {
+    // Front stand-in (Point): the hand-drawn sprite is a front view; drawn plain.
+    ctx.drawImage(hero.img, -ax, -ay);
   } else {
     const jm = heroJump();
     ctx.drawImage(jm.frames[jumpIndex(d)].img, -ax, -ay);

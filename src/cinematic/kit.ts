@@ -115,6 +115,10 @@ function cometLayer(ctx: CanvasRenderingContext2D, pts: TrailPt[], w: number, ca
  * squash (optional, see BallSquash): squash-and-stretch with a flattened contact face on the −x side.
  * 'cobalt' (GALE HAMMER): a navy halo (normal blend) under a cobalt halo and an ice core, so the glow never
  * blows out on pale grass or in front of the floodlights.
+ * 'blacklight' (SPOTLIGHT SOLO): a uvDeep halo and a soft violet halo (both normal blend, so nothing blooms white
+ * in the dark) under a small additive ivory core: the ball's own glow under the follow-spot.
+ * 'pearl' (MERIDIAN THREAD): an ink halo (normal blend, the dark halo that keeps the ball the brightest point on
+ * paper) under an emerald outer glow and a pearl core glow. No heat: it is a pass, not a fireball.
  */
 export function drawBall(
   env: Env, spin: BallSpin, x: number, y: number, r: number, D: number, heat = 0, glow = 0, palette: BallPalette = 'fire',
@@ -122,7 +126,19 @@ export function drawBall(
 ) {
   const ctx = env.ctx;
   if (glow > 0) {
-    if (palette === 'cobalt') {
+    if (palette === 'blacklight') {
+      ctx.globalCompositeOperation = 'source-over';
+      drawGlow(ctx, glowOf([42, 22, 96]), x, y, r * D * 3.6, glow * 0.55);
+      drawGlow(ctx, glowOf([122, 77, 255]), x, y, r * D * 2.9, glow * 0.4);
+      ctx.globalCompositeOperation = 'lighter';
+      drawGlow(ctx, glowOf([246, 240, 223]), x, y, r * D * 1.8, glow * 0.45);
+    } else if (palette === 'pearl') {
+      ctx.globalCompositeOperation = 'source-over';
+      drawGlow(ctx, glowOf([13, 13, 20]), x, y, r * D * 3, glow * 0.55);
+      ctx.globalCompositeOperation = 'lighter';
+      drawGlow(ctx, glowOf([11, 143, 88]), x, y, r * D * 4.4, glow * 0.5);
+      drawGlow(ctx, glowOf([251, 246, 234]), x, y, r * D * 1.8, glow * 0.65);
+    } else if (palette === 'cobalt') {
       ctx.globalCompositeOperation = 'source-over';
       drawGlow(ctx, glowOf([10, 18, 56]), x, y, r * D * 3.4, glow * 0.6);
       ctx.globalCompositeOperation = 'lighter';
@@ -145,7 +161,7 @@ export function drawBall(
   ctx.drawImage(cv, x - (cv.width / 2) * D, y - (cv.height / 2) * D, cv.width * D, cv.height * D);
   if (heat > 0.6) {
     ctx.globalCompositeOperation = 'lighter';
-    drawGlow(ctx, glowOf(palette === 'cobalt' ? [238, 251, 255] : [255, 250, 230]), x, y, r * D * 1.3, (heat - 0.6) * 2);
+    drawGlow(ctx, glowOf(palette === 'cobalt' ? [238, 251, 255] : palette === 'pearl' ? [251, 246, 234] : [255, 250, 230]), x, y, r * D * 1.3, (heat - 0.6) * 2);
     ctx.globalCompositeOperation = 'source-over';
   }
 }

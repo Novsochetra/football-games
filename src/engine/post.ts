@@ -61,6 +61,20 @@ export class FxState {
   lensX = 0.5;
   lensY = 0.5;
   lensR = 0.2;
+  /**
+   * Beat echo (SPOTLIGHT SOLO): up to three lighten-blended copies of the frame, offset by k·(echoDX, echoDY)
+   * (UV units, y down; k = 1, 2, 3 at weights 0.6 / 0.35 / 0.18) and multiplied by echoColor. The copies only show
+   * where they are brighter than what is underneath (violet exposures of the lit No.10 in the dark around him).
+   * echoR > 0 limits it to a soft disc of that radius (screen-height units) around (echoX, echoY) (UV, y down).
+   * echo = 0 is off (the frame then runs the shader without the echo block). Never more than 4 consecutive frames.
+   */
+  echo = 0;
+  echoDX = 0;
+  echoDY = 0;
+  echoX = 0.5;
+  echoY = 0.5;
+  echoR = 0;
+  echoColor: RGB = [0.62, 0.44, 1.25];
 
   reset() {
     this.shocks.length = 0;
@@ -97,6 +111,13 @@ export class FxState {
     this.lensX = 0.5;
     this.lensY = 0.5;
     this.lensR = 0.2;
+    this.echo = 0;
+    this.echoDX = 0;
+    this.echoDY = 0;
+    this.echoX = 0.5;
+    this.echoY = 0.5;
+    this.echoR = 0;
+    this.echoColor = [0.62, 0.44, 1.25];
   }
 }
 
@@ -261,6 +282,27 @@ const FINAL_LENS = FINAL.replace('void main(){', 'uniform vec4 uLens;\nvoid main
   }`,
 );
 
+// Beat echo (SPOTLIGHT SOLO), compiled into two more FINAL programs (with and without the pressure lens) that are
+// used only on frames with fx.echo > 0, so every other frame runs the exact shaders above. Inserted after the base
+// colour fetch and before the bloom add: e_k = tex(uv - k·d)·echoColor·w_k·echo·mask, col = max(col, e1, e2, e3).
+const ECHO_BLOCK = `  {
+    vec2 ed = uv - uEcho.xy;
+    ed.x *= aspect;
+    float em = uEchoR > 0.0 ? 1.0 - smoothstep(0.7 * uEchoR, uEchoR, length(ed)) : 1.0;
+    vec3 ek = uEchoColor * (uEcho.z * em);
+    vec3 e1 = texture2D(uScene, uv - uEchoD).rgb * ek * 0.6;
+    vec3 e2 = texture2D(uScene, uv - 2.0 * uEchoD).rgb * ek * 0.35;
+    vec3 e3 = texture2D(uScene, uv - 3.0 * uEchoD).rgb * ek * 0.18;
+    col = max(col, max(e1, max(e2, e3)));
+  }
+  col += texture2D(uBloomTex, uv).rgb * uBloom;`;
+const withEcho = (src: string) =>
+  src
+    .replace('void main(){', 'uniform vec3 uEcho;\nuniform float uEchoR;\nuniform vec2 uEchoD;\nuniform vec3 uEchoColor;\nvoid main(){')
+    .replace('  col += texture2D(uBloomTex, uv).rgb * uBloom;', ECHO_BLOCK);
+const FINAL_ECHO = withEcho(FINAL);
+const FINAL_LENS_ECHO = withEcho(FINAL_LENS);
+
 interface Target {
   fb: WebGLFramebuffer;
   tex: WebGLTexture;
@@ -274,6 +316,8 @@ export class PostFX {
   private progBlur: WebGLProgram;
   private progFinal: WebGLProgram;
   private progFinalLens: WebGLProgram;
+  private progFinalEcho: WebGLProgram;
+  private progFinalLensEcho: WebGLProgram;
   private sceneTex: WebGLTexture;
   private quad: WebGLBuffer;
   private a?: Target;
@@ -299,6 +343,8 @@ export class PostFX {
     this.progBlur = this.program(VERT, BLUR);
     this.progFinal = this.program(VERT, FINAL);
     this.progFinalLens = this.program(VERT, FINAL_LENS);
+    this.progFinalEcho = this.program(VERT, FINAL_ECHO);
+    this.progFinalLensEcho = this.program(VERT, FINAL_LENS_ECHO);
     this.quad = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
@@ -416,6 +462,8 @@ export class PostFX {
     // Final composite (the lens variant only while a pressure lens is active).
     const lens = fx.lens !== 0;
     p = lens ? this.progFinalLens : this.progFinal;
+    const echo = fx.echo > 0;
+    if (echo) p = lens ? this.progFinalLensEcho : this.progFinalEcho;
     gl.useProgram(p);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
@@ -461,6 +509,12 @@ export class PostFX {
     gl.uniform1f(this.u(p, 'uCutW'), fx.cutWidth);
     gl.uniform2f(this.u(p, 'uCutArc'), fx.cutA0, fx.cutA1 < fx.cutA0 ? fx.cutA1 + Math.PI * 2 : fx.cutA1);
     if (lens) gl.uniform4f(this.u(p, 'uLens'), fx.lensX, 1 - fx.lensY, fx.lensR, fx.lens);
+    if (echo) {
+      gl.uniform3f(this.u(p, 'uEcho'), fx.echoX, 1 - fx.echoY, Math.min(1, fx.echo));
+      gl.uniform1f(this.u(p, 'uEchoR'), fx.echoR);
+      gl.uniform2f(this.u(p, 'uEchoD'), fx.echoDX, -fx.echoDY);
+      gl.uniform3f(this.u(p, 'uEchoColor'), fx.echoColor[0], fx.echoColor[1], fx.echoColor[2]);
+    }
     this.draw(p, null);
   }
 }

@@ -3,10 +3,16 @@
 import { clamp, lerp, ramp, type RGB } from './math';
 
 export type RampName =
+  | 'uv' | 'mote'
   | 'fire' | 'gold' | 'aura' | 'cyan' | 'smoke' | 'dust' | 'grass' | 'white' | 'ember' | 'night' | 'crimson' | 'silver'
-  | 'cobalt' | 'dew';
+  | 'cobalt' | 'dew'
+  | 'jade' | 'ink';
 
 export const RAMPS: Record<RampName, RGB[]> = {
+  // SPOTLIGHT SOLO: white > ivory > lilac > ultraviolet > uvDeep (the beat flares, the command-window motes).
+  uv: [[255, 255, 255], [246, 240, 223], [201, 182, 255], [122, 77, 255], [42, 22, 96]],
+  // SPOTLIGHT SOLO: dust drifting in the follow-spot beam (spawn with add: false, normal blend).
+  mote: [[246, 240, 223], [201, 182, 255], [90, 70, 140]],
   fire: [[255, 255, 238], [255, 228, 120], [255, 152, 44], [232, 62, 26], [125, 16, 26], [36, 10, 20]],
   gold: [[255, 255, 245], [255, 236, 150], [255, 186, 64], [206, 96, 24]],
   aura: [[255, 246, 226], [255, 196, 96], [255, 92, 52], [196, 18, 40], [70, 6, 28]],
@@ -23,6 +29,10 @@ export const RAMPS: Record<RampName, RGB[]> = {
   cobalt: [[238, 251, 255], [70, 216, 255], [45, 82, 224], [10, 18, 56]],
   // GALE HAMMER: dew beads and glints.
   dew: [[255, 255, 255], [214, 248, 255], [140, 220, 255], [70, 150, 210]],
+  // MERIDIAN THREAD: pearl > mint > jade > emerald > deep green (thread sparks, aura, glints).
+  jade: [[255, 252, 240], [190, 255, 215], [47, 224, 138], [11, 143, 88], [13, 40, 28]],
+  // MERIDIAN THREAD: paper > tone > graphite > ink (ink flecks, normal blend: add: false).
+  ink: [[239, 231, 214], [160, 152, 140], [60, 58, 62], [13, 13, 20]],
 };
 
 const STEPS = 24;

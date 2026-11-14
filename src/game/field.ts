@@ -1,6 +1,6 @@
 // Field view: the situation that sets up each special (a dribble for ZENITH METEOR, a high
-// cross for CRIMSON CRESCENT, a long shot from 30 m for GALE HAMMER), the slowed-down command
-// window, and the aftermath.
+// cross for CRIMSON CRESCENT, a long shot from 30 m for GALE HAMMER, a through ball behind a back
+// four for MERIDIAN THREAD), the slowed-down command window, and the aftermath.
 
 import type { Env } from '../cinematic/timeline';
 import { VW, VH } from '../engine/camera';
@@ -9,13 +9,18 @@ import { BallSpin } from '../engine/pixel';
 import { PK, drawGlow, glowSprite, type RampName } from '../engine/particles';
 import { FIELD, drawFieldBackdrop, drawGoal, drawShadow } from '../art/stadium';
 import {
-  HERO_KIT, KEEPER_KIT, RIVAL_KIT, RIVAL_KIT_B, WINGER_KIT, POSES, P, drawPuppet, poseAt, renderPuppet, type Kit, type Pose,
+  HERO_KIT, KEEPER_KIT, RIVAL_KIT, RIVAL_KIT_B, RIVAL_KIT_C, RIVAL_KIT_D, WINGER_KIT, POSES, P, drawPuppet, poseAt, renderPuppet,
+  type Kit, type Pose,
 } from '../art/puppet';
 import { PIXEL_FONT, TITLE_FONT, pixelText } from '../art/fx';
 import { drawBall } from '../cinematic/kit';
 import type { SpecialDef, SpecialId } from '../cinematic/specials';
-import { drawNo10Boxed, no10, warmNo10Boxed, type No10Key } from '../art/no10';
+import { drawNo10Boxed, no10, no10Final, warmNo10Boxed, type No10Key } from '../art/no10';
 import { STAMPS, drawStamp, ghostStamp } from '../cinematic/gale/common';
+import { gauntletRender, gauntletReset, gauntletResult, gauntletUpdate, warmGauntlet } from './gauntlet';
+import { drawNo7Boxed, no7, no7Final, warmNo7, type No7Key } from '../art/no7';
+import { HEX as MT, LAYOUT, PATH, crossStitch, needleEye, threadLine, type XZ } from '../cinematic/meridian/common';
+import { THREAD_NOTES } from '../engine/audio';
 
 const K = 0.42;
 const RUN: [number, Pose][] = [
@@ -23,14 +28,20 @@ const RUN: [number, Pose][] = [
 ];
 const runPose = (t: number) => poseAt(RUN, t % 0.4, (x) => x);
 
-/** One shared mapping: each special's aura / command-window mote ramp (meridian -> 'jade', solo -> 'uv' when they land). */
-export const AURA_RAMP: Record<SpecialId, RampName> = { zenith: 'aura', crescent: 'crimson', gale: 'cobalt' };
+/** One shared mapping: each special's aura / command-window mote ramp. */
+export const AURA_RAMP: Record<SpecialId, RampName> = { zenith: 'aura', crescent: 'crimson', gale: 'cobalt', solo: 'uv', meridian: 'jade' };
 
 /** Long shot (GALE HAMMER): No.10 is drawn from the studio Dribble cycle / Celebrate as box-filtered caches, never a puppet. */
 const DRIBBLE: No10Key[] = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'];
 const FIELD_SCALE = 0.4, RESULT_SCALE = 0.5;
 /** Command window opens at 30 m (x 880). */
 const LONGSHOT_X = 880;
+/** Through ball (MERIDIAN THREAD): the command window opens when No.10 reaches x 900 (~1.2 s). */
+const THROUGH_X = 900;
+/** No.7's re-skinned Run cache for the field (and the result view's Celebrate). */
+const NO7_RUN: No7Key[] = ['Run.R1', 'Run.R2', 'Run.R3', 'Run.R4', 'Run.R5', 'Run.R6', 'Run.R7', 'Run.R8'];
+/** Command-window stitch preview: the eye markers pluck E5, F#5, A5 at these cmdT. */
+const EYE_PLUCKS = [0.25, 0.45, 0.65];
 
 interface Actor {
   kit: Kit;
@@ -51,6 +62,9 @@ export class Field {
   hero!: Actor;
   defA!: Actor;
   defB!: Actor;
+  /** The two extra defenders of the four-man wall ('through' and 'gauntlet' only; parked off the pitch otherwise). */
+  defC!: Actor;
+  defD!: Actor;
   keeper!: Actor;
   /** No.7, who delivers the cross (cross scenario only). */
   winger!: Actor;
@@ -63,6 +77,8 @@ export class Field {
   timeScale = 1;
   /** Long shot: index of the last command-window inhale loop started. */
   private inhaleLoop = -1;
+  /** Through ball: how many of the stitch preview's eye plucks have played. */
+  private eyePlucks = 0;
 
   constructor(private env: Env, public special: SpecialDef) {
     this.reset();
@@ -75,7 +91,13 @@ export class Field {
       // Build the field caches up front (no hitch on the first frame).
       warmNo10Boxed(this.env, DRIBBLE, FIELD_SCALE);
       warmNo10Boxed(this.env, ['C1', 'C2'], RESULT_SCALE);
+    } else if (def.scenario === 'through') {
+      warmNo10Boxed(this.env, DRIBBLE, FIELD_SCALE);
+      warmNo10Boxed(this.env, ['C1', 'C2', 'P3a'], RESULT_SCALE);
+      warmNo7(this.env, NO7_RUN, FIELD_SCALE);
+      warmNo7(this.env, ['Celebrate.C1', 'Celebrate.C2', 'Point.Q2'], RESULT_SCALE);
     }
+    if (def.scenario === 'gauntlet') warmGauntlet(this.env);
   }
 
   reset() {
@@ -85,8 +107,20 @@ export class Field {
     this.timeScale = 1;
     this.crossU = 0;
     this.inhaleLoop = -1;
+    this.eyePlucks = 0;
     this.keeper = { kit: KEEPER_KIT, x: 1168, z: 258, facing: -1, pose: POSES.gkReady, h: 0 };
-    if (this.special.scenario === 'longshot') {
+    if (this.special.scenario === 'through') {
+      // No.10 looks up 30 m out; a flat back four, D1 about to press; No.7 wide on the near touchline (all from LAYOUT).
+      const L = LAYOUT;
+      this.hero = { kit: HERO_KIT, x: L.no10Start.x, z: L.no10Start.z, facing: 1, pose: POSES.stand, h: 0 };
+      this.defA = { kit: RIVAL_KIT, x: L.d1.x, z: L.d1.z, facing: -1, pose: POSES.stand, h: 0 };
+      this.defB = { kit: RIVAL_KIT_B, x: L.d2.x, z: L.d2.z, facing: -1, pose: POSES.stand, h: 0 };
+      this.winger = { kit: WINGER_KIT, x: L.no7Start.x, z: L.no7Start.z, facing: 1, pose: POSES.stand, h: 0 };
+      this.keeper.x = L.keeper.x;
+      this.keeper.z = L.keeper.z;
+      this.ball = { x: L.no10Start.x + 12, z: L.no10Start.z + 2, h: 0 };
+      this.camX = 840;
+    } else if (this.special.scenario === 'longshot') {
       // 87th minute, 0-0: No.10 collects a loose ball 40 m out and runs at a packed defence; the keeper is 2 m off his line.
       this.hero = { kit: HERO_KIT, x: 640, z: 266, facing: 1, pose: POSES.stand, h: 0 };
       this.defA = { kit: RIVAL_KIT, x: 968, z: 244, facing: -1, pose: POSES.stand, h: 0 };
@@ -111,10 +145,25 @@ export class Field {
       this.ball = { x: 710, z: 264, h: 0 };
       this.camX = 790;
     }
+    // Parked off the pitch: only 'through' and 'gauntlet' field the extra two defenders (and set their own kits).
+    this.defC = { kit: RIVAL_KIT_B, x: -500, z: 244, facing: -1, pose: POSES.stand, h: 0 };
+    this.defD = { kit: RIVAL_KIT_B, x: -500, z: 272, facing: -1, pose: POSES.stand, h: 0 };
+    if (this.special.scenario === 'gauntlet') gauntletReset(this);
+    if (this.special.scenario === 'through') {
+      // MERIDIAN THREAD's D3 (near centre-back) and D4 (near-side full-back, the offside line).
+      this.defC = { kit: RIVAL_KIT_C, x: LAYOUT.d3.x, z: LAYOUT.d3.z, facing: -1, pose: POSES.stand, h: 0 };
+      this.defD = { kit: RIVAL_KIT_D, x: LAYOUT.d4.x, z: LAYOUT.d4.z, facing: -1, pose: POSES.stand, h: 0 };
+    }
     this.env.parts.clear();
   }
 
+  /** SPOTLIGHT SOLO's result: BREAKTHROUGH · 1 ON 1 (no goal). */
+  showBreakthrough() {
+    gauntletResult(this, this.env);
+  }
+
   showResult() {
+    if (this.special.result === 'breakthrough') return this.showBreakthrough();
     this.mode = 'result';
     this.t = 0;
     this.score = 1;
@@ -124,7 +173,19 @@ export class Field {
     const deg = Math.PI / 180;
     const sitA = P({ torso: 50 * deg, thighN: 90 * deg, kneeN: 90 * deg, thighF: 80 * deg, kneeF: 100 * deg, armN: 40 * deg, armF: 30 * deg });
     const sitB = P({ torso: 10 * deg, head: 30 * deg, thighN: 80 * deg, kneeN: 100 * deg, thighF: 70 * deg, kneeF: 110 * deg, armN: 30 * deg });
-    if (this.special.scenario === 'longshot') {
+    if (this.special.scenario === 'through') {
+      // No.7 celebrates by the near post, No.10 runs in pointing at him; all four defenders still look at the far side
+      // where the ball never went; the keeper is sprawled; the ball sits in the far side of the net.
+      const look = (a: Actor, x: number, z: number, facing: 1 | -1, pose: Pose = POSES.lookFar, h = 0): Actor => ({ ...a, x, z, facing, pose, h });
+      this.hero = { ...this.hero, x: 1000, z: 272, facing: 1, pose: POSES.stand, h: 0 };
+      this.winger = { ...this.winger, x: 1130, z: 318, facing: -1, pose: POSES.celebrate, h: 0 };
+      this.defA = look(this.defA, 962, 250, -1);
+      this.defB = look(this.defB, 1026, 238, 1);
+      this.defC = look(this.defC, 1046, 264, -1);
+      this.defD = look(this.defD, 1066, 302, -1, P({ ...POSES.sitWrongWay, armN: 140 * deg, elbowN: 4 * deg, head: -24 * deg }), -9);
+      this.keeper = { ...this.keeper, x: 1160, z: 250, facing: -1, pose: P({ ...POSES.gkDive, spin: 1.6 }), h: -4 };
+      this.ball = { x: LAYOUT.finish.x, z: LAYOUT.finish.z, h: 0 };
+    } else if (this.special.scenario === 'longshot') {
       // The stamps stay in the turf; the ball sits in the far top corner; the keeper lies flat; both defenders are down.
       this.hero = { ...this.hero, x: 906, z: 266, facing: 1, pose: POSES.stand, h: 0 };
       // Seated on the turf: the hip sits ~9 px lower than a standing hip (h < 0), defender 1 knocked onto his back.
@@ -156,11 +217,14 @@ export class Field {
   }
 
   update(dt: number) {
+    if (this.special.scenario === 'gauntlet') return gauntletUpdate(this, this.env, dt);
     const sdt = dt * this.timeScale;
     this.t += sdt;
     const { rng, parts } = this.env;
     if ((this.mode === 'intro' || this.mode === 'command') && this.special.scenario === 'cross') {
       this.updateCross(dt, sdt);
+    } else if ((this.mode === 'intro' || this.mode === 'command') && this.special.scenario === 'through') {
+      this.updateThrough(dt, sdt);
     } else if (this.mode === 'intro' || this.mode === 'command') {
       const h = this.hero;
       const longshot = this.special.scenario === 'longshot';
@@ -213,7 +277,9 @@ export class Field {
       this.camX = lerp(this.camX, h.x + 80, 1 - Math.exp(-dt * 3));
     } else {
       // result: celebrate bounce (the long shot's studio Celebrate frames only hop a little)
-      this.hero.h = this.special.scenario === 'longshot' ? Math.abs(Math.sin(this.t * Math.PI * 2)) * 3 : Math.abs(Math.sin(this.t * 5)) * 8;
+      const studio = this.special.scenario === 'longshot' || this.special.scenario === 'through';
+      this.hero.h = studio ? Math.abs(Math.sin(this.t * Math.PI * 2)) * 3 : Math.abs(Math.sin(this.t * 5)) * 8;
+      if (this.special.scenario === 'through') this.winger.h = Math.abs(Math.sin(this.t * Math.PI * 2 + 1)) * 3;
       this.camX = lerp(this.camX, 1080, 1 - Math.exp(-dt * 2));
       if (rng.next() < 0.5) {
         parts.spawn({
@@ -274,6 +340,134 @@ export class Field {
       });
     }
     this.camX = lerp(this.camX, lerp(1080, h.x + 20, look), 1 - Math.exp(-dt * 3));
+  }
+
+  /**
+   * Through ball (MERIDIAN THREAD): No.10 carries at 118 px/s from LAYOUT.no10Start with the usual small touches; D1
+   * steps out to press him at 0.8 s; D2-D4 hold a flat line and side-step to mirror him; the keeper rocks on his line;
+   * No.7 jogs up the near touchline at 100 px/s and bends his run inside from 0.9 s, onside behind D4 at the trigger.
+   * The command window opens at x 900 (~1.2 s) with the stitch preview (three eye plucks).
+   */
+  private updateThrough(dt: number, sdt: number) {
+    const { rng, parts, sfx } = this.env;
+    const h = this.hero, L = LAYOUT;
+    if (this.mode === 'intro') {
+      h.x += 118 * sdt;
+      if (h.x >= THROUGH_X) {
+        this.mode = 'command';
+        this.cmdT = 0;
+        sfx.blip(660);
+      }
+    } else {
+      this.cmdT += dt;
+      this.timeScale = lerp(this.timeScale, 0.06, 1 - Math.exp(-dt * 8));
+      h.x += 118 * sdt;
+      // The stitch preview: each eye marker plucks as it lights (E5, F#5, A5 at gain 0.12).
+      while (this.eyePlucks < 3 && this.cmdT >= EYE_PLUCKS[this.eyePlucks]) {
+        sfx.pluck([THREAD_NOTES.E5, THREAD_NOTES.Fs5, THREAD_NOTES.A5][this.eyePlucks], 0.9, 0.12);
+        this.eyePlucks++;
+      }
+    }
+    h.pose = runPose(this.t);
+    const ph = (this.t % 0.8) / 0.8;
+    this.ball.x = h.x + 12 + Math.sin(ph * Math.PI) * 10;
+    this.ball.z = h.z + 2;
+    this.ball.h = Math.abs(Math.sin(ph * Math.PI * 2)) * 2;
+    this.spin.rotate(0, 0, 1, sdt * 12);
+    // D1 presses from 0.8 s; the other three hold the line and shuffle to mirror him.
+    const d1 = this.defA;
+    const out = ease.inOutQuad(clamp((this.t - 0.8) / 0.55));
+    d1.x = Math.max(lerp(L.d1.x, L.d1Out.x, out), h.x + 40);
+    d1.z = lerp(L.d1.z, L.d1Out.z, out);
+    const deg = Math.PI / 180;
+    const set = (k: number) => P({ ...POSES.stand, torso: 12 * deg, kneeN: (22 + 6 * k) * deg, kneeF: (26 - 6 * k) * deg, thighN: (10 + 4 * k) * deg });
+    d1.pose = out > 0 && out < 1 ? runPose(this.t + 0.13) : set(Math.sin(this.t * 9));
+    const line: [Actor, XZ, number][] = [[this.defB, L.d2, 0.27], [this.defC, L.d3, 0.51], [this.defD, L.d4, 0.77]];
+    for (const [d, home, phs] of line) {
+      d.x = home.x;
+      d.z = home.z + (h.z - L.no10Start.z) * 0.5 + Math.sin(this.t * 4 + phs * 6) * 1.5;
+      d.pose = set(Math.sin(this.t * 8 + phs * 9));
+    }
+    this.keeper.z = L.keeper.z + Math.sin(this.t * 2) * 6;
+    this.keeper.pose = POSES.gkReady;
+    // No.7: jog, then bend the run inside (onside behind D4).
+    const w = this.winger;
+    w.x += 100 * sdt;
+    w.z = lerp(L.no7Start.z, L.no7Strike.z, ease.inOutQuad(clamp((this.t - 0.9) / 0.35)));
+    w.pose = runPose(this.t + 0.2);
+    if (rng.next() < 0.3 * this.timeScale) {
+      parts.spawn({
+        kind: PK.Smoke, x: h.x - 6, y: h.z, vx: -30, vy: -8, max: 0.5, s0: 2, s1: 7, ramp: 'dust', a0: 0.4, a1: 0, add: false, r0: 0, r1: 1,
+      });
+    }
+    if (this.mode === 'command' && rng.next() < 0.6) {
+      parts.spawn({
+        kind: PK.Glow, x: h.x + rng.range(-10, 10), y: h.z - rng.range(0, 40), vx: 0, vy: rng.range(-60, -20),
+        max: 0.5, s0: rng.range(3, 6), s1: 1, ramp: AURA_RAMP[this.special.id], r0: 0.1, r1: 1, a0: 0.9, a1: 0, layer: 0,
+      });
+    }
+    this.camX = lerp(this.camX, h.x + 80, 1 - Math.exp(-dt * 3));
+  }
+
+  /** Through ball, command window (world space, on the turf under the players): the stitch preview along PATH. */
+  private drawThroughTurf(time: number) {
+    if (this.mode !== 'command') return;
+    const ctx = this.env.ctx;
+    const grow = ease.outCubic(clamp(this.cmdT / 0.6));
+    const pts = [{ x: this.ball.x, y: this.ball.z }, ...PATH.points(0.04, Math.max(0.05, grow), 4).map((q) => ({ x: q.x, y: q.z }))];
+    threadLine(ctx, pts, 1.2, 0.95 * clamp(this.cmdT / 0.15), { stitch: { dash: 6, dip: 3, phase: -time * 8 }, halo: 0.7 });
+    PATH.eyes.forEach((u, i) => {
+      const e = PATH.at(u), d = PATH.dir(u);
+      const lit = this.cmdT - EYE_PLUCKS[i];
+      if (lit < -0.05) return;
+      const beat = 0.75 + 0.25 * Math.sin(time * 6 - i * 1.4);
+      needleEye(ctx, e.x, e.z, 11, clamp(lit / 0.12) * beat, Math.atan2(d.z, d.x), 0.9, 0.55);
+    });
+    if (grow > 0.98) crossStitch(ctx, LAYOUT.target.x, LAYOUT.target.z, 4.5 * (1 + 0.18 * Math.sin(time * 9)), 1, 0.55);
+  }
+
+  /** Through ball, command window: the tiny almond eye glyph above No.10, looking off to the far side (up-screen). */
+  private drawLookGlyph(time: number) {
+    if (this.mode !== 'command') return;
+    const ctx = this.env.ctx;
+    const h = this.hero;
+    const x = h.x - 1, y = h.z - h.h - 50;
+    const blink = Math.sin(time * 2.6) > 0.93 ? 0.15 : 1;
+    const a = clamp(this.cmdT / 0.25);
+    needleEye(ctx, x, y, 12, blink, 0, a, 1, { fill: 0 });
+    if (blink > 0.5) {
+      ctx.globalAlpha = a;
+      ctx.fillStyle = MT.ink;
+      ctx.fillRect(x - 3, y - 2, 2, 2);
+      ctx.fillStyle = MT.pearl;
+      ctx.fillRect(x - 3, y - 2, 1, 1);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /** Through ball: No.7 from his studio Run cache (puppet stand-in until exported); Celebrate in the result view. */
+  private drawWinger(a: Actor) {
+    const env = this.env;
+    drawShadow(env.ctx, a.x, a.z, 11, 0.35);
+    if (this.mode === 'result') {
+      const key: No7Key = no7Final('Celebrate.C1') ? (Math.floor(this.t / 0.25) % 2 ? 'Celebrate.C2' : 'Celebrate.C1') : 'Point.Q2';
+      drawNo7Boxed(env, key, a.x, a.z - a.h, RESULT_SCALE, { flip: a.facing < 0 });
+      return;
+    }
+    const key = NO7_RUN[Math.floor(this.t / 0.07) % 8];
+    const f = no7(key);
+    // Like the Dribble strip, the Run strip is drawn in place on one registration: a fixed pivot, the actor's x carries him.
+    const pivot: [number, number] | undefined = f ? [f.a.anchorOf(no7('Run.R1')?.i ?? f.i, 'contact')[0], 103] : undefined;
+    drawNo7Boxed(env, key, a.x, a.z - a.h, FIELD_SCALE, pivot ? { pivot } : {});
+  }
+
+  /** Through ball result: No.10 runs in pointing (Celebrate C1/C2; until drawn, Point P3a full-body). Never the puppet. */
+  private drawThroughHero(a: Actor) {
+    if (this.mode !== 'result') return this.drawHeroStudio(a);
+    const env = this.env;
+    drawShadow(env.ctx, a.x, a.z, 11, 0.35);
+    const key: No10Key = no10Final('C1') ? (Math.floor(this.t / 0.25) % 2 ? 'C2' : 'C1') : 'P3a';
+    drawNo10Boxed(env, key, a.x, a.z - a.h, RESULT_SCALE, { anchor: 'contact' });
   }
 
   /**
@@ -343,6 +537,8 @@ export class Field {
   private drawActor(a: Actor) {
     const ctx = this.env.ctx;
     if (a === this.hero && this.special.scenario === 'longshot') return this.drawHeroStudio(a);
+    if (a === this.hero && this.special.scenario === 'through') return this.drawThroughHero(a);
+    if (a === this.winger && this.special.scenario === 'through') return this.drawWinger(a);
     drawShadow(ctx, a.x, a.z, 11, 0.35);
     const r = renderPuppet(a.kit, a.pose, { k: K, facing: a.facing });
     // feet at z - h; hip ~ 40 units above feet
@@ -350,28 +546,36 @@ export class Field {
   }
 
   render(time: number) {
+    if (this.special.scenario === 'gauntlet') return gauntletRender(this, this.env, time, (t) => this.drawScoreboard(t));
     const env = this.env;
     const { ctx, cam, fx } = env;
     const zoom = this.mode === 'result' ? 1.15 : 1.3;
+    // The through ball tilts the camera down a little so the stitch preview's X, No.7's run and the result's
+    // celebrations sit above the command panel / banner (every other scenario keeps y 214).
+    const camY =
+      this.special.scenario !== 'through' ? 214 : this.mode === 'command' ? lerp(214, 256, ease.outCubic(clamp(this.cmdT / 0.4))) : this.mode === 'result' ? 236 : 214;
     cam.reset(); // clear any shake left over from the cinematic
-    cam.set(this.camX, 214, zoom, 0);
+    cam.set(this.camX, camY, zoom, 0);
     env.world();
-    drawFieldBackdrop(ctx, env.art.stadium, this.camX, 214, time);
+    drawFieldBackdrop(ctx, env.art.stadium, this.camX, camY, time);
     const longshot = this.special.scenario === 'longshot';
     if (longshot) this.drawLongshotTurf(time);
+    const through = this.special.scenario === 'through';
+    if (through) this.drawThroughTurf(time);
     drawGoal(ctx, 'back', this.mode === 'result' ? 0.15 : 0);
 
     // Depth-sorted actors + ball.
     const items: { z: number; draw: () => void }[] = [];
     const cast = [this.hero, this.defA, this.defB, this.keeper];
-    if (this.special.scenario === 'cross') cast.push(this.winger);
+    if (this.special.scenario === 'cross' || through) cast.push(this.winger);
+    if (through) cast.push(this.defC, this.defD); // ('gauntlet' draws its own wall of four in gauntlet.ts)
     for (const a of cast) items.push({ z: a.z, draw: () => this.drawActor(a) });
     items.push({
       z: this.ball.z + 0.5,
       draw: () => {
         const air = clamp(this.ball.h / 160);
         drawShadow(ctx, this.ball.x, this.ball.z, 4 - air * 1.5, 0.4 - air * 0.25);
-        const pal = this.special.id === 'crescent' ? 'crimson' : this.special.id === 'gale' ? 'cobalt' : 'fire';
+        const pal = this.special.id === 'crescent' ? 'crimson' : this.special.id === 'gale' ? 'cobalt' : this.special.id === 'meridian' ? 'pearl' : 'fire';
         const by = this.ball.z - 3 - this.ball.h;
         if (air > 0.05) {
           // A ball in the air reads poorly against the crowd: halo it and mark where it will drop.
@@ -394,6 +598,7 @@ export class Field {
     env.parts.draw(ctx, 0);
     for (const it of items) it.draw();
     drawGoal(ctx, 'front');
+    if (through) this.drawLookGlyph(time);
     env.parts.draw(ctx, 1);
 
     // Screen-space HUD.
@@ -410,7 +615,9 @@ export class Field {
             ? 'No.7 HITS THE BYLINE AND WHIPS IN A HIGH CROSS'
             : this.special.scenario === 'longshot'
               ? 'No.10 RUNS AT A PACKED DEFENCE · 30 M OUT'
-              : 'No.10 BREAKS THROUGH THE MIDFIELD';
+              : this.special.scenario === 'through'
+                ? 'No.10 LOOKS UP · No.7 BENDS HIS RUN'
+                : 'No.10 BREAKS THROUGH THE MIDFIELD';
         pixelText(ctx, caption, VW / 2, 48, 12, '#ffe7b0', 'center');
         ctx.globalAlpha = 1;
       }
@@ -419,7 +626,7 @@ export class Field {
     fx.bloom = 0.7;
     fx.vignette = 0.4;
     fx.sat = this.mode === 'command' ? lerp(1, 0.75, clamp(this.cmdT * 3)) : 1;
-    if (this.mode === 'command') fx.tint = longshot ? [236, 244, 255] : [255, 238, 232];
+    if (this.mode === 'command') fx.tint = longshot ? [236, 244, 255] : through ? [246, 248, 240] : [255, 238, 232];
     if (this.mode === 'command' && longshot) {
       // Air loading: a faint pressure-lens pinch on his boot.
       const [u, v] = cam.toUV(...this.bootPoint());
@@ -478,14 +685,15 @@ export class Field {
     ctx.fillRect(170, 259, 160, 10);
     const fl = 0.75 + 0.25 * Math.sin(time * 12);
     const gale = this.special.id === 'gale';
+    const meridian = this.special.id === 'meridian';
     const gg = ctx.createLinearGradient(170, 0, 330, 0);
-    gg.addColorStop(0, gale ? '#2D52E0' : '#c8202a');
-    gg.addColorStop(1, gale ? '#46D8FF' : '#ffd34a');
+    gg.addColorStop(0, gale ? '#2D52E0' : meridian ? '#0B8F58' : '#c8202a');
+    gg.addColorStop(1, gale ? '#46D8FF' : meridian ? '#2FE08A' : '#ffd34a');
     ctx.fillStyle = gg;
     ctx.globalAlpha = fl;
     ctx.fillRect(171, 260, 158, 8);
     ctx.globalAlpha = 1;
-    pixelText(ctx, '100', 338, 258, 10, gale ? '#46D8FF' : '#ffd34a');
+    pixelText(ctx, '100', 338, 258, 10, gale ? '#46D8FF' : meridian ? '#2FE08A' : '#ffd34a');
     // Commands
     const blink = Math.sin(time * 10) > 0;
     ctx.fillStyle = 'rgba(200,32,42,0.35)';
@@ -507,7 +715,8 @@ export class Field {
       ctx.strokeRect(330.5, 279.5, 51, 16);
       pixelText(ctx, '30 M', 356, 282, 10, '#46D8FF', 'center', '#0A1238');
     }
-    const dim = this.special.scenario === 'cross' ? ['HEADER', 'VOLLEY', 'TRAP'] : ['SHOOT', 'PASS', 'DRIBBLE'];
+    const dim =
+      this.special.scenario === 'cross' ? ['HEADER', 'VOLLEY', 'TRAP'] : this.special.scenario === 'through' ? ['SHOOT', 'SHORT PASS', 'DRIBBLE'] : ['SHOOT', 'PASS', 'DRIBBLE'];
     dim.forEach((s, i) => pixelText(ctx, s, 140 + i * 90, 312, 10, '#5d5a80'));
     pixelText(ctx, 'NEXT STAGE', 140, 327, 8, '#3f3c60');
     // Prompt
@@ -523,7 +732,7 @@ export class Field {
     ctx.restore();
     // Spotlight glow around the hero portrait edge
     ctx.globalCompositeOperation = 'lighter';
-    drawGlow(ctx, glowSprite(gale ? 'cobalt' : 'aura', 0.4), 67, y0 + 49, 60, 0.25 * fl);
+    drawGlow(ctx, glowSprite(gale ? 'cobalt' : meridian ? 'jade' : 'aura', 0.4), 67, y0 + 49, 60, 0.25 * fl);
     ctx.globalCompositeOperation = 'source-over';
   }
 
@@ -559,9 +768,11 @@ export class Field {
     ctx.fillStyle = '#ffe9a8';
     ctx.fillText(`GOAL  ·  ${this.special.name}`, VW / 2, 286);
     ctx.restore();
+    const through = this.special.scenario === 'through';
+    if (through) pixelText(ctx, 'No.7 SCORES · ASSIST No.10', VW / 2, 318, 10, '#2FE08A', 'center');
     const blink = 0.6 + 0.4 * Math.sin(time * 5);
     ctx.globalAlpha = a * blink;
-    pixelText(ctx, 'R  REPLAY SPECIAL      SPACE  PLAY FROM KICK-OFF', VW / 2, 324, 10, '#ffffff', 'center');
+    pixelText(ctx, 'R  REPLAY SPECIAL      SPACE  PLAY FROM KICK-OFF', VW / 2, through ? 331 : 324, 10, '#ffffff', 'center');
     ctx.globalAlpha = 1;
     void PIXEL_FONT;
   }

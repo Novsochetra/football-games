@@ -16,9 +16,11 @@ import { Game } from './game/game';
 import { visibleSpecials, type SpecialId } from './cinematic/specials';
 
 const BLURBS: Record<SpecialId, string> = {
+  solo: 'Four defenders wall off the box. The floodlights crash off, one follow-spot finds No.10, and his feet play a drum solo: a step-over, a sole lift over a slide tackle, an elastico and a nutmeg, every touch on the beat, every beat leaving a violet print of light.',
   zenith: 'No.10 flicks the ball into the sky, leaps after it, and volleys it down from in front of the full moon like a falling star.',
   crescent: 'Back to goal, No.10 flips upside down under a high cross. The stadium turns over with him, and his boot carves a crescent of crimson fire that carries the ball into the net.',
   gale: 'From 30 m out, No.10 hits the ball so hard it never touches the grass again. It skims on cushions of crushed air, the world goes quiet, and the thunder only arrives after the ball has gone past.',
+  meridian: 'No.10 looks one way and passes the other. Without looking, he rolls the ball with the outside of his boot through three needle-eye gaps into No.7\'s stride. The stadium drains to manga ink, and when No.7 touches the ball the colour washes back along the thread.',
 };
 
 async function boot() {
@@ -166,7 +168,8 @@ async function boot() {
     }
   };
 
-  const VISIBLE = visibleSpecials(new URLSearchParams(location.search).has('all'));
+  // Work-in-progress specials show with ?all, or in the preview build (VITE_SHOW_ALL=1).
+  const VISIBLE = visibleSpecials(new URLSearchParams(location.search).has('all') || import.meta.env.VITE_SHOW_ALL === '1');
   const titleEl = $('title');
   const kindEl = $('kind');
   const blurbEl = $('blurb');

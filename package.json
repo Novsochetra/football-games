@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "build:artifact": "npm run build && node scripts/make-artifact.mjs",
+    "build:preview": "tsc --noEmit && VITE_SHOW_ALL=1 vite build --outDir dist-preview && node scripts/make-artifact.mjs dist-preview/index.html dist-preview/no10-skills-preview.html \"No.10 Skills Preview\"",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
