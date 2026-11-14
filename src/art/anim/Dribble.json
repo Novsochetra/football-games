@@ -1,0 +1,341 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Dribble",
+  "view": "Side",
+  "fps": 13,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view, facing east, unmirrored (No.10 is right-footed: the near/right leg touches). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (Settle F1: the braking right heel); airborne frames (contact null) sit on pelvis. ball = centre of the 12 px ball (radius 6 at x1; r 12 at x2, r 18 at x3), NEVER drawn in the frame; touch = the boot is on the ball; boot = the contact pixel of bootPart on the drawn boot; head = skull point; eye = the pupil pixel (measured); lowBoot = lowest pixel of an airborne frame; bbox = [x0,y0,x1,y1] measured on the art. solo = SPOTLIGHT SOLO shot-local use times. Studio layer: Art only (no Num/Ball layer; the ball guide is these anchors). Dribble (75 ms, studio 13 fps): right stance F2-F5 on the right toe-tip (73,102), left stance F6-F8,F1 on the left toe-tip (76,102). originDx = world x of each canvas from the cycle F1 (F1 0, F2-F5 24, F6-F8 42; the cycle advances 42 px = 70 px/s at x1): the shot-2 scroll and the field scroll must equal it so the feet never slide. Ball rolls on row 96 and is touched on F1 (right laces) and F5 (left instep).",
+ "frames": [
+  {
+   "name": "F1",
+   "id": "Dribble_F1",
+   "label": "R-touch",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    75,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     99,
+     96
+    ],
+    "boot": [
+     92,
+     95
+    ],
+    "head": [
+     81,
+     22
+    ],
+    "eye": [
+     90,
+     28
+    ],
+    "bbox": [
+     61,
+     9,
+     98,
+     102
+    ]
+   },
+   "touch": true,
+   "bootPart": "laces",
+   "contactFoot": "left toe",
+   "originDx": 0,
+   "solo": "s2 0.00, 0.80; s4 0.00; s7 0.00 (touch) + trail ghost 0.00"
+  },
+  {
+   "name": "F2",
+   "id": "Dribble_F2",
+   "label": "R-down",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    57,
+    69
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     81.9,
+     96
+    ],
+    "head": [
+     62,
+     23
+    ],
+    "eye": [
+     72,
+     29
+    ],
+    "bbox": [
+     33,
+     9,
+     80,
+     102
+    ]
+   },
+   "touch": false,
+   "contactFoot": "right toe",
+   "originDx": 24,
+   "solo": "s2 0.10, 0.85; s4 0.07, 1.85"
+  },
+  {
+   "name": "F3",
+   "id": "Dribble_F3",
+   "label": "pass (left leg through)",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    62,
+    67
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     87.9,
+     96
+    ],
+    "head": [
+     67,
+     22
+    ],
+    "eye": [
+     77,
+     28
+    ],
+    "bbox": [
+     42,
+     9,
+     82,
+     102
+    ]
+   },
+   "touch": false,
+   "contactFoot": "right toe",
+   "originDx": 24,
+   "solo": "s2 0.20, 0.90; s4 0.13, 1.90; s7 0.20 (trail ghost)"
+  },
+  {
+   "name": "F4",
+   "id": "Dribble_F4",
+   "label": "R-up",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    67,
+    66
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     92.9,
+     96
+    ],
+    "head": [
+     74,
+     21
+    ],
+    "eye": [
+     83,
+     27
+    ],
+    "bbox": [
+     54,
+     8,
+     88,
+     102
+    ]
+   },
+   "touch": false,
+   "contactFoot": "right toe",
+   "originDx": 24,
+   "solo": "s2 0.30, 0.95; s4 1.95; s7 0.30"
+  },
+  {
+   "name": "F5",
+   "id": "Dribble_F5",
+   "label": "L-touch",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    72,
+    67
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     97,
+     96
+    ],
+    "boot": [
+     89,
+     94
+    ],
+    "head": [
+     78,
+     22
+    ],
+    "eye": [
+     87,
+     28
+    ],
+    "bbox": [
+     58,
+     9,
+     92,
+     102
+    ]
+   },
+   "touch": true,
+   "bootPart": "instep",
+   "contactFoot": "right toe",
+   "originDx": 24,
+   "solo": "s2 0.40, 1.00; s7 0.40 (touch) + trail ghost 0.40"
+  },
+  {
+   "name": "F6",
+   "id": "Dribble_F6",
+   "label": "L-down",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    60,
+    69
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     85.3,
+     96
+    ],
+    "head": [
+     65,
+     23
+    ],
+    "eye": [
+     75,
+     29
+    ],
+    "bbox": [
+     33,
+     9,
+     80,
+     102
+    ]
+   },
+   "touch": false,
+   "contactFoot": "left toe",
+   "originDx": 42,
+   "solo": "s2 0.50, 1.05; s7 0.45"
+  },
+  {
+   "name": "F7",
+   "id": "Dribble_F7",
+   "label": "pass (right leg through)",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    65,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     90.8,
+     96
+    ],
+    "head": [
+     70,
+     22
+    ],
+    "eye": [
+     80,
+     28
+    ],
+    "bbox": [
+     45,
+     9,
+     85,
+     102
+    ]
+   },
+   "touch": false,
+   "contactFoot": "left toe",
+   "originDx": 42,
+   "solo": "s2 0.60, 1.10; s7 0.50"
+  },
+  {
+   "name": "F8",
+   "id": "Dribble_F8",
+   "label": "L-up",
+   "type": "N",
+   "ms": 75,
+   "pelvis": [
+    70,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     95.3,
+     96
+    ],
+    "head": [
+     77,
+     21
+    ],
+    "eye": [
+     86,
+     27
+    ],
+    "bbox": [
+     57,
+     8,
+     91,
+     102
+    ]
+   },
+   "touch": false,
+   "contactFoot": "left toe",
+   "originDx": 42,
+   "solo": "s2 0.70, 1.15"
+  }
+ ]
+}

@@ -1,0 +1,235 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "westStrip": "RivalSlide_west.png",
+ "studio": {
+  "project": "Rivals",
+  "animation": "Slide",
+  "view": "Side",
+  "fps": 12,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Rival Slide (defender B), studio project \"Rivals\", animation Slide, Side view; drawn on the shared Sochetra body with the rival head, re-skinned in RIVAL_KIT (src/art/puppet.ts: white shirt/socks p/q/r, teal trim, grey shorts, teal boots, light skin, blond hair). Defender B wears RIVAL_KIT_B: swap the colours in kitB (skin and hair only). Drawn facing EAST; B slides WEST at No.10, so shot 4 draws it with flip: true -> RivalSlide_west.png (a plain mirror: the shirt has no number). Points are pixel indices. The lowest pixel is on row 102 in every frame; contact = the turf contact used for placement (S0 the right toe-tip, S1 the take-off boot, S2/S2b the sliding hip, S3 the shoulders); studTop = top pixel of the leading boot (S2/S2b row 85 = 17 px above the turf: with No.10 SoleLift F8b lowBoot at world row 81 that leaves 3 clear rows = 9 px at x3 in the money frame); ballMoney = where the ball hangs at the money frame relative to B (above his chest, clear of the head); bodyCom = the body centre of mass (S3 spins slowly about it; the loader also computes the pixel com). S0 approach (optional, re-skin of Run R4), S1 launch 0.30, S2 slide 0.50 (alternate S2/S2b on 8ths through the slow window), S2b hold 1.25-1.45, S3 sprawl 1.45-2.00.",
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "p": "#ffffff",
+  "q": "#d6deec",
+  "r": "#828caa",
+  "t": "#28beaa",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "v": "#c89646",
+  "w": "#96622c",
+  "x": "#5a361e",
+  "y": "#464e5c",
+  "z": "#2a2e3a",
+  "G": "#161620",
+  "B": "#5ae6d2",
+  "C": "#146e6e"
+ },
+ "kitB": {
+  "#e8ac84": "#d69668",
+  "#aa6e56": "#b06e4a",
+  "#c89646": "#463c3c",
+  "#96622c": "#282022",
+  "#5a361e": "#120c0e"
+ },
+ "frames": [
+  {
+   "name": "S0",
+   "id": "RivalSlide_S0",
+   "label": "approach",
+   "type": "R",
+   "ms": 70,
+   "pelvis": [
+    78,
+    63
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     86,
+     19
+    ],
+    "bodyCom": [
+     84.7,
+     51.6
+    ],
+    "bbox": [
+     58,
+     6,
+     105,
+     102
+    ]
+   },
+   "contactFoot": "right toe (R4 plant)",
+   "solo": "s4 0.25 (optional; else puppet run1-4)"
+  },
+  {
+   "name": "S1",
+   "id": "RivalSlide_S1",
+   "label": "launch",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    58,
+    78
+   ],
+   "contact": [
+    60,
+    102
+   ],
+   "anchors": {
+    "head": [
+     45,
+     34
+    ],
+    "studTop": [
+     92,
+     82
+    ],
+    "bodyCom": [
+     57.2,
+     64.7
+    ],
+    "bbox": [
+     26,
+     19,
+     98,
+     102
+    ]
+   },
+   "contactFoot": "left (take-off) boot",
+   "solo": "s4 0.30"
+  },
+  {
+   "name": "S2",
+   "id": "RivalSlide_S2",
+   "label": "full slide",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    56,
+    86
+   ],
+   "contact": [
+    58,
+    102
+   ],
+   "anchors": {
+    "head": [
+     24,
+     53
+    ],
+    "studTop": [
+     93,
+     85
+    ],
+    "ballMoney": [
+     55.7,
+     64.6
+    ],
+    "bodyCom": [
+     46.7,
+     76.3
+    ],
+    "bbox": [
+     9,
+     38,
+     99,
+     102
+    ]
+   },
+   "contactFoot": "left hip/shin + folded boot (hand trails at x21-28)",
+   "solo": "s4 0.50, alternating with S2b on 8ths to 1.25"
+  },
+  {
+   "name": "S2b",
+   "id": "RivalSlide_S2b",
+   "label": "slide hold",
+   "type": "V",
+   "ms": 100,
+   "pelvis": [
+    56,
+    86
+   ],
+   "contact": [
+    58,
+    102
+   ],
+   "anchors": {
+    "head": [
+     24,
+     53
+    ],
+    "studTop": [
+     93,
+     85
+    ],
+    "ballMoney": [
+     55.7,
+     64.6
+    ],
+    "bodyCom": [
+     46.5,
+     76
+    ],
+    "bbox": [
+     9,
+     37,
+     99,
+     102
+    ]
+   },
+   "contactFoot": "as S2",
+   "solo": "s4 1.25-1.45 (money frame 1.30-1.42)"
+  },
+  {
+   "name": "S3",
+   "id": "RivalSlide_S3",
+   "label": "sprawl",
+   "type": "N",
+   "ms": 120,
+   "pelvis": [
+    64,
+    74
+   ],
+   "contact": [
+    18,
+    102
+   ],
+   "anchors": {
+    "head": [
+     21,
+     89
+    ],
+    "studTop": [
+     66,
+     35
+    ],
+    "bodyCom": [
+     49.5,
+     76.1
+    ],
+    "bbox": [
+     7,
+     35,
+     94,
+     102
+    ]
+   },
+   "contactFoot": "shoulders + back of the head on the turf",
+   "solo": "s4 1.45-2.00 (spun slowly about com)"
+  }
+ ]
+}

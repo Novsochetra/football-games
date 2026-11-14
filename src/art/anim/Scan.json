@@ -1,0 +1,147 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "back",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Scan",
+  "view": "Back",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Scan = 4 variants of Carry (pass shot 2: S1 0.35, S2a 0.50, S2b 0.75, S2a 1.00, S3 1.25-1.55). Back view (from behind; the goal far up-screen), not mirrored. Registration = Idle Back: body centre x 64, soles on row 102; the camera rides with him, so the sprite does not travel (the stride bob is drawn: pelvis y 65 on the down frames, 63 on the passing frames; head 19 -> 17). contact = the centre of the planted sole on row 102: right (72,102) on B1 B2 S1 S2a S2b, left (55,102) on B3 B4 S3. head = the skull (sightline origin). ball = the ball guide centre (B1/S1 touched at the right toe, then rolling ahead up-screen); the ball sits up-screen of the boot, so draw it before (behind) the sprite where they overlap. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "frames": [
+  {
+   "name": "S1",
+   "id": "S1",
+   "label": "chin dip to the ball",
+   "type": "V of B1",
+   "ms": 150,
+   "pelvis": [
+    65,
+    65
+   ],
+   "contact": [
+    72,
+    102
+   ],
+   "touch": true,
+   "anchors": {
+    "ball": [
+     69,
+     92
+    ],
+    "head": [
+     66,
+     21
+    ],
+    "bbox": [
+     42,
+     9,
+     88,
+     102
+    ]
+   },
+   "pass": "shot 2 0.35"
+  },
+  {
+   "name": "S2a",
+   "id": "S2a",
+   "label": "the read: head turned left",
+   "type": "V of B2",
+   "ms": 250,
+   "pelvis": [
+    65,
+    63
+   ],
+   "contact": [
+    72,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     68,
+     90
+    ],
+    "head": [
+     66,
+     18
+    ],
+    "bbox": [
+     42,
+     5,
+     88,
+     102
+    ]
+   },
+   "pass": "shot 2 0.50, 1.00"
+  },
+  {
+   "name": "S2b",
+   "id": "S2b",
+   "label": "the breath",
+   "type": "V of S2a",
+   "ms": 250,
+   "pelvis": [
+    65,
+    63
+   ],
+   "contact": [
+    72,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     68,
+     90
+    ],
+    "head": [
+     66,
+     17
+    ],
+    "bbox": [
+     42,
+     3,
+     88,
+     102
+    ]
+   },
+   "pass": "shot 2 0.75"
+  },
+  {
+   "name": "S3",
+   "id": "S3",
+   "label": "the tell: toe turned in",
+   "type": "V of B4",
+   "ms": 160,
+   "pelvis": [
+    63,
+    63
+   ],
+   "contact": [
+    55,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     64,
+     89
+    ],
+    "head": [
+     62,
+     18
+    ],
+    "bbox": [
+     34,
+     5,
+     86,
+     102
+    ]
+   },
+   "pass": "shot 2 1.25-1.55"
+  }
+ ]
+}

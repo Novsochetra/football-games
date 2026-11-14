@@ -1,0 +1,80 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "mixed",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "No.7",
+  "animation": "Idle",
+  "view": "Side (frame 1) + Front (frame 1)",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark hair #463428/#281c16, yellow \"7\"; MOTION_LIBRARY \u00a74), same scale (98 px standing, ground row 102). Model sheet: frame \"Side\" (Side view, contact (73,102) = the Idle Side boot spot) and frame \"Front\" (Front view, contact (64,102) body centre). Each frame carries its own view. Reference / result view. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "frames": [
+  {
+   "name": "Side",
+   "id": "Side",
+   "label": "model sheet (side)",
+   "type": "R of Sochetra Idle Side + No.7 head",
+   "ms": 300,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     17
+    ],
+    "eye": [
+     75,
+     24
+    ],
+    "bbox": [
+     52,
+     7,
+     81,
+     102
+    ]
+   },
+   "pass": "model sheet",
+   "view": "side"
+  },
+  {
+   "name": "Front",
+   "id": "Front",
+   "label": "model sheet (front)",
+   "type": "R of Sochetra Idle Front + No.7 head",
+   "ms": 300,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     13
+    ],
+    "bbox": [
+     39,
+     5,
+     89,
+     102
+    ]
+   },
+   "pass": "model sheet / result view",
+   "view": "front"
+  }
+ ]
+}

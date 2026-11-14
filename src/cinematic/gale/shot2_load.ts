@@ -20,9 +20,10 @@ import { PK, drawGlow, glowOf } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { focusLines } from '../../art/fx';
 import { FIELD, drawFieldBackdrop } from '../../art/stadium';
+import { drawAnim, findAnim, findFrame, type StudioAnim } from '../../art/studioAnim';
 import { P, POSES, RIVAL_KIT, RIVAL_KIT_B, drawPuppet, mixPose, poseAt, renderPuppet, type Pose } from '../../art/puppet';
 import {
-  BLINK, HEX, MUFFLE, PAL, SEQ, dewMirror, drawBall, drawNo10, drawStamp, galeGrade, isobars, lensAt,
+  BLINK, HEX, MUFFLE, PAL, SEQ, drawBall, drawNo10, drawStamp, galeGrade, isobars, lensAt,
   no10, no10At, no10Point, pressureStamp, smearArc, sparkleCyan, springBack, steps, type No10Key,
 } from './common';
 
@@ -86,6 +87,8 @@ interface GBlade { X: number; s: number; h: number; ph: number; c: number }
 let sparklesArr: Sparkle[] = [];
 let bladesArr: GBlade[] = [];
 let fgBlades: HTMLCanvasElement[] | null = null;
+/** The studio Glance G4 face (resolved in init; null while the strip is not exported). */
+let glance: { a: StudioAnim; i: number } | null = null;
 
 // ---------------------------------------------------------------- pure functions of t
 
@@ -119,18 +122,19 @@ function camAt(t: number): CamState {
   }
   const d = ease.inOutCubic(clamp((t - INHALE0) / (RELEASE - INHALE0)));
   x = lerp(x, CX1, d);
-  let y = lerp(CY0, CY1, d) + Math.sin(Math.PI * d) * 14;
+  // Descend early in the arc, so the frame top clears his chin within a few frames of the dolly starting.
+  let y = lerp(CY0, CY1, ease.outQuad(d)) + Math.sin(Math.PI * d) * 14;
   // The plant: the camera absorbs it, a 4 px dip that settles (no spring-back past level).
   if (t >= PLANT) y += 4 * Math.sin(Math.min(Math.PI, (t - PLANT) * 22)) * Math.exp(-(t - PLANT) * 8);
   let z = lerp(1, ZOOM1, d) * steps(t, [[0, 1], [RATCHET[0], 1.02], [RATCHET[1], 1.0404]]);
   const hh = lerp(HH0, HH1, d);
-  // The leg fires: a short accelerating push toward the ball.
+  // The leg fires: an accelerating push onto the ball, fastest on the cut.
   const p = ease.inCubic(clamp((t - RELEASE) / (ICE + 0.08 - RELEASE)));
   if (p > 0) {
     const [bx, by] = strikePt(83.5, 96.5);
-    x = lerp(x, bx, 0.14 * p);
-    y = lerp(y, by, 0.1 * p);
-    z *= 1 + 0.06 * p;
+    x = lerp(x, bx, 0.32 * p);
+    y = lerp(y, by, 0.22 * p);
+    z *= 1 + 0.24 * p;
   }
   return { x, y, z, hh };
 }
@@ -226,15 +230,18 @@ function suck(env: Env, n: number) {
   const [tx, ty] = target;
   for (let i = 0; i < n; i++) {
     const th = rng.range(0, TAU);
-    const r = rng.range(50, 210);
+    const r = rng.range(40, 160);
     const x = tx + Math.cos(th) * r, y = Math.min(GY + 4, ty + Math.sin(th) * r * 0.62);
     const T = rng.range(0.06, 0.11);
     const ax = (2 * (tx - x)) / (T * T), ay = (2 * (ty - y)) / (T * T);
     const pick = rng.next();
-    if (pick < 0.42)
-      env.parts.spawn({ kind: PK.Glow, x, y, ax, ay, max: T, s0: rng.range(2.6, 4.4), s1: 1.4, ramp: 'dew', r0: 0.1, r1: 0.5, a0: 0.95, a1: 0.08, layer: 1 });
-    else if (pick < 0.62)
-      env.parts.spawn({ kind: PK.Streak, x, y, ax, ay, max: T, s0: 1.3, s1: 0.7, ramp: 'dew', r0: 0.2, r1: 0.6, a0: 0.75, a1: 0.05, k: 0.14, layer: 1 });
+    if (pick < 0.42) {
+      // Dew bead: a navy twin under it (normal blend) so the additive bead reads over the bright stands.
+      const s0 = rng.range(3.5, 6);
+      env.parts.spawn({ kind: PK.Glow, x, y, ax, ay, max: T, s0: s0 * 2, s1: 2.6, ramp: 'cobalt', r0: 0.97, r1: 1, a0: 0.4, a1: 0.05, add: false, layer: 1 });
+      env.parts.spawn({ kind: PK.Glow, x, y, ax, ay, max: T, s0, s1: 1.4, ramp: 'dew', r0: 0.1, r1: 0.5, a0: 0.95, a1: 0.08, layer: 1 });
+    } else if (pick < 0.62)
+      env.parts.spawn({ kind: PK.Streak, x, y, ax, ay, max: T, s0: 1.8, s1: 0.7, ramp: 'dew', r0: 0.2, r1: 0.6, a0: 0.75, a1: 0.05, k: 0.4, layer: 1 });
     else if (pick < 0.82)
       env.parts.spawn({ kind: PK.Pixel, x, y, ax, ay, max: T, s0: 2, s1: 1.5, ramp: 'white', r0: 0.3, r1: 0.9, a0: 0.7, a1: 0.05, add: false, layer: 1 });
     else
@@ -404,8 +411,11 @@ function drawGround(env: Env, c: CamState, time: number) {
 const SET_POSE: Pose = P({ torso: 0.17, head: -0.1, thighN: 0.3, kneeN: 0.52, thighF: -0.1, kneeF: 0.48, armN: 0.35, elbowN: 0.7, armF: -0.2, elbowF: 0.7 });
 const BACKPEDAL: [number, Pose][] = [[0, POSES.run4], [0.25, POSES.run3], [0.5, POSES.run2], [0.75, POSES.run1], [1, POSES.run4]];
 
-/** The two white defenders far behind, backpedalling into a screen near the box (puppets, k 0.7, dimmed). */
-function drawDefenders(env: Env, c: CamState) {
+/** The two white defenders far behind, backpedalling into a screen near the box (puppets, k 0.7, dimmed to 70 % with
+ *  a cool night tint, opaque). They dissolve into the haze (0.90-1.05) before the dolly carries them to the frame edge. */
+function drawDefenders(env: Env, c: CamState, t: number) {
+  const out = smooth01((t - 0.9) / 0.15);
+  if (out >= 1) return;
   const ctx = env.ctx;
   const S = 0.24; // depth scale vs his plane
   const defs = [
@@ -422,8 +432,8 @@ function drawDefenders(env: Env, c: CamState) {
     const [x, y] = groundAt(c, X, S);
     const k = 0.7;
     const sc = (S * D * 98) / (95 * k); // the puppet is ~95 units tall: match his size at that depth
-    const r = renderPuppet(d.kit, pose, { k, facing: -1 });
-    drawPuppet(ctx, r, x, y - 40 * k * sc, sc, 0.7);
+    const r = renderPuppet(d.kit, pose, { k, facing: -1, heatTint: { c: [40, 58, 104], a: 0.3 } });
+    drawPuppet(ctx, r, x, y - 40 * k * sc, sc, 1 - out);
   }
 }
 
@@ -513,6 +523,77 @@ function drawBead(ctx: CanvasRenderingContext2D, x: number, y: number, r: number
   ctx.restore();
 }
 
+/** Glance G4 (lids lowered, pupils down-right on the ball). Looked up by the strip's face patterns and by its own
+ *  export stem ('Glance'), which findAnim's side patterns include. */
+function glanceG4(): { a: StudioAnim; i: number } | null {
+  for (const a of [findAnim('Glance', 'face'), findAnim('Glance', 'side')]) {
+    if (!a) continue;
+    const i = findFrame(a, 'G4');
+    if (i >= 0) return { a, i };
+  }
+  return null;
+}
+
+/**
+ * The dew mirror (screen space): a convex dew drop of radius R at (x, y) with his Glance G4 face inside at integer
+ * x2, darkening toward a navy edge, a 1 px ice rim light on the lit side and one ice specular top-left; a filled
+ * disc, never a ring. The 1.30 glint sits on his right iris (eyeR), on a navy halo. Without the studio strip it
+ * falls back to drawNo10's face crop.
+ */
+function dewDrop(env: Env, x: number, y: number, R: number, gl: number) {
+  if (R < 1) return;
+  const ctx = env.ctx;
+  const sc = 2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, R, 0, TAU);
+  ctx.save();
+  ctx.clip();
+  const base = ctx.createRadialGradient(x - R * 0.2, y - R * 0.25, 0, x, y, R);
+  base.addColorStop(0, 'rgb(150,214,240)');
+  base.addColorStop(0.7, 'rgb(60,120,190)');
+  base.addColorStop(1, HEX.navy);
+  ctx.fillStyle = base;
+  ctx.fillRect(x - R, y - R, R * 2, R * 2);
+  // The face, upright and integer-scaled on its centre (only the eyes band fits inside a small drop).
+  const fx = Math.round(x), fy = Math.round(y + R * 0.06);
+  if (glance) drawAnim(ctx, glance.a, null, glance.i, fx, fy, sc, { pivot: [glance.a.w / 2, glance.a.h / 2] });
+  else drawNo10(env, 'G4', fx, fy, sc, { anchor: 'center' });
+  const edge = ctx.createRadialGradient(x, y, R * 0.35, x, y, R);
+  edge.addColorStop(0, 'rgba(10,18,56,0)');
+  edge.addColorStop(0.75, 'rgba(10,18,56,0.35)');
+  edge.addColorStop(1, 'rgba(10,18,56,0.9)');
+  ctx.fillStyle = edge;
+  ctx.fillRect(x - R, y - R, R * 2, R * 2);
+  ctx.restore();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = 'rgba(238,251,255,0.85)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(x, y, R - 0.5, Math.PI * 1.08, Math.PI * 1.62);
+  ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = HEX.ice;
+  ctx.beginPath();
+  ctx.ellipse(x - R * 0.42, y - R * 0.46, Math.max(1, R * 0.15), Math.max(0.8, R * 0.09), -0.65, 0, TAU);
+  ctx.fill();
+  ctx.restore();
+  if (gl > 0) {
+    let ex: number, ey: number;
+    if (glance) {
+      const [ax, ay] = glance.a.anchorOf(glance.i, 'eyeR');
+      ex = fx + (ax - glance.a.w / 2) * sc;
+      ey = fy + (ay - glance.a.h / 2) * sc;
+    } else [ex, ey] = no10Point(env, 'G4', 'eyeR', fx, fy, sc, { anchor: 'center' });
+    ctx.save();
+    drawGlow(ctx, glowOf(PAL.navy), ex, ey, 12, 0.35 * gl);
+    ctx.globalCompositeOperation = 'lighter';
+    drawGlow(ctx, glowOf(PAL.cyan), ex, ey, 10, 0.6 * gl);
+    ctx.restore();
+    sparkleCyan(ctx, ex, ey, 7 * gl, gl);
+  }
+}
+
 // ---------------------------------------------------------------- the shot
 
 export const shotLoad: Shot = {
@@ -549,6 +630,7 @@ export const shotLoad: Shot = {
     inhaleAcc = 0;
     breaths = [false, false];
     if (!fgBlades) fgBlades = makeFgBlades();
+    glance = glanceG4();
     ball = no10Point(env, 'F5a', 'ball', PLANT_TOE[0], PLANT_TOE[1], D);
     boot = no10Point(env, 'F5a', 'boot', PLANT_TOE[0], PLANT_TOE[1], D);
     boot6 = no10Point(env, 'F6', 'boot', PLANT_TOE[0], PLANT_TOE[1], D);
@@ -581,6 +663,7 @@ export const shotLoad: Shot = {
       env.cam.hit(0.25);
     }
     // Cold night: two breath puffs on the run-up (he exhales on the stride), then he holds his breath with the world.
+    // They leave in front of the mouth on layer 0 (behind the sprite), so they never cover or bloom his face.
     BREATH_T.forEach((bt, i) => {
       if (breaths[i] || t < bt) return;
       breaths[i] = true;
@@ -589,8 +672,8 @@ export const shotLoad: Shot = {
       const rng = env.rng;
       for (let k = 0; k < 4; k++)
         env.parts.spawn({
-          kind: PK.Smoke, x: ex + 4 * D + rng.range(-2, 2), y: ey + 5 * D + rng.range(-2, 2), vx: rng.range(10, 60), vy: rng.range(-18, 4), drag: 2.2,
-          max: rng.range(0.26, 0.36), s0: rng.range(4, 7), s1: rng.range(14, 22), ramp: 'white', r0: 0, r1: 0.6, a0: 0.32, a1: 0, add: false, layer: 1,
+          kind: PK.Smoke, x: ex + 9 * D + rng.range(-2, 2), y: ey + 7 * D + rng.range(-2, 2), vx: rng.range(50, 110), vy: rng.range(-14, 2), drag: 2.2,
+          max: rng.range(0.3, 0.4), s0: rng.range(3, 5), s1: rng.range(12, 18), ramp: 'white', r0: 0, r1: 0.6, a0: 0.2, a1: 0, add: false, layer: 0,
         });
     });
     // The inhale field: ~120 motes streaming to the point behind the cocked boot (life in sim seconds).
@@ -624,7 +707,7 @@ export const shotLoad: Shot = {
     drawBackdrop(env, c, time);
     env.world();
     drawGround(env, c, time);
-    drawDefenders(env, c);
+    drawDefenders(env, c, t);
     // Plant stamp decal (sim clock, sped up: it blooms fast, then holds through the slow motion).
     if (plantSim >= 0) drawStamp(ctx, PLANT_TOE[0] - 6, GY + 1, 30, (simT - plantSim) * 4, { squash: 0.25, grow: 0.3, alpha: 0.85 });
     drawGrass(env, c, t, false);
@@ -687,7 +770,8 @@ export const shotLoad: Shot = {
     // ---- the release: the smear arc along the heel's path (F5 boot -> F6 boot -> the ball's back).
     if (t >= SWING) {
       const p2: [number, number] = [ball[0] - BALL_R * D, ball[1] + 1];
-      const prog = lerp(0.5, 0.97, ease.outCubic(clamp((t - SWING) / (ICE - SWING))));
+      // Accelerates into the cut (the downswing speeds up into contact, it never settles).
+      const prog = lerp(0.3, 1, ease.inQuad(clamp((t - SWING) / (ICE - 0.02 - SWING))));
       const fade = 1 - 0.4 * clamp((t - ICE) / 0.1);
       smearArc(ctx, { x: boot[0], y: boot[1] }, { x: boot6[0], y: boot6[1] }, { x: p2[0], y: p2[1] }, 21, fade, prog);
     }
@@ -703,7 +787,7 @@ export const shotLoad: Shot = {
         : 1 - ease.inCubic(clamp((t - MIRROR_SHRINK) / (MIRROR1 - MIRROR_SHRINK)));
       const R = lerp(4.2 * env.cam.zoom, 32, k);
       const gl = t >= GLINT ? Math.exp(-(t - GLINT) * 6) * clamp((t - GLINT) / 0.03) : 0;
-      dewMirror(env, lerp(sbx, hoverX, clamp(k)), lerp(sby, hoverY, clamp(k)), R, { key: 'G4', scale: 2, glint: gl });
+      dewDrop(env, lerp(sbx, hoverX, clamp(k)), lerp(sby, hoverY, clamp(k)), R, gl);
     }
     if (lk > 0) {
       const [lx, ly] = toScreen(env, boot[0], boot[1]);
@@ -761,6 +845,13 @@ export const shotLoad: Shot = {
     fx.ca = 0.0012 + 0.0016 * inh;
     const k = lensK(t);
     if (k) lensAt(env, boot[0], boot[1], k, 0.22);
+    // A small whip onto the ball in the last frames before the flash (well under the 0.35 cap).
+    if (t >= 1.72) {
+      const [u, v] = env.cam.toUV(ball[0], ball[1]);
+      fx.radial = 0.18 * ease.inQuad(clamp((t - 1.72) / 0.14));
+      fx.radialX = u;
+      fx.radialY = v;
+    }
     if (t < 0.08) {
       fx.flash = 0.6 * (1 - t / 0.08);
       fx.flashColor = BLINK.flashIn;

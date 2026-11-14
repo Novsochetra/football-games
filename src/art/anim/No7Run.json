@@ -1,0 +1,282 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "No.7",
+  "animation": "Run",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark hair #463428/#281c16, yellow \"7\"; MOTION_LIBRARY \u00a74), same scale (98 px standing, ground row 102). Side view, facing east, not mirrored. Re-skin of GALE's Run R1-R8: R1-R4 plant the near (right) toe-tip at (73,102), R5-R8 the far (left) toe-tip at (76,102); the sprite origin advances by originDx = 27 px at R5 and again at the next R1. Shot 6: R1 0.00, R2 0.07, R3 0.14, R4 0.21 (x2, then Receive); shots 2/5: the {R1, R4, R5, R8} subset as 0.4x/0.5x box caches. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "frames": [
+  {
+   "name": "R1",
+   "id": "R1",
+   "label": "R-contact",
+   "type": "R of Run R1 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    58,
+    65
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     63,
+     18
+    ],
+    "eye": [
+     74,
+     26
+    ],
+    "bbox": [
+     33,
+     9,
+     86,
+     102
+    ]
+   },
+   "originDx": 0,
+   "pass": "shot 6 0.00; shots 2/5 cache"
+  },
+  {
+   "name": "R2",
+   "id": "R2",
+   "label": "R-down",
+   "type": "R of Run R2 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    64,
+    67
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     68,
+     19
+    ],
+    "eye": [
+     79,
+     27
+    ],
+    "bbox": [
+     45,
+     11,
+     87,
+     102
+    ]
+   },
+   "originDx": 0,
+   "pass": "shot 6 0.07"
+  },
+  {
+   "name": "R3",
+   "id": "R3",
+   "label": "L-pass",
+   "type": "R of Run R3 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    71,
+    66
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     76,
+     19
+    ],
+    "eye": [
+     87,
+     27
+    ],
+    "bbox": [
+     57,
+     10,
+     93,
+     102
+    ]
+   },
+   "originDx": 0,
+   "pass": "shot 6 0.14"
+  },
+  {
+   "name": "R4",
+   "id": "R4",
+   "label": "R-push",
+   "type": "R of Run R4 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    78,
+    63
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     85,
+     18
+    ],
+    "eye": [
+     96,
+     25
+    ],
+    "bbox": [
+     58,
+     8,
+     105,
+     102
+    ]
+   },
+   "originDx": 0,
+   "pass": "shot 6 0.21; shots 2/5 cache"
+  },
+  {
+   "name": "R5",
+   "id": "R5",
+   "label": "L-contact",
+   "type": "R of Run R5 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    58,
+    65
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     63,
+     18
+    ],
+    "eye": [
+     74,
+     26
+    ],
+    "bbox": [
+     30,
+     9,
+     81,
+     102
+    ]
+   },
+   "originDx": 27,
+   "pass": "shots 2/5 cache; field"
+  },
+  {
+   "name": "R6",
+   "id": "R6",
+   "label": "L-down",
+   "type": "R of Run R6 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    64,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     68,
+     19
+    ],
+    "eye": [
+     79,
+     27
+    ],
+    "bbox": [
+     42,
+     11,
+     85,
+     102
+    ]
+   },
+   "originDx": 27,
+   "pass": "field"
+  },
+  {
+   "name": "R7",
+   "id": "R7",
+   "label": "R-pass",
+   "type": "R of Run R7 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    71,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     76,
+     19
+    ],
+    "eye": [
+     87,
+     27
+    ],
+    "bbox": [
+     58,
+     10,
+     93,
+     102
+    ]
+   },
+   "originDx": 27,
+   "pass": "field"
+  },
+  {
+   "name": "R8",
+   "id": "R8",
+   "label": "L-push",
+   "type": "R of Run R8 (GALE final)",
+   "ms": 70,
+   "pelvis": [
+    78,
+    63
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     85,
+     18
+    ],
+    "eye": [
+     96,
+     25
+    ],
+    "bbox": [
+     61,
+     8,
+     107,
+     102
+    ]
+   },
+   "originDx": 27,
+   "pass": "shots 2/5 cache; field"
+  }
+ ]
+}

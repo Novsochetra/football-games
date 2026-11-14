@@ -1,0 +1,141 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Nutmeg",
+  "view": "Front",
+  "fps": 12,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Front view toward the lens (screen-left = HIS RIGHT), registration = Idle Front: body centre x 64, soles on row 102. Points are pixel indices (studioAnim adds 0.5). contact = centre of the planted sole on row 102 (contact2 = the second planted sole, StepOver F4/F5); airborne frames (Elastico F5) sit on pelvis. ball = centre of the 12 px ball at x1 on the turf (row 96) unless noted, never drawn in the frame; a front-view ball sits IN FRONT of the boot it touches (draw it over the sprite). boot = contact pixel of bootPart; num = the chest \"10\" box [x0,y0,x1,y1]; head = skull point; bbox measured on the art. Studio layer: Art only. Nutmeg F2-F4 (F1 = FrontTouch FT1): F2 shape, F3 set, F4 THE POKE (toe at the lens, no wind-up; ball (59,99) is nearer the lens than the turf row 96). Break BR1-BR3 follow.",
+ "frames": [
+  {
+   "name": "F2",
+   "id": "Nutmeg_F2",
+   "label": "shape",
+   "type": "N",
+   "ms": 80,
+   "pelvis": [
+    66,
+    66
+   ],
+   "contact": [
+    74,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     61,
+     96
+    ],
+    "head": [
+     74,
+     19
+    ],
+    "num": [
+     66,
+     45,
+     73,
+     51
+    ],
+    "bbox": [
+     38,
+     7,
+     96,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s6 0.20"
+  },
+  {
+   "name": "F3",
+   "id": "Nutmeg_F3",
+   "label": "set",
+   "type": "N",
+   "ms": 60,
+   "pelvis": [
+    65,
+    67
+   ],
+   "contact": [
+    74,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     61,
+     96
+    ],
+    "head": [
+     68,
+     19
+    ],
+    "num": [
+     64,
+     46,
+     71,
+     52
+    ],
+    "bbox": [
+     39,
+     8,
+     93,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s6 0.30"
+  },
+  {
+   "name": "F4",
+   "id": "Nutmeg_F4",
+   "label": "POKE",
+   "type": "N",
+   "ms": 60,
+   "pelvis": [
+    65,
+    67
+   ],
+   "contact": [
+    74,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     59,
+     99
+    ],
+    "boot": [
+     59,
+     99
+    ],
+    "head": [
+     68,
+     19
+    ],
+    "num": [
+     64,
+     46,
+     71,
+     52
+    ],
+    "bbox": [
+     40,
+     8,
+     93,
+     102
+    ]
+   },
+   "touch": true,
+   "bootPart": "toe",
+   "solo": "s6 0.40-0.55 (THE POKE)"
+  }
+ ]
+}

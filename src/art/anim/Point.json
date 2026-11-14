@@ -1,0 +1,154 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Point",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Front view (toward the camera), drawn full-body, cropped chest-up by shot 6 (diptych at integer x2). Not mirrored. Registration = Stand Front: body centre contact (64,102) between the planted soles (the hips pop +2 px screen-right with the feet planted). tip = where the jade thread starts: the index fingertip on P3a/P3b (87,41), the closed fist on P1/P2 (= fist). Shot 6: P1 1.40, P2 1.50, P3a 1.60-1.95, P3b 1.95-2.07 (blink), P3a 2.07-2.40. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "frames": [
+  {
+   "name": "P1",
+   "id": "P1",
+   "label": "turn in, weight to his left",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    66,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     66,
+     18
+    ],
+    "tip": [
+     44,
+     62
+    ],
+    "fist": [
+     44,
+     62
+    ],
+    "bbox": [
+     40,
+     5,
+     90,
+     102
+    ]
+   },
+   "pass": "shot 6 1.40"
+  },
+  {
+   "name": "P2",
+   "id": "P2",
+   "label": "arm rising, elbow leads",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    66,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     66,
+     18
+    ],
+    "tip": [
+     60,
+     54
+    ],
+    "fist": [
+     60,
+     54
+    ],
+    "bbox": [
+     41,
+     5,
+     90,
+     102
+    ]
+   },
+   "pass": "shot 6 1.50"
+  },
+  {
+   "name": "P3a",
+   "id": "P3a",
+   "label": "two-finger point across, grin",
+   "type": "N",
+   "ms": 240,
+   "pelvis": [
+    66,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     66,
+     18
+    ],
+    "tip": [
+     87,
+     41
+    ],
+    "bbox": [
+     41,
+     5,
+     90,
+     102
+    ]
+   },
+   "pass": "shot 6 1.60-1.95, 2.07-2.40"
+  },
+  {
+   "name": "P3b",
+   "id": "P3b",
+   "label": "blink",
+   "type": "V of P3a",
+   "ms": 240,
+   "pelvis": [
+    66,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     66,
+     18
+    ],
+    "tip": [
+     87,
+     41
+    ],
+    "bbox": [
+     41,
+     5,
+     90,
+     102
+    ]
+   },
+   "pass": "shot 6 1.95-2.07"
+  }
+ ]
+}

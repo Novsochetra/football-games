@@ -31,8 +31,18 @@ const runPose = (t: number) => poseAt(RUN, t % 0.4, (x) => x);
 /** One shared mapping: each special's aura / command-window mote ramp. */
 export const AURA_RAMP: Record<SpecialId, RampName> = { zenith: 'aura', crescent: 'crimson', gale: 'cobalt', solo: 'uv', meridian: 'jade' };
 
-/** Long shot (GALE HAMMER): No.10 is drawn from the studio Dribble cycle / Celebrate as box-filtered caches, never a puppet. */
+/** Through ball (MERIDIAN THREAD): No.10 is drawn from the studio Dribble cycle / Celebrate as box-filtered caches, never a puppet. */
 const DRIBBLE: No10Key[] = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'];
+/**
+ * Long shot (GALE HAMMER): No.10 sprints at the packed defence on the studio Run cycle (MOTION_LIBRARY §3.2: Run
+ * serves the field caches of the new scenarios), as box-filtered caches, never a puppet. A Run stride covers only
+ * 10.8 px at the 0.4x field scale (Dribble 8.4 px), so at 118 px/s no cadence can hold the planted boot still: the
+ * cycle plays at a sprint's 5 steps/s (50 ms frames, exactly 3 render frames each) on each frame's pelvis, so the body
+ * glides at the actor's speed with no lurch and the boots slide least (74 px/s; 88 at the studio's 70 ms, 118 on a
+ * fixed pivot). R1 (the right boot reaching forward) lands on every ball touch (the touch period, 0.8 s, is 2 cycles).
+ */
+const SPRINT: No10Key[] = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8'];
+const SPRINT_PER = 0.05;
 const FIELD_SCALE = 0.4, RESULT_SCALE = 0.5;
 /** Command window opens at 30 m (x 880). */
 const LONGSHOT_X = 880;
@@ -89,7 +99,7 @@ export class Field {
     this.reset();
     if (def.scenario === 'longshot') {
       // Build the field caches up front (no hitch on the first frame).
-      warmNo10Boxed(this.env, DRIBBLE, FIELD_SCALE);
+      warmNo10Boxed(this.env, SPRINT, FIELD_SCALE);
       warmNo10Boxed(this.env, ['C1', 'C2'], RESULT_SCALE);
     } else if (def.scenario === 'through') {
       warmNo10Boxed(this.env, DRIBBLE, FIELD_SCALE);
@@ -276,9 +286,12 @@ export class Field {
       if (this.mode === 'command' && longshot) this.updateAirLoading(dt);
       this.camX = lerp(this.camX, h.x + 80, 1 - Math.exp(-dt * 3));
     } else {
-      // result: celebrate bounce (the long shot's studio Celebrate frames only hop a little)
+      // result: celebrate bounce (the studio Celebrate frames only hop a little). The long shot's fallback (Strike F10,
+      // a calm standing settle) stays on the turf: a bobbing standing pose reads as floating, not celebrating.
       const studio = this.special.scenario === 'longshot' || this.special.scenario === 'through';
-      this.hero.h = studio ? Math.abs(Math.sin(this.t * Math.PI * 2)) * 3 : Math.abs(Math.sin(this.t * 5)) * 8;
+      const hop = Math.abs(Math.sin(this.t * Math.PI * 2)) * 3;
+      this.hero.h =
+        this.special.scenario === 'longshot' ? (no10Final('C1') ? hop : 0) : studio ? hop : Math.abs(Math.sin(this.t * 5)) * 8;
       if (this.special.scenario === 'through') this.winger.h = Math.abs(Math.sin(this.t * Math.PI * 2 + 1)) * 3;
       this.camX = lerp(this.camX, 1080, 1 - Math.exp(-dt * 2));
       if (rng.next() < 0.5) {
@@ -517,13 +530,22 @@ export class Field {
     return [this.hero.x + 4, this.hero.z - this.hero.h - 3];
   }
 
-  /** Long shot: No.10 from the studio caches (Dribble while running, Celebrate in the result view). */
+  /** Long shot: No.10 from the studio caches (Run while sprinting, Celebrate in the result view); the through ball's carry (Dribble). */
   private drawHeroStudio(a: Actor) {
     const env = this.env;
     drawShadow(env.ctx, a.x, a.z, 11, 0.35);
     if (this.mode === 'result') {
       const key: No10Key = Math.floor(this.t / 0.25) % 2 ? 'C2' : 'C1';
       drawNo10Boxed(env, key, a.x, a.z - a.h, RESULT_SCALE, { anchor: 'contact' });
+      return;
+    }
+    if (this.special.scenario === 'longshot') {
+      // The sprint: each Run frame sits on its own pelvis (x) and the ground row (y 103), so the body moves exactly
+      // with the actor whatever each canvas's registration (the strip's originDx); the Jump stand-in on its contact toe.
+      const key = SPRINT[Math.floor(this.t / SPRINT_PER) % 8];
+      const f = no10(key);
+      const pivot: [number, number] | undefined = f ? [f.a.anchorOf(f.i, 'pelvis')[0], 103] : undefined;
+      drawNo10Boxed(env, key, a.x, a.z - a.h, FIELD_SCALE, pivot ? { pivot } : { anchor: 'contact' });
       return;
     }
     const key = DRIBBLE[Math.floor((this.t % 0.8) / 0.1) % 8];
@@ -550,10 +572,11 @@ export class Field {
     const env = this.env;
     const { ctx, cam, fx } = env;
     const zoom = this.mode === 'result' ? 1.15 : 1.3;
-    // The through ball tilts the camera down a little so the stitch preview's X, No.7's run and the result's
-    // celebrations sit above the command panel / banner (every other scenario keeps y 214).
-    const camY =
-      this.special.scenario !== 'through' ? 214 : this.mode === 'command' ? lerp(214, 256, ease.outCubic(clamp(this.cmdT / 0.4))) : this.mode === 'result' ? 236 : 214;
+    // The through ball and the long shot tilt the camera down a little so the stitch preview's X, No.7's run, the long
+    // shot's boot (the lens pinch), ball, stamp 1 and defender 2, and the results' celebrations and fallen defenders sit
+    // above the command panel / banner (every other scenario keeps y 214).
+    const tilt = this.special.scenario === 'through' || this.special.scenario === 'longshot';
+    const camY = !tilt ? 214 : this.mode === 'command' ? lerp(214, 256, ease.outCubic(clamp(this.cmdT / 0.4))) : this.mode === 'result' ? 236 : 214;
     cam.reset(); // clear any shake left over from the cinematic
     cam.set(this.camX, camY, zoom, 0);
     env.world();

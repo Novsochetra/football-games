@@ -227,6 +227,8 @@ export const shotCutIn: Shot = {
     { at: TONES[0], fn: (env) => env.sfx.airTone(AIR_TONES.G5, 0.3) },
     { at: TONES[1], fn: (env) => env.sfx.airTone(AIR_TONES.B5, 0.3) },
     { at: TONES[2], fn: (env) => env.sfx.airTone(AIR_TONES.D6, 0.3) },
+    // The exit squash sucks in (the move's own inhale, unpitched); its hard cut lands on the pop.
+    { at: T_SQ, fn: (env) => env.sfx.inhale(0.12, 0.25) },
     { at: T_POP, fn: (env) => (env.sfx.crack(0.8), env.sfx.boom(0.4)) },
   ],
   prepare(env) {
@@ -320,12 +322,18 @@ export const shotCutIn: Shot = {
       popped = true;
       // The PK.Ring in the cobalt ramp, drawn over the wipe (layer 2): normal blend so it reads on the ice disc.
       parts.spawn({ kind: PK.Ring, x: WX, y: WY, s0: 20, s1: 300, max: 0.12, k: 0.72, ramp: 'cobalt', r0: 0.3, r1: 0.95, a0: 1, a1: 0, add: false, layer: 2 });
+      // Streaks burst outward from the flattened line's two halves (left half flies left, right half right). Each is
+      // born on its own heading ray from the centre (in the burst's squashed space), so the rays fan out and never
+      // cross: the first pop frame reads as a clean outward burst, not scratches.
       for (let i = 0; i < 40; i++) {
-        const a = rng.range(0, TAU);
+        const side = rng.next() < 0.5 ? -1 : 1;
+        const a = (side > 0 ? 0 : Math.PI) + rng.range(-0.6, 0.6);
         const s = rng.range(700, 1500);
+        const d = WA * rng.range(0.2, 1.0);
         parts.spawn({
-          kind: PK.Streak, x: WX + Math.cos(a) * WA * 0.9 * rng.next(), y: WY, vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.75,
-          drag: 2, max: rng.range(0.12, 0.22), s0: rng.range(1.2, 2.4), s1: 0.6, ramp: 'dew', r0: 0, r1: 0.8, k: 1.3, layer: 1,
+          kind: PK.Streak, x: WX + Math.cos(a) * d, y: WY + Math.sin(a) * d * 0.75 * 0.35,
+          vx: Math.cos(a) * s, vy: Math.sin(a) * s * 0.75 * 0.35,
+          drag: 2, max: rng.range(0.12, 0.22), s0: rng.range(1.2, 2.4), s1: 0.6, ramp: 'dew', r0: 0, r1: 0.8, k: 1.3, a0: 0.8, layer: 1,
         });
       }
       env.cam.hit(0.35);
@@ -483,18 +491,20 @@ export const shotCutIn: Shot = {
       }
       ctx.restore();
 
-      // 0.38 eye glint: sparkle on both eyes + a cyan lens flare, then a soft twinkle while the face is up.
+      // 0.38 eye glint: sparkle on both eyes + a cyan lens flare, then a soft catchlight twinkle while the face is up.
+      // Sized for x4 eyes (~8 px): it snaps in and fades on a square, so the eyes read again within ~0.1 s.
       const eyes = eyePts(env, fx0, fy0);
-      const gl = pulse(t, T_GLINT, 0.26);
+      const gl = pulse(t, T_GLINT, 0.2);
       if (t > T_GLINT + 0.12 && t < T_SQ + 0.04) {
-        const k = clamp((t - T_GLINT - 0.12) / 0.15) * (0.4 + 0.12 * Math.sin(t * 20));
-        eyes.forEach(([ex, ey], i) => sparkle(ctx, ex, ey, 7, k, 0.4 + i * 0.6 + t * 0.8));
+        // The after-twinkle is a small catchlight up-right of each pupil, never on it (his gaze stays readable).
+        const k = clamp((t - T_GLINT - 0.12) / 0.15) * (0.3 + 0.1 * Math.sin(t * 20));
+        eyes.forEach(([ex, ey], i) => sparkle(ctx, ex + SC, ey - SC, 5, k, 0.4 + i * 0.6 + t * 0.8));
       }
       if (gl > 0) {
-        const ge = ease.outCubic(gl);
+        const ge = gl * gl;
         eyes.forEach(([ex, ey], i) => {
-          sparkle(ctx, ex, ey, 8 + 22 * gl, ge, t * 2.2 + i * 0.5);
-          if (i === 1) lensFlare(ctx, ex, ey, 46, ge * 0.6, [120, 220, 255]);
+          sparkle(ctx, ex, ey, 6 + 16 * gl, ge, t * 2.2 + i * 0.5);
+          if (i === 1) lensFlare(ctx, ex, ey, 34, ge * 0.45, [120, 220, 255]);
         });
       }
     }
@@ -511,16 +521,16 @@ export const shotCutIn: Shot = {
       // The flattened ball springs back round as it pops: the ring opens from a wide oval to a circle.
       const R = lerp(40, 480, Math.pow(u, 1.1));
       const k = lerp(0.35, 1, ease.outCubic(u));
-      // Inside the ring: cool cyan light, about as bright as shot 2's opening flash-in (it carries the cut), with the
-      // pressure it released still rippling out in it (two faint blown isobars).
+      // Inside the ring: cool cyan light that lands near shot 2's opening flash-in (it carries the cut) without
+      // blowing out its centre, with the pressure it released still rippling out in it (two faint blown isobars).
       ctx.save();
       ctx.translate(WX, WY);
       ctx.scale(1, k);
       const dg = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-      dg.addColorStop(0, 'rgb(172,228,255)');
-      dg.addColorStop(0.55, 'rgb(112,190,242)');
-      dg.addColorStop(0.9, 'rgb(80,160,232)');
-      dg.addColorStop(1, 'rgb(160,226,255)');
+      dg.addColorStop(0, 'rgb(112,184,238)');
+      dg.addColorStop(0.55, 'rgb(86,158,226)');
+      dg.addColorStop(0.9, 'rgb(74,146,220)');
+      dg.addColorStop(1, 'rgb(132,202,246)');
       ctx.fillStyle = dg;
       ctx.beginPath();
       ctx.arc(0, 0, R, 0, TAU);
@@ -559,13 +569,13 @@ export const shotCutIn: Shot = {
     galeGrade(fx);
     fx.contrast = 1.08;
     fx.vignette = 0.5;
-    fx.bloom = lerp(0.9, 1.3, pulse(t, T_GLINT, 0.35));
+    fx.bloom = lerp(0.9, 1.3, Math.pow(pulse(t, T_GLINT, 0.3), 1.5));
     fx.bloomThresh = 0.76;
     fx.ca = 0.0016 + 0.004 * pulse(t, T_GLINT, 0.2) + (t >= T_POP ? 0.004 : 0);
     if (t >= T_POP) {
-      // The pop flashes 0.5 for one frame; then the flash eases to ~0.2 while the bright disc grows, so the frame's
-      // overall brightness keeps rising into shot 2's cyan flash-in (one event, never a strobe).
-      fx.flash = keys([[T_POP, 0.5], [T_POP + 0.016, 0.5], [T_POP + 0.03, 0.2], [DUR - 0.016, 0.24]], t, ease.linear);
+      // The pop flashes 0.5, then the flash decays steadily (never dips and rises again) while the cooled ice disc
+      // grows over it, so the frame's brightness hands over to shot 2's cyan flash-in as one event, never a strobe.
+      fx.flash = keys([[T_POP, 0.5], [T_POP + 0.035, 0.47], [DUR - 0.016, 0.12]], t, ease.linear);
       fx.flashColor = BLINK.popFlash;
     }
   },
@@ -636,21 +646,25 @@ function drawTitle(ctx: CanvasRenderingContext2D, t: number) {
     if (g.c === ' ') return;
     const lt = t - (T_TITLE + STAG * i);
     if (lt <= 0) return;
-    let sx = letterSpring(lt, 4 / (g.w + 10));
-    let sy = sx < 1 ? Math.min(1.35, 1 + 0.45 * (1 - sx)) : 1 - 0.6 * (sx - 1);
+    const sx = letterSpring(lt, 4 / (g.w + 10));
+    const sy = sx < 1 ? Math.min(1.35, 1 + 0.45 * (1 - sx)) : 1 - 0.6 * (sx - 1);
     // Exit: each letter squashes flat in a wave, left to right.
     const st = T_SQ + 0.004 * i;
     const eu = clamp((t - st) / (T_POP - st));
-    if (eu > 0) {
-      sy *= Math.max(0, 1 - ease.inBack(eu));
-      sx *= 1 + 0.3 * ease.inQuad(eu);
-    }
-    if (sy <= 0.02) return;
+    const ex = eu > 0 ? 1 + 0.3 * ease.inQuad(eu) : 1;
+    const ey = eu > 0 ? Math.max(0, 1 - ease.inBack(eu)) : 1;
+    if (sy * ey <= 0.02) return;
     ctx.save();
     ctx.translate(g.x, TITLE_Y - capH / 2);
     ctx.transform(1, 0, skew, 1, 0, 0);
+    // The exit squash flattens onto the cap centre line (like the window flattening into its line).
+    ctx.scale(ex, ey);
+    // The entry spring: a tall stretched sliver grows up from the baseline (so it never pokes down into the tag
+    // plate); the brief overshoot squash stays centred on the cap. Both pivots agree at sy = 1, so no jump.
+    const piv = sy > 1 ? capH / 2 : 0;
+    ctx.translate(0, piv);
     ctx.scale(sx, sy);
-    ctx.translate(0, capH / 2);
+    ctx.translate(0, capH / 2 - piv);
     // 2 px navy outer stroke, 3 px cobalt stroke, ice fill.
     ctx.strokeStyle = HEX.navy;
     ctx.lineWidth = 10;

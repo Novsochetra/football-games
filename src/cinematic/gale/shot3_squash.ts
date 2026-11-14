@@ -6,7 +6,7 @@
 //           r 23 at x2, the macro pixel grid) trembles with dew beads on its crown; floodlight bokeh and dark turf
 //           behind, out-of-focus blades in front.
 // 0.12      Contact (M2): hit-stop (rate 0.08 to 0.62), the cobalt/ice impact frame for 3 frames, the ball squashes
-//           flat on the laces (sx 1 -> 0.58, sy 1 -> 1.25, dented face, bending seams) while the boot drives into it,
+//           flat on the laces (sx 1 -> 0.58, sy 1 -> 1.25, dented face, bending seams) while the boot presses into it,
 //           three ice ripples run across the panels, the dew crown bursts off and hangs glinting, the pressure lens
 //           bulges on the contact, the grass under the ball fans flat, 2 px micro-shake. M2b (drawn variant) 0.37.
 // 0.62      Release (M3): rate snaps to 1, the ball springs back past round, stretches along the flight line and is
@@ -52,7 +52,7 @@ const MD = 2;
 /** Ball radius in macro px (renderBall r 23 drawn x2: 92 px across, on the macro boot's pixel grid). */
 const MR = 23;
 const BR = MR * MD;
-/** M2's canvas origin on screen at contact (before the boot drives in): the shin runs off the top of the frame. */
+/** M2's canvas origin on screen at contact (before the boot presses in): the shin runs off the top of the frame. */
 const MO_X = 187, MO_Y = -3;
 /** Laces of M1/M2/M2b (canvas px + 0.5) and of M3 (18 px on, 6 up), and the turf row (109). */
 const LACES12: readonly [number, number] = [58.5, 86.5];
@@ -89,7 +89,7 @@ const RIBBON_Y = 106;
 let spin = new BallSpin();
 let simT = 0;
 let hitSim = -1;
-let hitDone = false, relDone = false, swapDone = false, landDone = false;
+let hitDone = false, relDone = false, swapDone = false, landDone = false, breathDone = false;
 let windAcc = 0;
 let C0: [number, number] = [0, 0];
 
@@ -134,7 +134,7 @@ function rateAt(t: number) {
 interface Squash { k: number; sx: number; sy: number; dent: number; face: number; cx: number; cy: number }
 
 /**
- * The ball under the boot. The far side barely moves (the ball's own inertia) while the laces drive in: the contact
+ * The ball under the boot. The far side barely moves (the ball's own inertia) while the laces press in: the contact
  * face is where the boot is. sx 1 -> 0.58 and sy 1 -> 1.25 over 0.12-0.47 (ease-out), the dent grows with it, and
  * the bottom stays on the turf (the centre lifts as it bulges up).
  */
@@ -223,7 +223,7 @@ function makeMacroBg(): HTMLCanvasElement {
   const g = c.getContext('2d')!;
   const r = new Rng(3033);
   const sky = g.createLinearGradient(0, 0, 0, MHZ);
-  sky.addColorStop(0, '#0c1840');
+  sky.addColorStop(0, '#16285a');
   sky.addColorStop(0.5, '#1d3878');
   sky.addColorStop(1, '#5a7db8');
   g.fillStyle = sky;
@@ -260,21 +260,27 @@ function makeMacroBg(): HTMLCanvasElement {
     lg.fillRect(i * 84 + 20, 104, 74, 9);
   }
   blurOnto(6);
-  // Floodlit haze toward the horizon (lifted, cool: high-key).
   g.globalAlpha = 1;
-  const hz = g.createLinearGradient(0, MHZ - 50, 0, MHZ + 4);
-  hz.addColorStop(0, 'rgba(120,160,220,0)');
-  hz.addColorStop(1, 'rgba(150,186,230,0.38)');
-  g.fillStyle = hz;
-  g.fillRect(0, MHZ - 50, VW, 54);
   // Turf: hazy at the horizon, floodlit green at the ball's line, dark toward the lens.
   const tf = g.createLinearGradient(0, MHZ, 0, VH);
   tf.addColorStop(0, '#3b7a62');
   tf.addColorStop(0.3, '#2a7a3c');
-  tf.addColorStop(0.5, '#226a32');
-  tf.addColorStop(1, '#0f3a1e');
+  tf.addColorStop(0.5, '#2a7a3a');
+  tf.addColorStop(1, '#1d5830');
   g.fillStyle = tf;
   g.fillRect(0, MHZ, VW, VH - MHZ);
+  // The far-turf edge is as far out of focus as the stands: blur a strip across it once.
+  g.filter = 'blur(4px)';
+  g.drawImage(c, 0, MHZ - 12, VW, 24, 0, MHZ - 12, VW, 24);
+  g.filter = 'none';
+  // Floodlit haze toward the horizon (lifted, cool: high-key), straddling the far-turf edge so it is as soft as the
+  // stands behind it.
+  const hz = g.createLinearGradient(0, MHZ - 50, 0, MHZ + 24);
+  hz.addColorStop(0, 'rgba(120,160,220,0)');
+  hz.addColorStop(0.68, 'rgba(150,186,230,0.38)');
+  hz.addColorStop(1, 'rgba(150,186,230,0)');
+  g.fillStyle = hz;
+  g.fillRect(0, MHZ - 50, VW, 74);
   // Far turf texture (soft, receding) and near turf (big, very soft).
   for (let i = 0; i < 700; i++) {
     const y = r.range(MHZ + 2, TURF_Y - 2);
@@ -352,6 +358,8 @@ function buildCaches() {
 // ---------------------------------------------------------------- the macro frames (StrikeMacro, with fallbacks)
 
 type MacroName = 'M1' | 'M2' | 'M2b' | 'M3';
+/** The 2-frame smear copy of M1: pale and cool, no outline. */
+const SMEAR_TINT: [number, number, number] = [200, 228, 255];
 
 function macroAnim(): StudioAnim | null {
   return findAnim('StrikeMacro', 'side');
@@ -362,18 +370,28 @@ function macroAnim(): StudioAnim | null {
  * anchor; M2b falls back to M2. If the strip is missing, the brief's fallback: Strike F6/F7 cropped on the boot at
  * an integer scale (via drawNo10's StrikeMacro stand-ins), its laces on the same point.
  */
-function drawMacro(env: Env, name: MacroName, lx: number, ly: number, o: { alpha?: number; stretch?: number } = {}) {
+function drawMacro(
+  env: Env, name: MacroName, lx: number, ly: number,
+  o: { alpha?: number; stretch?: number; tint?: [number, number, number]; bootOnly?: boolean } = {},
+) {
   const ctx = env.ctx;
   const a = macroAnim();
   const i = a ? findFrame(a, name, ...(name === 'M2b' ? ['M2'] : [])) : -1;
   ctx.save();
   ctx.translate(lx, ly);
   if (o.stretch && o.stretch !== 1) ctx.scale(o.stretch, 1);
+  if (o.bootOnly) {
+    // Only the boot's band round the laces (no sock, no shin).
+    ctx.beginPath();
+    ctx.rect(-400, -18 * MD, 800, 40 * MD);
+    ctx.clip();
+  }
   if (a && i >= 0) {
-    drawAnim(ctx, a, null, i, 0, 0, MD, { anchor: 'laces', alpha: o.alpha ?? 1 });
+    drawAnim(ctx, a, o.tint ? a.tinted(i, o.tint) : null, i, 0, 0, MD, { anchor: 'laces', alpha: o.alpha ?? 1 });
   } else {
     const key: No10Key = name === 'M1' ? 'M1' : name === 'M3' ? 'M3' : 'M2';
-    drawNo10(env, key, 0, 0, 4 * MD, { anchor: 'laces', alpha: o.alpha ?? 1 });
+    const f = o.tint ? no10(key) : null;
+    drawNo10(env, key, 0, 0, 4 * MD, { anchor: 'laces', alpha: o.alpha ?? 1 }, f && o.tint ? f.a.tinted(f.i, o.tint) : undefined);
   }
   ctx.restore();
 }
@@ -510,7 +528,8 @@ function drawRipples(ctx: CanvasRenderingContext2D, s: Squash, t: number) {
 /** Bead position at t: riding the ball before contact, then the crown (ballistic on the simulation clock). */
 function beadAt(b: Bead, t: number, ballX: number, ballY: number): { x: number; y: number; vx: number; vy: number } {
   if (t < HIT || hitSim < 0) return { x: ballX + b.x, y: ballY + b.y, vx: 0, vy: 0 };
-  const tau = simT - hitSim;
+  // The crown pops off under the impact frames (a quick lead on the unwarped clock), then hangs in the hit-stop.
+  const tau = simT - hitSim + 0.02 * ease.outCubic(clamp((t - HIT) / 0.06));
   const g = 900;
   return { x: BALL0X + b.x + b.vx * tau, y: BALL0Y + b.y + b.vy * tau + 0.5 * g * tau * tau, vx: b.vx, vy: b.vy + g * tau };
 }
@@ -545,7 +564,9 @@ function renderMacro(env: Env, t: number) {
     bx -= clamp(k, -1, 1) * MD;
   } else if (t >= REL) {
     const rb = releaseBall(t);
-    bx = rb.x;
+    // Never over M3's toe: the overshoot ball's left edge stays just clear of the laces as it leaves.
+    const [ml] = macroLaces(t);
+    bx = Math.max(rb.x, ml + BR * rb.sx + 4);
     by = rb.y;
     sx = rb.sx;
     sy = rb.sy;
@@ -575,6 +596,14 @@ function renderMacro(env: Env, t: number) {
     ctx.globalCompositeOperation = 'source-over';
   }
 
+  // The vapour blast between the boot and the departing ball: soft puffs (macro scale), fresh and cyan. It starts
+  // ahead of the toe and is drawn BEHIND the boot, so M3's toe-lift keeps its outline and lavender shading.
+  if (ballOn && t >= REL) {
+    const x0 = s.face + 30, y0 = s.cy + 4, x1 = bx - BR * sx * 0.5;
+    const L = Math.max(1, x1 - x0);
+    puffBand(ctx, Math.ceil(L / 14), 14, (d) => [x0 + d, lerp(y0, by, d / L)], 2.6, t - REL, 0.95, 1, 10);
+  }
+
   // ---- the boot.
   const [lx, ly] = macroLaces(t);
   if (t < HIT) {
@@ -586,8 +615,9 @@ function renderMacro(env: Env, t: number) {
       const p1 = { x: lx - 150, y: ly - 10 };
       smearArc(ctx, p0, p1, p2, 54, 0.85 * clamp(u * 3), 1);
     }
-    // The 2-frame smear: a stretched copy at 0.5 alpha behind the boot on the last two frames before contact.
-    if (t >= HIT - 2 / 60) drawMacro(env, 'M1', lx + 41 * MD * (1 - 1.8), ly, { alpha: 0.5, stretch: 1.8 });
+    // The 2-frame smear: a stretched, pale-cool copy of the boot alone (no outline, no sock) at 0.5 alpha behind the
+    // boot on the last two frames before contact.
+    if (t >= HIT - 2 / 60) drawMacro(env, 'M1', lx + 41 * MD * (1 - 1.8), ly, { alpha: 0.5, stretch: 1.8, tint: SMEAR_TINT, bootOnly: true });
     drawMacro(env, 'M1', lx, ly);
   } else if (t < REL) {
     drawMacro(env, t < M2B_T ? 'M2' : 'M2b', lx, ly);
@@ -599,12 +629,6 @@ function renderMacro(env: Env, t: number) {
 
   // ---- the ball (cobalt; heat and glow rise with the contact).
   if (ballOn) {
-    if (t >= REL) {
-      // The vapour blast between the boot and the departing ball: soft puffs (macro scale), fresh and cyan.
-      const x0 = s.face + 4, y0 = s.cy + 4, x1 = bx - BR * sx * 0.5;
-      const L = Math.max(1, x1 - x0);
-      puffBand(ctx, Math.ceil(L / 14), 14, (d) => [x0 + d, lerp(y0, by, d / L)], 2.6, t - REL, 0.95, 1, 10);
-    }
     const heat = t < HIT ? 0.18 : t < REL ? lerp(0.25, 0.42, s.k) : 0.45;
     drawBall(env, spin, bx, by, MR, MD, heat, 0, 'cobalt', { sx, sy, dent });
     drawRipples(ctx, s, t);
@@ -654,7 +678,7 @@ function renderMacro(env: Env, t: number) {
   // Out-of-focus blades right at the lens (screen bottom corners).
   // Tall dark blades at the frame edges (against the haze and the far turf), lit ones low in the middle.
   if (fgBlades && fgBladesLit) {
-    ctx.globalAlpha = 0.85;
+    ctx.globalAlpha = 0.6;
     ctx.drawImage(fgBlades[0], -120, VH - 290, 320, 300);
     ctx.drawImage(fgBlades[2], 500, VH - 260, 270, 254);
     ctx.globalAlpha = 0.95;
@@ -799,6 +823,22 @@ function drawGround(env: Env, c: CamState, time: number) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
+/** One scratch canvas for the dimmed defenders (no per-frame allocation once it is sized). */
+let dimCv: HTMLCanvasElement | null = null;
+
+/** `src` darkened by a navy veil clipped to its own pixels (source-atop): opaque, 70 % brightness. */
+function dimmed(src: HTMLCanvasElement): HTMLCanvasElement {
+  if (!dimCv || dimCv.width !== src.width || dimCv.height !== src.height) dimCv = makeCanvas(src.width, src.height);
+  const g = dimCv.getContext('2d')!;
+  g.globalCompositeOperation = 'copy';
+  g.drawImage(src, 0, 0);
+  g.globalCompositeOperation = 'source-atop';
+  g.fillStyle = 'rgba(10,18,56,0.3)';
+  g.fillRect(0, 0, src.width, src.height);
+  g.globalCompositeOperation = 'source-over';
+  return dimCv;
+}
+
 /** A set, defensive screen stance (as the defenders end shot 2), far behind near the box. */
 const SET_POSE: Pose = P({ torso: 0.17, head: -0.1, thighN: 0.3, kneeN: 0.52, thighF: -0.1, kneeF: 0.48, armN: 0.35, elbowN: 0.7, armF: -0.2, elbowF: 0.7 });
 
@@ -817,7 +857,8 @@ function drawDefenders(env: Env, c: CamState, t: number) {
     const k = 0.7;
     const sc = (S * D * 98) / (95 * k);
     const r = renderPuppet(d.kit, pose, { k, facing: -1 });
-    drawPuppet(ctx, r, x, y - 40 * k * sc, sc, 0.7);
+    // Opaque, dimmed to 70 % brightness (a navy veil inside the figure, not see-through).
+    drawPuppet(ctx, { ...r, cv: dimmed(r.cv) }, x, y - 40 * k * sc, sc, 1);
   }
 }
 
@@ -1052,7 +1093,7 @@ function renderWorld(env: Env, t: number) {
   galeGrade(fx, 1, [220, 238, 255], 1.08);
   fx.vignette = 0.42;
   fx.bloom = 0.9;
-  fx.bloomThresh = 0.66;
+  fx.bloomThresh = 0.8; // as the macro: the white boot keeps its lavender shading
   fx.ca = 0.0012 + 0.003 * Math.exp(-(t - SWAP) * 5);
   const rel = squashAt(REL);
   const k = springBack(t, REL, 0.2, 0.14);
@@ -1092,22 +1133,23 @@ function spawnRelease(env: Env) {
   const rng = env.rng;
   const s = squashAt(REL);
   const ex = s.cx + 30, ey = s.cy;
-  // The vapour collar: a short cone of white mist opening back from where the ball breaks away.
+  // The vapour collar: a short cone of white mist opening back from where the ball breaks away. It stays ahead of the
+  // toe and behind the boot (layer 2), so M3's toe-lift keeps its outline.
   for (let i = 0; i < 26; i++) {
     const d = rng.range(0, 70);
     const sg = rng.sign();
     const off = d * Math.tan(0.6) * rng.range(0.3, 1);
     env.parts.spawn({
-      kind: PK.Smoke, x: ex - d, y: ey + sg * off, vx: -rng.range(20, 120), vy: sg * rng.range(60, 200), drag: 2,
-      max: rng.range(0.35, 0.6), s0: rng.range(10, 18), s1: rng.range(30, 50), ramp: 'white', r0: 0, r1: 0.5, a0: 0.5, a1: 0, add: false, layer: 3,
+      kind: PK.Smoke, x: ex + 40 - d * 0.6, y: ey + sg * off, vx: -rng.range(20, 120), vy: sg * rng.range(60, 200), drag: 2,
+      max: rng.range(0.35, 0.6), s0: rng.range(10, 18), s1: rng.range(30, 50), ramp: 'white', r0: 0, r1: 0.5, a0: 0.5, a1: 0, add: false, layer: 2,
     });
   }
-  // Turf spray and dew off the contact.
+  // Turf spray and dew off the contact (thrown up ahead of the toe, so M3's toe-lift stays readable).
   for (let i = 0; i < 14; i++) {
     const a = rng.range(-Math.PI * 0.75, -Math.PI * 0.1);
     const v = rng.range(300, 900);
     env.parts.spawn({
-      kind: PK.Debris, x: s.face + rng.range(0, 60), y: TURF_Y - 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ay: 1400, drag: 0.5, vrot: rng.range(-14, 14),
+      kind: PK.Debris, x: s.face + rng.range(40, 90), y: TURF_Y - 2, vx: Math.cos(a) * v, vy: Math.sin(a) * v, ay: 1400, drag: 0.5, vrot: rng.range(-14, 14),
       max: rng.range(0.4, 0.7), s0: rng.range(4, 8), s1: 4, ramp: 'grass', r0: rng.next(), r1: rng.next(), a0: 1, a1: 1, add: false, layer: 3,
     });
   }
@@ -1115,8 +1157,8 @@ function spawnRelease(env: Env) {
     const a = rng.range(-Math.PI * 0.9, -Math.PI * 0.05);
     const v = rng.range(300, 1000);
     env.parts.spawn({
-      kind: PK.Glow, x: s.face + rng.range(-10, 70), y: TURF_Y - rng.range(2, 20), vx: Math.cos(a) * v, vy: Math.sin(a) * v, ay: 1200, drag: 0.8,
-      max: rng.range(0.4, 0.7), s0: rng.range(3, 6), s1: 1.5, ramp: 'dew', r0: 0, r1: 0.6, a0: 1, a1: 0.2, layer: 3,
+      kind: PK.Glow, x: s.face + rng.range(40, 90), y: TURF_Y - rng.range(2, 20), vx: Math.cos(a) * v, vy: Math.sin(a) * v, ay: 1200, drag: 0.8,
+      max: rng.range(0.4, 0.7), s0: rng.range(3, 6), s1: 1.5, ramp: 'dew', r0: 0, r1: 0.6, a0: 1, a1: 0.2, layer: 2,
     });
   }
 }
@@ -1124,13 +1166,13 @@ function spawnRelease(env: Env) {
 function spawnWorld(env: Env) {
   const rng = env.rng;
   const [bx, by] = BALL_REST;
-  // The vapour collar where the ball broke away, opening back toward him.
+  // The vapour collar where the ball broke away, opening back toward him (ahead of the toe, behind him: layer 0).
   for (let i = 0; i < 18; i++) {
     const d = rng.range(0, 44);
     const sg = rng.sign();
     env.parts.spawn({
-      kind: PK.Smoke, x: EXIT[0] + 18 - d * 0.8, y: EXIT[1] + sg * d * rng.range(0.15, 0.5), vx: rng.range(30, 110), vy: sg * rng.range(20, 60), drag: 1.8,
-      max: rng.range(0.45, 0.8), s0: rng.range(6, 10), s1: rng.range(16, 26), ramp: 'white', r0: 0, r1: 0.5, a0: 0.36, a1: 0, add: false, layer: 1,
+      kind: PK.Smoke, x: EXIT[0] + 30 - d * 0.5, y: EXIT[1] + sg * d * rng.range(0.15, 0.5), vx: rng.range(30, 110), vy: sg * rng.range(20, 60), drag: 1.8,
+      max: rng.range(0.45, 0.8), s0: rng.range(6, 10), s1: rng.range(16, 26), ramp: 'white', r0: 0, r1: 0.5, a0: 0.36, a1: 0, add: false, layer: 0,
     });
   }
   // Eddies along the trail (soft puffs that curl off it and dissolve).
@@ -1141,12 +1183,12 @@ function spawnWorld(env: Env) {
       max: rng.range(0.6, 0.95), s0: rng.range(4, 7), s1: rng.range(14, 24), ramp: 'white', r0: 0.1, r1: 0.6, a0: 0.26, a1: 0, add: false, layer: 0,
     });
   }
-  // Turf thrown up by the strike, raining back down.
+  // Turf thrown up by the strike (ahead of F7's toe), raining back down.
   for (let i = 0; i < 18; i++) {
     const a = rng.range(-Math.PI * 0.62, -Math.PI * 0.2);
     const v = rng.range(260, 640);
     env.parts.spawn({
-      kind: PK.Debris, x: bx + rng.range(-6, 24), y: GY - 2 - rng.range(0, 30), vx: Math.cos(a) * v + 140, vy: Math.sin(a) * v, ay: 1500, drag: 0.6, vrot: rng.range(-12, 12),
+      kind: PK.Debris, x: bx + rng.range(24, 50), y: GY - 2 - rng.range(0, 30), vx: Math.cos(a) * v + 140, vy: Math.sin(a) * v, ay: 1500, drag: 0.6, vrot: rng.range(-12, 12),
       max: rng.range(0.7, 1.1), s0: rng.range(2.2, 4.2), s1: 2, ramp: 'grass', r0: rng.next(), r1: rng.next(), a0: 1, a1: 1, add: false, layer: 1,
     });
   }
@@ -1155,7 +1197,7 @@ function spawnWorld(env: Env) {
     const a = rng.range(-Math.PI * 0.7, -Math.PI * 0.15);
     const v = rng.range(200, 700);
     env.parts.spawn({
-      kind: PK.Glow, x: bx + rng.range(4, 40), y: by + rng.range(-20, 10), vx: Math.cos(a) * v + 170, vy: Math.sin(a) * v, ay: 1250, drag: 0.7,
+      kind: PK.Glow, x: bx + rng.range(24, 60), y: by + rng.range(-20, 10), vx: Math.cos(a) * v + 170, vy: Math.sin(a) * v, ay: 1250, drag: 0.7,
       max: rng.range(0.7, 1.15), s0: rng.range(1.6, 3), s1: 1, ramp: 'dew', r0: 0, r1: 0.6, a0: 1, a1: 0.25, layer: 1,
     });
   }
@@ -1182,17 +1224,24 @@ function spawnLanding(env: Env) {
     });
   }
   // He breathes out as he lands (cold night): a little mist that the wind carries toward goal.
+  spawnBreath(env, 0.3);
+}
+
+/** A breath of mist from his mouth (F9 / F10 share the head), carried toward goal by the wind. */
+function spawnBreath(env: Env, a0 = 0.25) {
+  const rng = env.rng;
   const [ex, ey] = no10Point(env, 'F9', 'eye', LAND_TOE[0], LAND_TOE[1], D);
   for (let k = 0; k < 4; k++)
     env.parts.spawn({
       kind: PK.Smoke, x: ex + 4 * D + rng.range(-2, 2), y: ey + 5 * D + rng.range(-2, 2), vx: rng.range(30, 80), vy: rng.range(-16, 4), drag: 2,
-      max: rng.range(0.3, 0.42), s0: rng.range(4, 7), s1: rng.range(14, 20), ramp: 'white', r0: 0, r1: 0.6, a0: 0.3, a1: 0, add: false, layer: 1,
+      max: rng.range(0.3, 0.42), s0: rng.range(4, 7), s1: rng.range(14, 20), ramp: 'white', r0: 0, r1: 0.6, a0, a1: 0, add: false, layer: 1,
     });
 }
 
-/** Wind in the ball's wake: thin streaks streaming toward goal past him, thinning out. */
+/** Wind in the ball's wake: thin streaks streaming toward goal behind him (layer 0, never across his face), thinning out. */
 function spawnWind(env: Env, t: number, dt: number) {
-  const rate = 70 * (1 - smooth01((t - SWAP) / 0.6));
+  // Thinning out but never stopping while he settles (a light breeze keeps F9's hold alive).
+  const rate = 10 + 60 * (1 - smooth01((t - SWAP) / 0.6));
   windAcc += rate * dt;
   const rng = env.rng;
   const c = camAt(t);
@@ -1201,7 +1250,7 @@ function spawnWind(env: Env, t: number, dt: number) {
     const y = GY - 8 - Math.pow(rng.next(), 1.6) * 270;
     env.parts.spawn({
       kind: PK.Streak, x: c.x - VW / (2 * c.z) - rng.range(0, 120), y, vx: rng.range(1100, 1700), vy: rng.range(-30, 30),
-      max: rng.range(0.35, 0.55), s0: rng.range(1, 2), s1: 0.6, ramp: 'white', r0: 0, r1: 0.6, a0: 0.6, a1: 0, k: 1.8, add: false, layer: 1,
+      max: rng.range(0.35, 0.55), s0: rng.range(1, 2), s1: 0.6, ramp: 'white', r0: 0, r1: 0.6, a0: 0.6, a1: 0, k: 1.8, add: false, layer: 0,
     });
   }
 }
@@ -1229,6 +1278,10 @@ export const shotSquash: Shot = {
       const f = no10(k);
       if (f) f.a.tinted(f.i, [170, 228, 255]);
     }
+    // The pale smear copy of M1 (so its tint is not built mid-shot).
+    const a = macroAnim();
+    const i = a ? findFrame(a, 'M1') : -1;
+    if (a && i >= 0) a.tinted(i, SMEAR_TINT);
   },
   init(env) {
     env.sfx.clearBus();
@@ -1238,7 +1291,7 @@ export const shotSquash: Shot = {
     spin.rotate(0, 0, 1, 0.4);
     simT = 0;
     hitSim = -1;
-    hitDone = relDone = swapDone = landDone = false;
+    hitDone = relDone = swapDone = landDone = breathDone = false;
     windAcc = 0;
     // The world camera at the swap: F7's laces on the screen point where the macro M3's laces are.
     const [mlx, mly] = macroLaces(SWAP);
@@ -1319,7 +1372,11 @@ export const shotSquash: Shot = {
       spawnLanding(env);
       env.cam.hit(0.12);
     }
-    if (t >= SWAP && t < 1.3) spawnWind(env, t, dt);
+    if (!breathDone && t >= 1.38) {
+      breathDone = true;
+      spawnBreath(env);
+    }
+    if (t >= SWAP && t < 1.45) spawnWind(env, t, dt);
     if (t >= SWAP) {
       const c = camAt(t);
       env.cam.set(c.x, c.y, c.z, 0);

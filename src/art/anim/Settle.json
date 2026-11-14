@@ -1,0 +1,186 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Settle",
+  "view": "Side",
+  "fps": 12,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view, facing east, unmirrored (No.10 is right-footed: the near/right leg touches). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (Settle F1: the braking right heel); airborne frames (contact null) sit on pelvis. ball = centre of the 12 px ball (radius 6 at x1; r 12 at x2, r 18 at x3), NEVER drawn in the frame; touch = the boot is on the ball; boot = the contact pixel of bootPart on the drawn boot; head = skull point; eye = the pupil pixel (measured); lowBoot = lowest pixel of an airborne frame; bbox = [x0,y0,x1,y1] measured on the art. solo = SPOTLIGHT SOLO shot-local use times. Studio layer: Art only (no Num/Ball layer; the ball guide is these anchors). Settle shares the SoleLift canvas (left toe-tip (70,102)); shot 7 places it at the Dribble cycle origin +48 (= Dribble F7 canvas 42 + 6) so the left toe pixel never moves from Dribble F6. F1 brake: right heel (78,102), the ball still rolling into the upturned sole; F2 SOLE STOP (sole on the ball, boot = the sole bottom (97,90), measured: the plan said (97,91) which is 1 px under the drawn sole); F3 chin up; F3b breath (alternate F3/F3b, held through the freeze).",
+ "frames": [
+  {
+   "name": "F1",
+   "id": "Settle_F1",
+   "label": "brake",
+   "type": "N",
+   "ms": 80,
+   "pelvis": [
+    73,
+    68
+   ],
+   "contact": [
+    78,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     96,
+     96
+    ],
+    "head": [
+     68,
+     22
+    ],
+    "eye": [
+     78,
+     28
+    ],
+    "bbox": [
+     51,
+     9,
+     89,
+     102
+    ]
+   },
+   "touch": false,
+   "contactFoot": "right heel",
+   "solo": "s7 0.60"
+  },
+  {
+   "name": "F2",
+   "id": "Settle_F2",
+   "label": "sole stop",
+   "type": "V",
+   "ms": 90,
+   "pelvis": [
+    69,
+    67
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     100,
+     96
+    ],
+    "boot": [
+     97,
+     90
+    ],
+    "head": [
+     70,
+     21
+    ],
+    "eye": [
+     80,
+     27
+    ],
+    "bbox": [
+     53,
+     8,
+     105,
+     102
+    ]
+   },
+   "touch": true,
+   "bootPart": "sole",
+   "contactFoot": "left toe",
+   "solo": "s7 0.80 (SOLE STOP, final hit)"
+  },
+  {
+   "name": "F3",
+   "id": "Settle_F3",
+   "label": "chin up",
+   "type": "V",
+   "ms": 200,
+   "pelvis": [
+    69,
+    67
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     100,
+     96
+    ],
+    "boot": [
+     97,
+     90
+    ],
+    "head": [
+     70,
+     20
+    ],
+    "eye": [
+     79,
+     27
+    ],
+    "bbox": [
+     53,
+     7,
+     105,
+     102
+    ]
+   },
+   "touch": true,
+   "bootPart": "sole",
+   "contactFoot": "left toe",
+   "solo": "s7 1.20, 1.50; result view (0.5x cache)"
+  },
+  {
+   "name": "F3b",
+   "id": "Settle_F3b",
+   "label": "chin up breath",
+   "type": "V",
+   "ms": 200,
+   "pelvis": [
+    69,
+    67
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     100,
+     96
+    ],
+    "boot": [
+     97,
+     90
+    ],
+    "head": [
+     70,
+     19
+    ],
+    "eye": [
+     79,
+     26
+    ],
+    "bbox": [
+     53,
+     7,
+     105,
+     102
+    ]
+   },
+   "touch": true,
+   "bootPart": "sole",
+   "contactFoot": "left toe",
+   "solo": "s7 1.40, 1.60 (held through the freeze)"
+  }
+ ]
+}

@@ -1,0 +1,333 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Trivela",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view, facing east (No.10 right-footed: the near/right leg kicks with the OUTSIDE of the boot, ankle turned IN; the far/left leg plants). Not mirrored (no west strip). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Registration: the Trivela canvas = the Approach/Run canvas + originDx 56 px (exactly GALE's Strike canvas). contact = the planted toe-tip column on row 102: the far (left) toe (76,102) on T3-T8b (the plant never slides; flat on T3-T6, on the toes T7-T8b), the near (right) toe (94,102) on T9/T9b. ball = the 12 px ball centre (87,96) on T3-T6 (wide of and a little ahead of the plant); at T5/T6 draw the ball OVER the sprite (nearer the camera than the boot). boot: T4 = the heel at the top of the knee-flick backswing (35,79); T5 = the outside of the boot low behind the plant (50,92); T6 = the outside contact point (80,96) (bootPart outside; the ball's back edge is x 81), so shot 1 crops T6 x4 on boot. head = skull point; eye: T7 the half-closed profile eye, T8a/T8b the OPEN eye of the 3/4 face (glint), T9/T9b the profile eye following the pass. Shot 3: AP1 0.00, AP3 0.09 (Approach strip), T3 0.18, T4 0.40, T5 0.55, T6 0.62-0.84 (ink freeze), T7 0.84, T8a 0.95, T8b 1.15, T9 1.30, T9b 1.50-1.70; shot 5 = T9 0.5x cache. T9b is a review-round-2 addition (T9 was held 0.40 s): pelvis/contact/legs = T9, head/torso/arms 1 px up, mop settled. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "frames": [
+  {
+   "name": "T3",
+   "id": "T3",
+   "label": "plant, head away",
+   "type": "N",
+   "ms": 140,
+   "pelvis": [
+    57,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     87,
+     96
+    ],
+    "head": [
+     55,
+     21
+    ],
+    "bbox": [
+     25,
+     8,
+     82,
+     102
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 3 0.18-0.40"
+  },
+  {
+   "name": "T4",
+   "id": "T4",
+   "label": "wind-up (knee flick), head away",
+   "type": "N",
+   "ms": 80,
+   "pelvis": [
+    58,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     87,
+     96
+    ],
+    "boot": [
+     35,
+     79
+    ],
+    "head": [
+     57,
+     21
+    ],
+    "bbox": [
+     29,
+     8,
+     84,
+     102
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 3 0.40",
+   "bootPart": "heel"
+  },
+  {
+   "name": "T5",
+   "id": "T5",
+   "label": "swing, ankle in, sole to camera",
+   "type": "N",
+   "ms": 50,
+   "pelvis": [
+    61,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     87,
+     96
+    ],
+    "boot": [
+     50,
+     92
+    ],
+    "head": [
+     64,
+     20
+    ],
+    "bbox": [
+     43,
+     7,
+     91,
+     102
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 3 0.55",
+   "bootPart": "outside"
+  },
+  {
+   "name": "T6",
+   "id": "T6",
+   "label": "contact: outside of the boot, head away",
+   "type": "N",
+   "ms": 60,
+   "pelvis": [
+    65,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "bootPart": "outside",
+   "anchors": {
+    "ball": [
+     87,
+     96
+    ],
+    "boot": [
+     80,
+     96
+    ],
+    "head": [
+     72,
+     21
+    ],
+    "bbox": [
+     39,
+     8,
+     97,
+     102
+    ],
+    "outside": [
+     80,
+     96
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 1 boot crop x4; shot 3 0.62-0.84"
+  },
+  {
+   "name": "T7",
+   "id": "T7",
+   "label": "follow-through out to his right, profile half-closed",
+   "type": "N",
+   "ms": 120,
+   "pelvis": [
+    69,
+    64
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     72,
+     18
+    ],
+    "eye": [
+     81,
+     26
+    ],
+    "bbox": [
+     41,
+     5,
+     92,
+     102
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 3 0.84"
+  },
+  {
+   "name": "T8a",
+   "id": "T8a",
+   "label": "reveal: 3/4 to camera, smirk",
+   "type": "N",
+   "ms": 140,
+   "pelvis": [
+    71,
+    63
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     72,
+     18
+    ],
+    "eye": [
+     82,
+     24
+    ],
+    "bbox": [
+     56,
+     5,
+     92,
+     102
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 3 0.95"
+  },
+  {
+   "name": "T8b",
+   "id": "T8b",
+   "label": "wink",
+   "type": "V of T8a",
+   "ms": 160,
+   "pelvis": [
+    71,
+    63
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     72,
+     18
+    ],
+    "eye": [
+     82,
+     24
+    ],
+    "bbox": [
+     55,
+     5,
+     92,
+     102
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 3 1.15"
+  },
+  {
+   "name": "T9",
+   "id": "T9",
+   "label": "recover onto the right foot, eyes follow the pass",
+   "type": "N",
+   "ms": 140,
+   "pelvis": [
+    84,
+    65
+   ],
+   "contact": [
+    94,
+    102
+   ],
+   "anchors": {
+    "head": [
+     88,
+     19
+    ],
+    "eye": [
+     97,
+     25
+    ],
+    "bbox": [
+     64,
+     6,
+     104,
+     102
+    ]
+   },
+   "originDx": 56,
+   "pass": "shot 3 1.30-1.70; shot 5 0.5x cache"
+  },
+  {
+   "name": "T9b",
+   "id": "T9b",
+   "label": "settle: hair settled + breath",
+   "type": "V of T9 (review round 2: T9 holds 1.30-1.50, T9b 1.50-1.70)",
+   "ms": 200,
+   "pelvis": [
+    84,
+    65
+   ],
+   "contact": [
+    94,
+    102
+   ],
+   "anchors": {
+    "head": [
+     88,
+     18
+    ],
+    "eye": [
+     97,
+     24
+    ],
+    "bbox": [
+     64,
+     5,
+     103,
+     102
+    ]
+   },
+   "pass": "shot 3 1.50-1.70 (under the thread wipe)"
+  }
+ ]
+}

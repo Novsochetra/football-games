@@ -1,0 +1,137 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "westStrip": "Break_west.png",
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Break",
+  "view": "Front",
+  "fps": 12,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Front view toward the lens (screen-left = HIS RIGHT), registration = Idle Front: body centre x 64, soles on row 102. Points are pixel indices (studioAnim adds 0.5). contact = centre of the planted sole on row 102 (contact2 = the second planted sole, StepOver F4/F5); airborne frames (Elastico F5) sit on pelvis. ball = centre of the 12 px ball at x1 on the turf (row 96) unless noted, never drawn in the frame; a front-view ball sits IN FRONT of the boot it touches (draw it over the sprite). boot = contact pixel of bootPart; num = the chest \"10\" box [x0,y0,x1,y1]; head = skull point; bbox measured on the art. Studio layer: Art only. Break 3/4 front, accelerating to his right / screen-left; BR2<->BR3 loop on 8ths (same torso/head). The ball sits at the leading foot (ignored in shot 6: it has gone through D). Break_west.png = the whole strip mirrored (frame i in slot n-1-i) with the chest \"10\" re-mirrored inside its num box, so it reads \"10\" (shot 5 Elastico burst, flip: true); anchors mirror as x -> 127 - x (studioAnim does this).",
+ "frames": [
+  {
+   "name": "BR1",
+   "id": "Break_BR1",
+   "label": "first crossover",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    60,
+    67
+   ],
+   "contact": [
+    58,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     42,
+     96
+    ],
+    "head": [
+     48,
+     21
+    ],
+    "num": [
+     53,
+     45,
+     61,
+     53
+    ],
+    "bbox": [
+     33,
+     9,
+     90,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 0.85; s6 0.55"
+  },
+  {
+   "name": "BR2",
+   "id": "Break_BR2",
+   "label": "sprint stride",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    61,
+    66
+   ],
+   "contact": [
+    58,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     44,
+     96
+    ],
+    "head": [
+     52,
+     19
+    ],
+    "num": [
+     56,
+     44,
+     63,
+     52
+    ],
+    "bbox": [
+     37,
+     7,
+     92,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 1.00, 1.30, 1.50; s6 0.70, 1.00; s5 0.55, 0.80, 1.00 (west strip)"
+  },
+  {
+   "name": "BR3",
+   "id": "Break_BR3",
+   "label": "sprint stride b",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    60,
+    66
+   ],
+   "contact": [
+    66,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     40,
+     96
+    ],
+    "head": [
+     51,
+     19
+    ],
+    "num": [
+     55,
+     44,
+     62,
+     52
+    ],
+    "bbox": [
+     36,
+     8,
+     84,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 1.15, 1.40; s6 0.85, 1.10; s5 0.70, 0.90, 1.10 (west strip)"
+  }
+ ]
+}

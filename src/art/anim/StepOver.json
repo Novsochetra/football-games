@@ -1,0 +1,266 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "StepOver",
+  "view": "Front",
+  "fps": 12,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Front view toward the lens (screen-left = HIS RIGHT), registration = Idle Front: body centre x 64, soles on row 102. Points are pixel indices (studioAnim adds 0.5). contact = centre of the planted sole on row 102 (contact2 = the second planted sole, StepOver F4/F5); airborne frames (Elastico F5) sit on pelvis. ball = centre of the 12 px ball at x1 on the turf (row 96) unless noted, never drawn in the frame; a front-view ball sits IN FRONT of the boot it touches (draw it over the sprite). boot = contact pixel of bootPart; num = the chest \"10\" box [x0,y0,x1,y1]; head = skull point; bbox measured on the art. Studio layer: Art only. StepOver F2-F7 (the library ids; F1 = FrontTouch FT1): the ball is dead still at (64,96) through F2-F6; F4 THE SELL (key, hips 6 px screen-right), F7 the cut with the outside of the right boot (ball (48,96)).",
+ "frames": [
+  {
+   "name": "F2",
+   "id": "StepOver_F2",
+   "label": "plant",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    62,
+    67
+   ],
+   "contact": [
+    52,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     64,
+     96
+    ],
+    "head": [
+     62,
+     19
+    ],
+    "num": [
+     60,
+     46,
+     67,
+     52
+    ],
+    "bbox": [
+     37,
+     8,
+     94,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 0.14 (ghost 0.5)"
+  },
+  {
+   "name": "F3",
+   "id": "StepOver_F3",
+   "label": "circle",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    64,
+    67
+   ],
+   "contact": [
+    52,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     64,
+     96
+    ],
+    "head": [
+     69,
+     19
+    ],
+    "num": [
+     63,
+     46,
+     70,
+     52
+    ],
+    "bbox": [
+     35,
+     8,
+     97,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 0.27 (ghost 0.5)"
+  },
+  {
+   "name": "F4",
+   "id": "StepOver_F4",
+   "label": "THE SELL",
+   "type": "N",
+   "ms": 140,
+   "pelvis": [
+    70,
+    67
+   ],
+   "contact": [
+    52,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     64,
+     96
+    ],
+    "contact2": [
+     89,
+     102
+    ],
+    "head": [
+     82,
+     21
+    ],
+    "num": [
+     70,
+     46,
+     78,
+     54
+    ],
+    "bbox": [
+     35,
+     9,
+     99,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 0.40-0.60 (ghost 0.9, hit-stop)"
+  },
+  {
+   "name": "F5",
+   "id": "StepOver_F5",
+   "label": "load",
+   "type": "N",
+   "ms": 90,
+   "pelvis": [
+    72,
+    71
+   ],
+   "contact": [
+    52,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     64,
+     96
+    ],
+    "contact2": [
+     89,
+     102
+    ],
+    "head": [
+     86,
+     25
+    ],
+    "num": [
+     72,
+     50,
+     81,
+     58
+    ],
+    "bbox": [
+     36,
+     14,
+     103,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 0.60"
+  },
+  {
+   "name": "F6",
+   "id": "StepOver_F6",
+   "label": "push",
+   "type": "N",
+   "ms": 60,
+   "pelvis": [
+    68,
+    68
+   ],
+   "contact": [
+    89,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     64,
+     96
+    ],
+    "head": [
+     73,
+     20
+    ],
+    "num": [
+     68,
+     47,
+     75,
+     53
+    ],
+    "bbox": [
+     40,
+     9,
+     96,
+     102
+    ]
+   },
+   "touch": false,
+   "solo": "s3 0.70"
+  },
+  {
+   "name": "F7",
+   "id": "StepOver_F7",
+   "label": "cut",
+   "type": "N",
+   "ms": 60,
+   "pelvis": [
+    62,
+    67
+   ],
+   "contact": [
+    85,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     48,
+     96
+    ],
+    "boot": [
+     56,
+     96
+    ],
+    "head": [
+     56,
+     19
+    ],
+    "num": [
+     58,
+     46,
+     65,
+     52
+    ],
+    "bbox": [
+     36,
+     9,
+     90,
+     102
+    ]
+   },
+   "touch": true,
+   "bootPart": "outside",
+   "solo": "s3 0.80 (the cut)"
+  }
+ ]
+}

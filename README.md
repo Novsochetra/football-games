@@ -4,6 +4,9 @@ Special-shot scenes for No.10. The review page has a picker for each special:
 
 - **ZENITH METEOR** (sky volley, set up by a dribble)
 - **CRIMSON CRESCENT** (bicycle kick, set up by a high cross from No.7)
+- **GALE HAMMER** (long-range power shot from 30 m; a tier below Zenith Meteor)
+- In production: **MERIDIAN THREAD** (special pass) and **SPOTLIGHT SOLO** (special dribble), shown
+  only in the preview build (`npm run build:preview`, or open the page with `?all`)
 
 Other abilities (dribble, pass, block, keeper saves) come after these pass quality check.
 
@@ -52,6 +55,25 @@ sky, in front of the full moon, somersaults and volleys it straight down like a 
 | 8 | Net / Goal | Reverse angle: the net stretches toward the lens and tears | Spring-mesh net sim, strand snapping, GOAL slam, confetti, crowd |
 
 Total runtime about 17 s at 1×.
+
+## GALE HAMMER
+
+From 30 m out No.10 hits the ball so hard it never touches the grass again: it skims on three cushions
+of crushed air that stamp rings into the turf, and it outruns its own sound, so the thunder arrives late
+and flings the defenders. Ice white, electric cyan and cobalt; 6 shots, 11.3 s. Brief:
+`docs/skills/GALE_HAMMER.md` (copy in `src/cinematic/gale/SPEC.md`).
+
+| # | Shot | What happens |
+|---|------|--------------|
+| 1 | Cut-in | An oval window springs open on his eyes; the title springs out to the three-note air tune |
+| 2 | The load | Run-up and plant, then the slow-motion inhale: the pressure lens pinches the stadium, his eyes in a dew drop on the ball |
+| 3 | Squash | Macro: the ball squashes flat on the laces; the camera is blasted back to his follow-through and hop; the world goes muffled |
+| 4 | Air steps | The ball's scene: three air steps, a jump-blocking defender, the late boom flings him, the stadium sound slams back |
+| 5 | Pressure front | The keeper is swept; the ball slips in almost silently, then the pressure front balloons the net |
+| 6 | Footprints of air | Back view: three ring footprints to the net, the late thunder, GOAL!, the palm blow, name card |
+
+New engine pieces: the pressure lens post effect, muffle/dry/crowd audio buses with new sounds,
+a squashable cobalt ball, the `'longshot'` field scenario, and `src/art/no10.ts` (No.10 library frames).
 
 ## No.10 jump animation (Pixel Studio)
 

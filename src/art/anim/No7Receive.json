@@ -1,0 +1,252 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "No.7",
+  "animation": "Receive",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark hair #463428/#281c16, yellow \"7\"; MOTION_LIBRARY \u00a74), same scale (98 px standing, ground row 102). Side view, facing east, not mirrored. Shot 6 rail (world = Run canvas at x1; sprite origin = originDx): R1/R2 originDx 27 (left toe (76,102) = Run R5's plant), R3 originDx 48 (right toe (73,102)), R4-R6 originDx 86 (= the Strike canvas: plant toe (76,102), ball (83,96)). The pelvis moves forward on every frame from Run R4 (world 78) through R1 91, R2 97, R3 126, R4 142, R5 150, R6 164 (received in stride). R4 -> R5 share the plant-toe pixels. ball = ball centre: R1 (68,96) rolling in from behind on the near side (draw it over the sprite), R2 (94,96) pushed ahead off the inside of the right foot (boot = inside contact (87,96), touch), R4/R5 (83,96) (R5 boot = inside contact (76,95)). Shot 6: R1 0.25, R2 0.35 (hit-stop to 0.47), R3 0.47, R4 0.62, R5 0.80, R6 0.88. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "frames": [
+  {
+   "name": "R1",
+   "id": "R1",
+   "label": "reach: foot opening to the ball",
+   "type": "N",
+   "ms": 90,
+   "pelvis": [
+    64,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     68,
+     96
+    ],
+    "head": [
+     73,
+     19
+    ],
+    "eye": [
+     80,
+     29
+    ],
+    "bbox": [
+     45,
+     9,
+     87,
+     102
+    ]
+   },
+   "originDx": 27,
+   "pass": "shot 6 0.25"
+  },
+  {
+   "name": "R2",
+   "id": "R2",
+   "label": "touch: inside of the right foot, in stride",
+   "type": "N (key)",
+   "ms": 60,
+   "pelvis": [
+    70,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "bootPart": "inside",
+   "touch": true,
+   "anchors": {
+    "ball": [
+     94,
+     96
+    ],
+    "boot": [
+     87,
+     96
+    ],
+    "head": [
+     79,
+     19
+    ],
+    "eye": [
+     86,
+     29
+    ],
+    "bbox": [
+     44,
+     9,
+     94,
+     102
+    ],
+    "touch": [
+     87,
+     96
+    ]
+   },
+   "originDx": 27,
+   "pass": "shot 6 0.35-0.47 (hit-stop)"
+  },
+  {
+   "name": "R3",
+   "id": "R3",
+   "label": "push-off, eyes to goal",
+   "type": "V of Run R4 (re-skin)",
+   "ms": 80,
+   "pelvis": [
+    78,
+    63
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     81,
+     18
+    ],
+    "eye": [
+     92,
+     26
+    ],
+    "bbox": [
+     58,
+     8,
+     105,
+     102
+    ]
+   },
+   "originDx": 48,
+   "pass": "shot 6 0.47"
+  },
+  {
+   "name": "R4",
+   "id": "R4",
+   "label": "plant, short backswing",
+   "type": "V of Strike F5a (re-skin)",
+   "ms": 100,
+   "pelvis": [
+    56,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     32,
+     75
+    ],
+    "head": [
+     61,
+     19
+    ],
+    "eye": [
+     68,
+     29
+    ],
+    "bbox": [
+     23,
+     9,
+     81,
+     102
+    ]
+   },
+   "originDx": 86,
+   "pass": "shot 6 0.62",
+   "bootPart": "heel"
+  },
+  {
+   "name": "R5",
+   "id": "R5",
+   "label": "strike: side-foot, boot end-on",
+   "type": "N (key)",
+   "ms": 60,
+   "pelvis": [
+    64,
+    65
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "bootPart": "inside",
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     76,
+     95
+    ],
+    "head": [
+     76,
+     19
+    ],
+    "eye": [
+     83,
+     29
+    ],
+    "bbox": [
+     35,
+     9,
+     91,
+     102
+    ]
+   },
+   "originDx": 86,
+   "pass": "shot 6 0.80"
+  },
+  {
+   "name": "R6",
+   "id": "R6",
+   "label": "follow-through, lands on the right foot",
+   "type": "N",
+   "ms": 140,
+   "pelvis": [
+    78,
+    68
+   ],
+   "contact": [
+    92,
+    102
+   ],
+   "anchors": {
+    "head": [
+     83,
+     21
+    ],
+    "eye": [
+     93,
+     28
+    ],
+    "bbox": [
+     53,
+     12,
+     108,
+     102
+    ]
+   },
+   "originDx": 86,
+   "pass": "shot 6 0.88"
+  }
+ ]
+}

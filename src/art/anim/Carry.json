@@ -1,0 +1,147 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "back",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Carry",
+  "view": "Back",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Carry (pass shot 2, 0.00-0.35, loops at 12 fps). Back view (from behind; the goal far up-screen), not mirrored. Registration = Idle Back: body centre x 64, soles on row 102; the camera rides with him, so the sprite does not travel (the stride bob is drawn: pelvis y 65 on the down frames, 63 on the passing frames; head 19 -> 17). contact = the centre of the planted sole on row 102: right (72,102) on B1 B2 S1 S2a S2b, left (55,102) on B3 B4 S3. head = the skull (sightline origin). ball = the ball guide centre (B1/S1 touched at the right toe, then rolling ahead up-screen); the ball sits up-screen of the boot, so draw it before (behind) the sprite where they overlap. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "frames": [
+  {
+   "name": "B1",
+   "id": "B1",
+   "label": "R-down + ball touch",
+   "type": "N",
+   "ms": 83,
+   "pelvis": [
+    65,
+    65
+   ],
+   "contact": [
+    72,
+    102
+   ],
+   "touch": true,
+   "anchors": {
+    "ball": [
+     69,
+     92
+    ],
+    "head": [
+     66,
+     19
+    ],
+    "bbox": [
+     42,
+     7,
+     88,
+     102
+    ]
+   },
+   "pass": "shot 2 0.00-0.35 loop (touch)"
+  },
+  {
+   "name": "B2",
+   "id": "B2",
+   "label": "passing, mop lifts",
+   "type": "N",
+   "ms": 83,
+   "pelvis": [
+    65,
+    63
+   ],
+   "contact": [
+    72,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     68,
+     90
+    ],
+    "head": [
+     66,
+     17
+    ],
+    "bbox": [
+     42,
+     3,
+     88,
+     102
+    ]
+   },
+   "pass": "shot 2 0.00-0.35 loop"
+  },
+  {
+   "name": "B3",
+   "id": "B3",
+   "label": "L-down",
+   "type": "N",
+   "ms": 83,
+   "pelvis": [
+    63,
+    65
+   ],
+   "contact": [
+    55,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     66,
+     89
+    ],
+    "head": [
+     62,
+     19
+    ],
+    "bbox": [
+     40,
+     7,
+     86,
+     102
+    ]
+   },
+   "pass": "shot 2 loop"
+  },
+  {
+   "name": "B4",
+   "id": "B4",
+   "label": "passing, sole flashes",
+   "type": "N",
+   "ms": 83,
+   "pelvis": [
+    63,
+    63
+   ],
+   "contact": [
+    55,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     66,
+     90
+    ],
+    "head": [
+     62,
+     17
+    ],
+    "bbox": [
+     40,
+     3,
+     86,
+     102
+    ]
+   },
+   "pass": "shot 2 0.00-0.35 loop"
+  }
+ ]
+}

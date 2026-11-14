@@ -1,0 +1,138 @@
+{
+ "frameW": 48,
+ "frameH": 26,
+ "view": "face",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Sochetra Face",
+  "animation": "GlanceFace",
+  "view": "Front",
+  "fps": 12,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Face crop 48x26 of src/art/hero_no10.png at (26,8), on its exact pixel grid (studio project \"Sochetra Face\", animation GlanceFace, Front view; palette = the 15 Sochetra colours + #ffffff eye white). G1 = the existing face (pixel-identical to the GALE Glance G1 and the hero crop), G2L = both irises to the screen-LEFT corner (his right: the first dart), G2 = both irises to the screen-RIGHT corner (his left: the second dart; shot 7 bookend, eyes on the keeper; shared with MERIDIAN THREAD). Only the irises move. Draw at integer x2-x5 on the centre (pelvis = crop centre). eyeL/eyeR = iris centres, eye = their midpoint, pupilL/pupilR = the n pupil pixels. SPOTLIGHT shot 1: G1 0.00, G2L 0.20, G2 0.30 (x5). Kept separate from the GALE \"Glance\" strip (G1, G4).",
+ "crop": {
+  "src": "src/art/hero_no10.png",
+  "x": 26,
+  "y": 8,
+  "w": 48,
+  "h": 26
+ },
+ "frames": [
+  {
+   "name": "G1",
+   "id": "Glance_G1",
+   "label": "face (base, = Glance G1)",
+   "ms": 200,
+   "pelvis": [
+    23.5,
+    12.5
+   ],
+   "contact": null,
+   "anchors": {
+    "eye": [
+     22.5,
+     14.5
+    ],
+    "eyeL": [
+     18.5,
+     14.5
+    ],
+    "eyeR": [
+     26.5,
+     14.5
+    ],
+    "bbox": [
+     4,
+     0,
+     38,
+     25
+    ]
+   },
+   "solo": "s1 0.00"
+  },
+  {
+   "name": "G2L",
+   "id": "Glance_G2L",
+   "label": "dart screen-left",
+   "ms": 100,
+   "pelvis": [
+    23.5,
+    12.5
+   ],
+   "contact": null,
+   "anchors": {
+    "eye": [
+     21.5,
+     14.5
+    ],
+    "eyeL": [
+     17.5,
+     14.5
+    ],
+    "eyeR": [
+     25.5,
+     14.5
+    ],
+    "bbox": [
+     4,
+     0,
+     38,
+     25
+    ],
+    "pupilL": [
+     17,
+     14
+    ],
+    "pupilR": [
+     25,
+     14
+    ]
+   },
+   "solo": "s1 0.20 (x5)"
+  },
+  {
+   "name": "G2",
+   "id": "Glance_G2",
+   "label": "dart screen-right",
+   "ms": 150,
+   "pelvis": [
+    23.5,
+    12.5
+   ],
+   "contact": null,
+   "anchors": {
+    "eye": [
+     23.75,
+     14.5
+    ],
+    "eyeL": [
+     19.5,
+     14.5
+    ],
+    "eyeR": [
+     28.0,
+     14.5
+    ],
+    "bbox": [
+     4,
+     0,
+     38,
+     25
+    ],
+    "pupilL": [
+     20,
+     14
+    ],
+    "pupilR": [
+     29,
+     14
+    ]
+   },
+   "solo": "s1 0.30 (x5); s7 1.20 bookend; pass insets"
+  }
+ ]
+}
