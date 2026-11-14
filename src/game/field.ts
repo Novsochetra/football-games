@@ -574,9 +574,11 @@ export class Field {
     const zoom = this.mode === 'result' ? 1.15 : 1.3;
     // The through ball and the long shot tilt the camera down a little so the stitch preview's X, No.7's run, the long
     // shot's boot (the lens pinch), ball, stamp 1 and defender 2, and the results' celebrations and fallen defenders sit
-    // above the command panel / banner (every other scenario keeps y 214).
+    // above the command panel / banner (every other scenario keeps y 214). The through ball tilts further (290) so No.7
+    // (z≈334), the X, D4 and the keeper all clear the panel, not just No.7's hair; the long shot keeps 256.
     const tilt = this.special.scenario === 'through' || this.special.scenario === 'longshot';
-    const camY = !tilt ? 214 : this.mode === 'command' ? lerp(214, 256, ease.outCubic(clamp(this.cmdT / 0.4))) : this.mode === 'result' ? 236 : 214;
+    const cmdY = this.special.scenario === 'through' ? 290 : 256;
+    const camY = !tilt ? 214 : this.mode === 'command' ? lerp(214, cmdY, ease.outCubic(clamp(this.cmdT / 0.4))) : this.mode === 'result' ? 236 : 214;
     cam.reset(); // clear any shake left over from the cinematic
     cam.set(this.camX, camY, zoom, 0);
     env.world();

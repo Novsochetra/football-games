@@ -14,7 +14,8 @@
 // (decelerating, re-pushed on every touch, always within a foot-length of the boot), spin locked to its roll.
 //
 // Beats (shot-local; all on the 16th grid):
-//   0.00 the ONE  CHUNK: the outer floodlight banks die in one frame (glows fade over 3 frames), dim 0 -> 0.45.
+//   0.00 the ONE  CHUNK: the outer floodlight banks die in one frame (glows fade over 3 frames), dim 0 -> 0.45. The
+//                 picture dies on frame 1, the step its t = 0 cues sound on (frame 0 shows the stadium fully lit).
 //   0.40          CHUNK: the inner banks and the ad boards die, dim 0.8. ~60 phone lights come on in the stands, the
 //                 pitch lines and the goal frame fluoresce lilac, his white boots and the ball glow in the dark.
 //   0.80          SPOT ON from the top-right: beam, floor pool, stage hole, beat flare. The wall turns to plum
@@ -122,15 +123,15 @@ function layout(env: Env): Layout {
   const at = (sx: number, s: number) => c0 + (sx - VW / 2) / s;
   const A0 = at(430, DEPTH.A);
   // Beat-snap at 1.00: zoom 1.3, centred between No.10 and A.
-  const mid = (aX(A0, SNAP_T) - track(M, SNAP_T)) / 2;
+  const mid = (track(M, DUR) + A_END_GAP - track(M, SNAP_T)) / 2;
   const cam: CamKey[] = [
     [0, 150, VH / 2, 1],
     [SNAP_T, mid, 206, 1.3],
   ];
   return {
     OX, PX, M, TB, c0, cam, A0,
-    B0: at(508, DEPTH.B), C0: at(552, DEPTH.C), D0: at(596, DEPTH.D), K0: at(626, DEPTH.K),
-    XG: at(648, GOAL.near), XBOX: c0 + 236, X6: c0 + 470,
+    B0: at(502, DEPTH.B), C0: at(540, DEPTH.C), D0: at(574, DEPTH.D), K0: at(612, DEPTH.K),
+    XG: at(636, GOAL.near), XBOX: c0 + 236, X6: c0 + 470,
   };
 }
 
@@ -231,19 +232,15 @@ function shuffleX(steps: readonly (readonly [number, number])[], t: number): { d
   }
   return { dx, lift, moving };
 }
-const A_SHUFFLE = [[0.1, 10], [0.3, 10], [0.5, 10]] as const;
+const A_SHUFFLE = [[0.1, 14], [0.3, 14], [0.5, 14], [0.7, 14]] as const;
 const B_SHUFFLE = [[0.2, 9], [0.4, 9], [0.6, 9]] as const;
 /** A's step up into the light on the 1.00 beat-snap (an 8th long). */
 const A_STEP = { t0: SNAP_T, dur: 0.1 };
 /** How far in front of No.10's pelvis A ends up (world px): at the edge of the pool, a clear stride from the ball. */
 const A_END_GAP = 128;
 
-function aX(A0: number, t: number): number {
-  return A0 + shuffleX(A_SHUFFLE, t).dx;
-}
-
 function figures(l: Layout, t: number): Fig[] {
-  // A: three shuffles back, set, then the step up into the edge of the pool.
+  // A: four shuffles back while No.10 closes, set, then the step FORWARD up into the edge of the pool.
   const a = shuffleX(A_SHUFFLE, t);
   let AX = l.A0 + a.dx, Aname = a.moving ? 'shuffle' : 'jockey';
   const su = (t - A_STEP.t0) / A_STEP.dur;
@@ -354,8 +351,11 @@ const CROWD_X0 = -520;
 /** Floodlight towers: screen x at t = 0 (zoom 1). Each lamp head carries two banks. */
 const TOWER_SX = [104, 470];
 /** Bank order: 0 = left tower's left (outer), 1 = left tower's right (inner), 2 = right tower's left (inner),
- *  3 = right tower's right (outer). Outer banks die at 0.00, inner at 0.40. */
-const BANK_DIE = [BANK_T[0], BANK_T[1], BANK_T[1], BANK_T[0]];
+ *  3 = right tower's right (outer). Outer banks die on the ONE, inner at 0.40. The runner renders a shot's t = 0
+ *  frame before its t = 0 cues fire (they play on the step to 1/60), so the outer banks die on that step: frame 0
+ *  shows the whole stadium lit for one frame, and the first CHUNK's picture and sound land together on frame 1. */
+const OUTER_DIE = BANK_T[0] + 1 / 60;
+const BANK_DIE = [OUTER_DIE, BANK_T[1], BANK_T[1], OUTER_DIE];
 const LAMP_ON = '#fffbe8', LAMP_HOT = '#ffffff', LAMP_DEAD = '#0d0816', LAMP_GLASS = '#3a2f55';
 
 /** 0 before `at`, then (n + 1) / frames on the n-th frame from it: the change already shows on the beat's own frame. */
@@ -365,7 +365,7 @@ const bankGlow = (b: number, t: number) => 1 - stepIn(t, BANK_DIE[b], DIE_F);
 const bankOn = (b: number, t: number) => t < BANK_DIE[b] - 1e-6;
 
 /** Stage dim outside the pool: 0 -> 0.45 at the first CHUNK, -> 0.8 at the second (each over DIE_F frames). */
-const dimLevel = (t: number) => 0.45 * stepIn(t, BANK_T[0], DIE_F) + 0.35 * stepIn(t, BANK_T[1], DIE_F);
+const dimLevel = (t: number) => 0.45 * stepIn(t, OUTER_DIE, DIE_F) + 0.35 * stepIn(t, BANK_T[1], DIE_F);
 
 const phones: { u: number; v: number; on: number; big: boolean; lilac: boolean; f: number; ph: number }[] = [];
 function buildPhones() {
@@ -391,8 +391,9 @@ function backdrop(ctx: CanvasRenderingContext2D): number {
 }
 const towerU = (l: Layout, i: number, bx: number) => l.c0 * BX_K + (TOWER_SX[i] - VW / 2) + (bx - l.c0 * BX_K) * 0.5;
 
-/** The dark structure of the stadium: sky band, towers (every lamp drawn dead), crowd, roof, dead boards. */
-function drawStands(env: Env, l: Layout, veil: number) {
+/** The structure of the stadium: sky band, towers (every lamp drawn dead), crowd, roof, and the ad boards (lit until
+ *  the inner banks die at 0.40, then dead). Drawn under the dim, behind the wall. */
+function drawStands(env: Env, l: Layout, veil: number, t: number) {
   const ctx = env.ctx;
   const st = env.art.stadium;
   ctx.save();
@@ -438,9 +439,17 @@ function drawStands(env: Env, l: Layout, veil: number) {
   ctx.fillRect(L0, BH - 122, W0, 14);
   ctx.fillStyle = '#05040b';
   ctx.fillRect(L0, BH - 12, W0, 12);
-  ctx.fillStyle = '#120a1e';
   const bu = CROWD_X0 + bx * 0.25;
-  for (let i = Math.floor((L0 - bu) / 80); i < Math.ceil((L0 + W0 - bu) / 80); i++) ctx.fillRect(bu + i * 80 + 4, BH - 9, 60, 6);
+  const boardsLit = t < BANK_T[1] - 1e-6;
+  const cols = ['#c81e2a', '#f6f0df', '#7a4dff', '#f6f0df'];
+  for (let i = Math.floor((L0 - bu) / 80); i < Math.ceil((L0 + W0 - bu) / 80); i++) {
+    const x = bu + i * 80 + 4;
+    ctx.fillStyle = boardsLit ? cols[((i % 4) + 4) % 4] : '#120a1e';
+    ctx.fillRect(x, BH - 9, 60, 6);
+    if (!boardsLit) continue;
+    ctx.fillStyle = '#05040b';
+    for (let q = 0; q < 6; q++) ctx.fillRect(x + 4 + q * 9, BH - 8, 4, 4);
+  }
   // With the house lights gone the stands sink further than the pitch (one more multiply of the stage's dim
   // colour: darkness made of light, never ink or a colour drain), so the phone lights pop.
   if (veil > 0) {
@@ -453,7 +462,7 @@ function drawStands(env: Env, l: Layout, veil: number) {
   ctx.restore();
 }
 
-/** The lit lamps, their glows and the lit boards: light sources, drawn after the dim. */
+/** The lit lamps and their glows: light sources, drawn after the dim. */
 function drawLamps(env: Env, l: Layout, t: number) {
   const ctx = env.ctx;
   ctx.save();
@@ -494,28 +503,11 @@ function drawLamps(env: Env, l: Layout, t: number) {
       ctx.fill();
     }
   }
-  // The ad boards: lit with the stadium, dead with the inner banks.
-  if (t < BANK_T[1] - 1e-6) {
-    ctx.globalCompositeOperation = 'source-over';
-    const L0 = bx - 520, W0 = 1040;
-    const bu = CROWD_X0 + bx * 0.25;
-    const cols = ['#c81e2a', '#f6f0df', '#7a4dff', '#f6f0df'];
-    for (let i = Math.floor((L0 - bu) / 80); i < Math.ceil((L0 + W0 - bu) / 80); i++) {
-      const x = bu + i * 80 + 4;
-      ctx.globalAlpha = 0.8;
-      ctx.fillStyle = cols[((i % 4) + 4) % 4];
-      ctx.fillRect(x, BH - 9, 60, 6);
-      ctx.fillStyle = '#05040b';
-      for (let q = 0; q < 6; q++) ctx.fillRect(x + 4 + q * 9, BH - 8, 4, 4);
-    }
-    ctx.globalAlpha = 1;
-  }
   ctx.restore();
 }
 
 /** ~60 steady phone lights across the visible stand: each pops on between 0.42 and 0.66 and twinkles slowly (±30%). */
-function drawPhones(env: Env, t: number) {
-  const ctx = env.ctx;
+function drawPhones(ctx: CanvasRenderingContext2D, t: number) {
   ctx.save();
   const bx = backdrop(ctx);
   const shift = bx * 0.25;
@@ -753,6 +745,52 @@ function outsidePool(env: Env, pool: StagePool, fn: (g: CanvasRenderingContext2D
   main.restore();
 }
 
+/** Draw `fn` (current transform) into the reused full-frame layer and lay it on the frame. `fn` paints far to near
+ *  and calls `cut(figs)` after the layers each figure stands in front of: the figure's opaque cached sprite is
+ *  punched out of everything painted so far (destination-out), so a line or post never crosses a body. */
+function behindWall(env: Env, fn: (g: CanvasRenderingContext2D, cut: (figs: Fig[]) => void) => void) {
+  const main = env.ctx;
+  const W = main.canvas.width, H = main.canvas.height;
+  if (!maskCv) maskCv = document.createElement('canvas');
+  if (maskCv.width !== W || maskCv.height !== H) {
+    maskCv.width = W;
+    maskCv.height = H;
+  }
+  const g = maskCv.getContext('2d')!;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.clearRect(0, 0, W, H);
+  g.setTransform(main.getTransform());
+  g.imageSmoothingEnabled = false;
+  fn(g, (figs) => {
+    g.globalCompositeOperation = 'destination-out';
+    g.globalAlpha = 1;
+    for (const f of figs) drawFig(g, f, 1);
+    g.globalCompositeOperation = 'source-over';
+  });
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  main.save();
+  main.setTransform(1, 0, 0, 1, 0, 0);
+  main.globalAlpha = 1;
+  main.globalCompositeOperation = 'source-over';
+  main.drawImage(maskCv, 0, 0);
+  main.restore();
+}
+
+/** Punch No.10's frame (placed like drawSolo(env, key, x, GY, SC, { pivot: [0, SOLE] })) out of a layer. */
+function cutSolo(g: CanvasRenderingContext2D, p: { img: HTMLCanvasElement }, x: number) {
+  g.save();
+  g.globalCompositeOperation = 'destination-out';
+  g.globalAlpha = 1;
+  g.imageSmoothingEnabled = false;
+  g.translate(x, GY);
+  g.scale(SC, SC);
+  g.drawImage(p.img, 0, -SOLE);
+  g.restore();
+}
+
 // ---------------------------------------------------------------- the shot
 
 export const shotLights: Shot = {
@@ -766,7 +804,8 @@ export const shotLights: Shot = {
     for (const k of keys) derive(env, k);
     buildPhones();
     buildSpecks();
-    // Glow sprites and the reused full-frame layer for A's half-lit silhouette (no allocation at the spot strike).
+    // Glow sprites and the reused full-frame layer (the dark accents behind the wall, A's half-lit silhouette): no
+    // allocation at the CHUNK or the spot strike.
     for (const c of [[255, 248, 226], [255, 255, 255], IVORY, LILAC, PAL.uv, PAL.uvDeep] as RGB[]) glowOf(c);
     if (!maskCv) maskCv = document.createElement('canvas');
     maskCv.width = env.ctx.canvas.width;
@@ -848,7 +887,7 @@ export const shotLights: Shot = {
 
     // ---- the world (everything here is under the stage dim)
     env.world();
-    drawStands(env, l, 0.6 * dark);
+    drawStands(env, l, 0.6 * dark, t);
     drawPitch(env, l);
     drawGoalBack(ctx, l);
     // The wall, far to near (the keeper behind the near post), each with a soft contact shadow.
@@ -885,14 +924,23 @@ export const shotLights: Shot = {
     env.world();
     drawLamps(env, l, t);
     if (dark > 0) {
-      drawPhones(env, t);
-      ctx.save();
-      ctx.globalAlpha = 0.3 * dark;
-      ctx.fillStyle = '#C9B6FF';
-      pitchLines(ctx, l);
-      ctx.restore();
-      drawGoalBack(ctx, l, dark);
-      drawGoalFront(ctx, l, dark);
+      // Light sources and fluorescent lines keep the world's depth: one layer, painted far to near with each figure
+      // cut out of what lies behind him (the keeper stands between the back net and the near post, the four
+      // outfield defenders in front of the goal, No.10 in front of the stands and the far touchline until the spot
+      // lifts him out of the world), so no line, post or phone light ever crosses a body.
+      behindWall(env, (g, cut) => {
+        drawPhones(g, t);
+        g.save();
+        g.globalAlpha = 0.3 * dark;
+        g.fillStyle = '#C9B6FF';
+        pitchLines(g, l);
+        g.restore();
+        drawGoalBack(g, l, dark);
+        cut([figs[0]]);
+        drawGoalFront(g, l, dark);
+        cut(figs.slice(1));
+        if (!lit) cutSolo(g, soloPic(env, key), hx);
+      });
     }
     // The wall sinks into the dark: half-way to plum silhouettes with lilac rims as the house lights go (3 frames),
     // all the way when the spot strikes (4 frames). After the spot, A only outside the pool (his near half is lit).
@@ -935,8 +983,9 @@ export const shotLights: Shot = {
     // 0.40: the inner banks CHUNK off (left-foot touch); the crowd hushes.
     { at: BANK_T[1], fn: (env) => (env.sfx.lightsOff(0.9), env.sfx.tom(TOMS.D2), env.sfx.duck(0.5, 0.6)) },
     { at: FOOTFALL_T[1], fn: (env) => env.sfx.scuff(0.1) },
-    // 0.55: an awed "ooooh" as the phone lights come on.
-    { at: 0.55, fn: (env) => env.sfx.ooh(0.3) },
+    // 0.55: an awed "ooooh" as the phone lights come on. ooh() goes through the crowd bus, which the 0.40 duck holds
+    // at 0.5 until 1.00, so 0.6 here is the brief's ooh(0.3) net level: the hush, then the ooh rising out of it.
+    { at: 0.55, fn: (env) => env.sfx.ooh(0.6) },
     // 0.80: SPOT ON (right-foot touch); the lamp hum starts (HUM[2] state, driven from update).
     { at: SPOT_T, fn: (env) => (env.sfx.spotOn(1.0), env.sfx.tom(TOMS.F2)) },
     { at: FOOTFALL_T[2], fn: (env) => env.sfx.scuff(0.12) },

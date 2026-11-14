@@ -23,7 +23,7 @@ import { KEEPER_KIT, RIVAL_KIT, RIVAL_KIT_B, RIVAL_KIT_C, RIVAL_KIT_D, type Kit 
 import {
   HEX, LAYOUT, PATH, THREAD_NOTES as N, crossStitch, drawBall, drawDownPitch, drawFrontFigure, drawNo10, drawNo7Boxed,
   frontFigure, inkGrade, mangaPanels, meridianGrade, needleEye, needlePoint, no10, no10Point,
-  no7Anchor, panelPoly, paperFlash, pluckLine, prepareInk, projectDecal, screentone, sliceThread, threadLine, warmNo7,
+  no7Anchor, no7Point, panelPoly, paperFlash, pluckLine, prepareInk, projectDecal, screentone, sliceThread, threadLine, warmNo7,
   type DownPitchView, type No10Key, type No7Key, type XZ,
 } from './common';
 
@@ -114,8 +114,11 @@ interface Defender {
 }
 const xz = (x: number, z: number): XZ => ({ x, z });
 const DEFS: Defender[] = [
-  { kit: RIVAL_KIT, from: xz(976, 258), to: LAYOUT.d1Out, tick: 0.55, sw: 0.97 },
-  { kit: RIVAL_KIT_B, from: xz(1031, 237), to: LAYOUT.d2, tick: 0.7, sw: 1.03 },
+  // View-only cheats (this camera only): from the eye D1 (near), D2 and needle eye 2 (far) all fall on one screen
+  // column. D1 shades 0.3 m toward the ball line and D2 1.4 m wider, so D1 stands clear between D2 and eye 2
+  // (>= 18 px from D2, 6 px from eye 2, 28 px from D3; eye 1 6 px off his far-side boot, correct for the poke).
+  { kit: RIVAL_KIT, from: xz(976, 255), to: xz(LAYOUT.d1Out.x, LAYOUT.d1Out.z - 3), tick: 0.55, sw: 0.97 },
+  { kit: RIVAL_KIT_B, from: xz(1031, 223), to: xz(LAYOUT.d2.x, LAYOUT.d2.z - 14), tick: 0.7, sw: 1.03 },
   { kit: RIVAL_KIT_C, from: xz(1035, 269), to: LAYOUT.d3, tick: 0.85, sw: 1.0 },
   { kit: RIVAL_KIT_D, from: xz(1051, 308), to: LAYOUT.d4, tick: 1.0, sw: 1.07 },
 ];
@@ -138,8 +141,10 @@ function defPose(d: Defender, i: number, t: number, v: DownPitchView): DefPose {
   const s = simAt(t);
   const u = smooth(clamp(s / SIM_END));
   const sw = swivel(d, t);
-  // They buy it: a side-step toward the far side (low z) as they swivel.
-  const fx = lerp(d.from.x, d.to.x, u), fz = lerp(d.from.z, d.to.z, u) - 5.5 * clamp(sw);
+  // They buy it: D2 and D3 side-step toward the far side (low z) as they swivel. D1 (the presser) stays square to
+  // the ball and D4 holds the offside line: both only turn and lean, which keeps D1 clear of D2 and D4 clear of the X.
+  const step = i === 1 || i === 2 ? 5.5 : 0;
+  const fx = lerp(d.from.x, d.to.x, u), fz = lerp(d.from.z, d.to.z, u) - step * clamp(sw);
   const p = projectDecal(fx, fz, 0, v);
   const sc = clamp((p.s * 18) / 46, 0.78, 1);
   return {
@@ -195,9 +200,10 @@ function glanceReal(key: 'G2' | 'G3') {
 
 /**
  * Glance G2 / G3 stand-ins while the library frames are not exported (the art hand-off left Glance open): the studio
- * G1 crop with its two 2x2 irises moved one pixel to his left (screen-right, brows untouched) for G2, plus the 1 px
+ * G1 crop with its two 2x2 irises moved one pixel to his left (crop-right, brows untouched) for G2, plus the 1 px
  * smirk (the mouth's right end lifts a row) for G3. Pixel edits on G1's own grid (the same code pupil override
  * CRIMSON CRESCENT shot 2 uses), so the swap never jumps; the library frames replace them as soon as they are exported.
+ * The inset draws every face crop mirrored, so on screen the gaze (and the smirk) point screen-left, to the far side.
  */
 function deriveGlance() {
   g2Img = g3Img = null;
@@ -387,16 +393,22 @@ function drawRoof(ctx: CanvasRenderingContext2D, v: DownPitchView, t: number) {
 
 // ---------------------------------------------------------------- camera
 
-/** The slow dolly-in, then the hard push-in over his shoulder toward the X; handheld micro-shake; stride bob. */
+/**
+ * The slow dolly-in; the tilt down onto his boots for the tell (S3, the toe turned in); then the hard push-in over
+ * his shoulder toward the X, which releases the tilt (a crane-push from the boot up to the X); handheld; stride bob.
+ */
 function camera(t: number) {
   const dolly = 1 + 0.08 * smooth(clamp((t - 0.35) / 1.2));
   const push = ease.inQuad(clamp((t - 1.55) / 0.23));
+  // Synced to S3 (1.25), landing at 1.40 as the inset has flown out (an earlier tilt lifts No.7 under the panel).
+  const tell = smooth(clamp((t - 1.25) / 0.15)) * (1 - push);
   const zoom = dolly * lerp(1, 1.25 / 1.08, push);
   const px = lerp(360, 480, push), py = lerp(175, 155, push);
   const hh = t < 0.35 || t > 1.62 ? 1 : 0.6;
   const hx = (Math.sin(t * 2.3) * 0.7 + Math.sin(t * 5.3 + 1.3) * 0.45) * hh;
   const hy = (Math.sin(t * 1.9 + 0.7) * 0.55 + Math.sin(t * 4.4) * 0.35) * hh;
-  return { zoom, px, py, hx, hy: hy - bob(t) };
+  // update() subtracts hy from the view centre, so a lower hy moves the view down (onto the boots).
+  return { zoom, px, py, hx, hy: hy - bob(t) - 50 * tell };
 }
 
 // ---------------------------------------------------------------- shot
@@ -410,7 +422,8 @@ export const shotEye: Shot = {
   seed: 402,
   rate,
   cues: [
-    { at: 0, fn: (env) => env.sfx.crowd(1.8, 0.2) },
+    // The bed outlasts the cut (holds to 1.8 s, tails off under shot 3's own bed): the crowd is dipped, never silenced.
+    { at: 0, fn: (env) => env.sfx.crowd(3.0, 0.2) },
     { at: 0.05, fn: (env) => env.sfx.kick(0.15) },
     { at: 0.38, fn: (env) => env.sfx.duck(0.35, 1.3) },
     { at: 0.55, fn: (env) => env.sfx.tick() },
@@ -517,8 +530,10 @@ export const shotEye: Shot = {
     }
 
     // The obvious central lane (between D1 and D3) shows a jade almond that pinches shut under an ink ×: covered.
+    // Anchored on the open turf between D1 and D3, nearer to No.10 (where the screen lerp D1 -> D3 lands as it
+    // opens), so it reads as a mark on the lane, not on anyone's boots, and stays put on the turf while D3 side-steps.
     {
-      const lane = P(1000, 262.5);
+      const lane = P(966, 264);
       const open = t < 0.8 ? 0 : t < 0.86 ? ease.outCubic((t - 0.8) / 0.06) : 1 - ease.inCubic(clamp((t - 0.9) / 0.08));
       const vis = t < 0.8 ? 0 : 1 - smooth(clamp((t - 1.12) / 0.15));
       if (open > 0.02) needleEye(ctx, lane.x, lane.y - 1, 24, open, 0, 0.9 * vis, 0.55);
@@ -526,14 +541,16 @@ export const shotEye: Shot = {
     }
 
     // The route's three needle eyes open faintly in turn: at D1's boots, between D2 and D3, behind D4's heel.
-    const eyeRot = [-Math.PI / 2, 0, -0.7];
+    // Eye 2 tilted along the path between D2 and D3.
+    const eyeRot = [-Math.PI / 2, -0.35, -0.7];
     PATH.eyes.forEach((u, i) => {
       const e = PATH.at(u);
       const p = P(e.x, e.z);
       const open = ease.outCubic(clamp((t - (0.85 + i * 0.1)) / 0.12));
       if (open <= 0.02) return;
-      const len = (i === 0 ? 7 : 6) * p.s;
-      needleEye(ctx, p.x, i === 0 ? p.y - len * 0.42 : p.y, len, open, eyeRot[i], 0.55 + 0.2 * routeProgress(t), i === 0 ? 1 : 0.5);
+      // Kept almond-shaped (squash 0.8, not a flat ellipse decal): the pointed tips must read as a needle's eye.
+      const len = 7 * p.s;
+      needleEye(ctx, p.x, i === 0 ? p.y - len * 0.42 : p.y - 1, len, open, eyeRot[i], 0.55 + 0.2 * routeProgress(t), i === 0 ? 1 : 0.8);
     });
 
     // Sightlines: one dashed jade line per tick, from his head to each defender; brackets and weight arrows.
@@ -562,10 +579,13 @@ export const shotEye: Shot = {
       ctx.restore();
       if (grow >= 1) {
         const pop = clamp((t - d.tick - 0.07) / 0.08);
-        inkBrackets(ctx, p.x - 13 * p.sc, p.y - p.h - 3, p.x + 13 * p.sc, p.y + 3, fade, pop);
+        // Once he buys it, his bracket and weight arrow clear away so the swivel, lean and swish read on their own
+        // (only the sightline stays until 1.22).
+        const bf = fade * (1 - smooth(clamp((t - Math.max(d.sw + 0.04, d.tick + 0.15)) / 0.1)));
+        inkBrackets(ctx, p.x - 13 * p.sc, p.y - p.h - 3, p.x + 13 * p.sc, p.y + 3, bf, pop);
         // Which foot carries his weight: the planted foot of the shuffle, then the far-side foot once he buys it.
         const side = p.sw > 0.35 ? -1 : p.frame === 0 ? 1 : -1;
-        weightArrow(ctx, p.x + side * 4.5 * p.sc, p.y - 1, side, 12 * p.sc, fade * pop);
+        weightArrow(ctx, p.x + side * 4.5 * p.sc, p.y - 1, side, 12 * p.sc, bf * pop);
         // The ping where the sightline lands.
         if (pop < 1) pearlGlint(ctx, tx, ty, 6 * (1 - pop) + 2, 1 - pop);
       }
@@ -632,7 +652,7 @@ export const shotEye: Shot = {
     if (t >= ROUTE_T1) {
       const pop = lerp(1.9, 1, ease.outBack(clamp((t - ROUTE_T1) / 0.08)));
       const beat = 1 + 0.12 * Math.sin((t - ROUTE_T1) * 22);
-      crossStitch(ctx, tgt.x, tgt.y, 9 * pop * beat, 1, 0.55);
+      crossStitch(ctx, tgt.x, tgt.y, 12 * pop * beat, 1, 0.55);
       if (t < ROUTE_T1 + 0.12) pearlGlint(ctx, tgt.x, tgt.y, 10 * (1 - (t - ROUTE_T1) / 0.12) + 3, 1 - (t - ROUTE_T1) / 0.12);
     }
 
@@ -642,7 +662,45 @@ export const shotEye: Shot = {
       const p = P(q.x, q.z);
       const k = no7Frame(s);
       const pel = no7Anchor(k, 'pelvis');
-      drawNo7Boxed(env, k, p.x, p.y, 0.4, { flip: true, pivot: [pel[0], 103] });
+      const o7 = { flip: true, pivot: [pel[0], 103] as [number, number] };
+      drawNo7Boxed(env, k, p.x, p.y, 0.4, o7);
+      // The X is HIS: a dotted run line from his boots, curving over the turf ahead of him onto the X (an arrowhead
+      // at the X), and a pearl glint on his head as the stitch locks. The pass reads 'to No.7', never 'to D4'.
+      if (t >= ROUTE_T1) {
+        const a = ease.outCubic(clamp((t - ROUTE_T1) / 0.1));
+        // The bend dips under D4's boots (>= 5 px below his soles) and lands on the X's near arm from below.
+        const x0 = p.x - 4, y0 = p.y - 2;
+        const qx = (p.x + tgt.x) / 2 - 10, qy = Math.max(p.y, tgt.y) + 14;
+        const x1 = tgt.x + 6, y1 = tgt.y + 5;
+        const ang = Math.atan2(y1 - qy, x1 - qx);
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        for (const [w, c] of [[3.5, HEX.paper], [1.5, HEX.ink]] as const) {
+          ctx.strokeStyle = c;
+          ctx.lineWidth = w;
+          ctx.setLineDash([2, 4]);
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.quadraticCurveTo(qx, qy, x1, y1);
+          ctx.stroke();
+          // The arrowhead on the X end (solid strokes).
+          ctx.setLineDash([]);
+          const hl = 5;
+          ctx.beginPath();
+          ctx.moveTo(x1 - Math.cos(ang - 0.6) * hl, y1 - Math.sin(ang - 0.6) * hl);
+          ctx.lineTo(x1, y1);
+          ctx.lineTo(x1 - Math.cos(ang + 0.6) * hl, y1 - Math.sin(ang + 0.6) * hl);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      if (t >= ROUTE_T1 && t < ROUTE_T1 + 0.12) {
+        const g = (t - ROUTE_T1) / 0.12;
+        const hp = no7Point(env, k, 'head', p.x, p.y, 0.4, o7);
+        pearlGlint(ctx, hp[0], hp[1] - 2, 7 * (1 - g) + 3, Math.sin(Math.PI * g));
+      }
     }
 
     // ---- The ball (colour) at his right toe, drawn behind his boot where they overlap.
@@ -676,23 +734,27 @@ export const shotEye: Shot = {
       const outK = ease.inCubic(clamp((t - INSET_OUT) / 0.15));
       // The slam lands with a 1 px panel shake.
       const kick = t >= INSET_IN + 0.1 && t < INSET_IN + 0.15 ? (Math.floor(t * 60) % 2 ? 1 : -1) : 0;
-      const dx = (1 - inK) * 300 + outK * 320 + kick, dy = -(1 - inK) * 24 - outK * 30;
+      // It flies out steeply up-right, clearing No.7 (lifted by the tilt onto the boots) before the X locks on him.
+      const dx = (1 - inK) * 300 + outK * 320 + kick, dy = -(1 - inK) * 24 - outK * 90;
       const poly = panelPoly(INSET.cx, INSET.cy, INSET.w, INSET.h, INSET.deg);
       const g3 = t >= INSET_G3;
       mangaPanels(ctx, [{
         poly, dx, dy, border: 3, gutter: 3,
         draw: (c) => {
-          screentone(c, [INSET.cx - INSET.w / 2 - 20, INSET.cy - INSET.h / 2 - 20, INSET.w + 40, INSET.h + 40], 4, 0.55, { corners: 0.75 });
+          // Shot 1's corner tone (dot 6): a manga halftone, never a fine checker.
+          screentone(c, [INSET.cx - INSET.w / 2 - 20, INSET.cy - INSET.h / 2 - 20, INSET.w + 40, INSET.h + 40], 6, 0.45, { corners: 0.75 });
           focusLines(c, env.frng(23), INSET.cx, INSET.cy - 4, 62, 190, 30, HEX.ink, 0.5, 2.2);
           const fkey: No10Key = g3 ? 'G3' : 'G2';
           const img = g3 ? g3Img : g2Img;
           const ax = Math.round(INSET.cx - 4), ay = Math.round(INSET.cy + 4);
-          // With a stand-in image, drawNo10 resolves fkey to the studio frame it was derived from (same 48x26 grid).
-          drawNo10(env, fkey, ax, ay, 4, { pivot: FACE_PIV }, img ?? undefined);
+          // Mirrored so his gaze points screen-left, the way the back line swivels (the far side): the disguise reads.
+          // FACE_PIV x is the crop centre, so the face stays centred at integer x4. With a stand-in image, drawNo10
+          // resolves fkey to the studio frame it was derived from (same 48x26 grid).
+          drawNo10(env, fkey, ax, ay, 4, { pivot: FACE_PIV, flip: true }, img ?? undefined);
           if (g3) {
-            // The cheeky glint on his near eye as the smirk lands (top-right corner of the right iris).
+            // The cheeky glint on his near eye as the smirk lands (the right iris's corner, mirrored with the face).
             const k = clamp((t - INSET_G3) / 0.12);
-            if (k < 1) pearlGlint(c, ax + (29 - FACE_PIV[0]) * 4, ay + (14 - FACE_PIV[1]) * 4, 9 * (1 - k) + 3, Math.sin(Math.PI * k));
+            if (k < 1) pearlGlint(c, ax - (29 - FACE_PIV[0]) * 4, ay + (14 - FACE_PIV[1]) * 4, 9 * (1 - k) + 3, Math.sin(Math.PI * k));
           }
         },
       }], t);

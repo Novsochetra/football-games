@@ -580,6 +580,9 @@ The whole pass in one frame: a meridian line drawn across the pitch.
   in one still.
 - **0.90–1.30** snap push-in toward No.7: zoom 0.85 → 1.5, `fx.radial` 0.3 centred on him (keep it
   at or below 0.35). Cut as his foot meets the ball.
+  *As built (whole-film review):* the cut lands one stride short of the X with the ball at No.7's heels and
+  no contact glint or reach, because shot 6 opens on that same picture and owns the one touch (0.35).
+  Cutting on the contact made the ball jump about 2.4 m back across the cut and the touch happen twice.
 
 **Audio**
 

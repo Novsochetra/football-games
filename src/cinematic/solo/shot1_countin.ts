@@ -5,9 +5,10 @@
 // own pixel grid), lit warm by the beam with a faint violet bounce from the dark, in a slow push. The feint is in his eyes
 // first: the pupils dart screen-left (G2L, 0.20) and screen-right (G2, 0.30), each dart leaving a 2-frame violet
 // exposure of the pupils where they were (the afterimage idea in miniature). Glint at 0.45 with a beat flare of the
-// pool. At 0.55 the pool rises and narrows to make room for the title; the drummer counts in on four stick clicks
-// (0.60 / 0.80 / 1.00 / 1.20, 8ths leading into the grid's beat 0 at global 1.40): each click lights one word group
-// under its own lamp (lampTitle, 3 frames of beat echo) and one of four small lamp pads (the four defenders to come).
+// pool. At 0.55 the pool rises and narrows to make room for the title (settled by the first click); the drummer counts
+// in on four stick clicks (0.60 / 0.80 / 1.00 / 1.20, 8ths leading into the grid's beat 0 at global 1.40): each click
+// lights one word group under its own lamp (lampTitle; the lamp's light lands in a small pool under the word; 3 frames
+// of beat echo) and one of four small lamp pads (the four defenders to come).
 // 1.05 the tag; 1.20 the whole title flares. 1.25 every lamp CHUNKs off except the eye pool, which irises down onto
 // his right eye (screen-left) by 1.35; two frames of black; a hard cut onto the downbeat of shot 2.
 // No impact frame, no full-frame flash, nothing strobes; sat 1, roll 0, the mix is never filtered.
@@ -18,7 +19,7 @@ import { TAU, clamp, ease, lerp, type RGB } from '../../engine/math';
 import { drawGlow, glowOf } from '../../engine/particles';
 import {
   FADE, HEX, HUM, PAL, SEQ, echoAt, fourCount, lampTitle, lensFlare, onGrid, pixelText, pulse, soloAt, soloGrade, soloPic,
-  stage, warmSolo, type SoloKey,
+  stage, warmSolo, TITLE_FONT, type SoloKey,
 } from './common';
 
 const DUR = 1.4;
@@ -30,18 +31,20 @@ const T_G2L = 0.2; // pupils dart screen-left (his right)
 const T_G2 = 0.3; // ... and screen-right (his left)
 const T_GLINT = 0.45;
 const T_RISE = 0.55; // the pool eases up and narrows for the title
-const RISE = 0.12;
+const RISE = 0.05; // 0.55 -> 0.60: settled when SPOT clicks on
 /** The count-in: four stick clicks on 8ths (the grid's beat 0 is global 1.40, the first frame of shot 2). */
 const CLICKS = [0.6, 0.8, 1.0, 1.2].map((c, i) => onGrid(c, `count-in ${i + 1}`));
+/** The same times nudged 1 µs early: lampTitle / fourCount test `lt < 1/60`, which is true on the 2nd frame for 0.8 / 1.0 / 1.2 in floats. */
+const LIT = CLICKS.map((c) => c - 1e-6);
 const T_TAG = 1.05;
 const T_OFF = 1.25; // every lamp CHUNKs off except the eye pool
-const T_SHUT = 1.35; // the iris has closed on his eye (rx 6); 1.367 and 1.383 are black; hard cut at 1.40
+const T_SHUT = 1.35; // the iris has closed on his whole eye (rx 10, ry 7.5); 1.367 and 1.383 are black; hard cut at 1.40
 
 // ---------------------------------------------------------------- layout (screen px, logical 640x360)
 const P0 = { x: VW / 2, y: 140, rx: 250, ry: 72 }; // the pool as it opens
 const P1 = { y: 118, rx: 220 }; // after 0.55
 const SOFT = 12; // the pool's soft falloff into the plum stage (never an outline)
-const LAMP: [number, number] = [606, -24]; // the follow-spot's lens, just above the top-right of frame
+const LAMP: [number, number] = [602, 6]; // the follow-spot's lens, just inside the top-right corner (the source reads)
 const TITLE: readonly string[] = ['SPOT', 'LIGHT ', 'SO', 'LO'];
 const TITLE_Y = 262; // baseline (TITLE_FONT 56 px)
 const PADS_DY = 263; // fourCount's pill (y 11-33) moved under the title: y 274-296
@@ -62,7 +65,14 @@ const PIV_CROP: [number, number] = [23.5, 13.5];
 /** Module caches (pure derived data; rebuilt if the device scale changes). */
 const faceCache = new Map<string, HTMLCanvasElement>();
 let faceK = 0;
-const expoCache = new Map<string, [number, number][]>();
+/** One exposure cell (crop px) and which of its edges face the beam (top-right) and carry the lilac rim. */
+interface ExpoCell {
+  x: number;
+  y: number;
+  top: boolean;
+  right: boolean;
+}
+const expoCache = new Map<string, ExpoCell[]>();
 let curtainCv: HTMLCanvasElement | null = null;
 
 const css = (c: RGB, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
@@ -148,12 +158,16 @@ function irisOf(env: Env, key: SoloKey, which: 'eyeL' | 'eyeR'): [number, number
   return [x + 0.5, y + 0.5];
 }
 
-/** Crop pixels where the pupils WERE in `from` and the eye white shows in `to`: the dart's violet exposure. */
-function uncovered(env: Env, from: SoloKey, to: SoloKey): [number, number][] {
+/**
+ * Crop pixels where the pupils WERE in `from` and the eye white shows in `to`: the dart's violet exposure. Each cell
+ * also records whether its top / right edge is an outer edge (no exposure cell beyond it): only those edges, the
+ * sides facing the beam, carry the 1 px lilac rim.
+ */
+function uncovered(env: Env, from: SoloKey, to: SoloKey): ExpoCell[] {
   const k = `${from}>${to}`;
   let out = expoCache.get(k);
   if (out) return out;
-  out = [];
+  const pts: [number, number][] = [];
   const a = soloPic(env, from), b = soloPic(env, to);
   if (a.w === b.w && a.h === b.h && a.px !== b.px) {
     for (let y = 0; y < a.h; y++)
@@ -161,9 +175,11 @@ function uncovered(env: Env, from: SoloKey, to: SoloKey): [number, number][] {
         const i = (y * a.w + x) * 4;
         const dark = a.px[i + 3] > 200 && a.px[i] < 60 && a.px[i + 1] < 40;
         const white = b.px[i + 3] > 200 && b.px[i] > 235 && b.px[i + 1] > 235 && b.px[i + 2] > 235;
-        if (dark && white) out.push([x, y]);
+        if (dark && white) pts.push([x, y]);
       }
   }
+  const has = new Set(pts.map(([x, y]) => `${x},${y}`));
+  out = pts.map(([x, y]) => ({ x, y, top: !has.has(`${x},${y - 1}`), right: !has.has(`${x + 1},${y}`) }));
   expoCache.set(k, out);
   return out;
 }
@@ -207,12 +223,12 @@ function poolAt(env: Env, t: number): Pool | null {
     // The operator irises down onto his RIGHT eye (screen-left in a front view): fast at first, then it lingers.
     const e = ease.outQuad(iris);
     const [ix, iy] = irisOf(env, 'G2', 'eyeL');
-    const [ex, ey] = facePt(env, ix - 1, iy + 0.3, fx, fy, push); // the centre of the eye (white + iris)
+    const [ex, ey] = facePt(env, ix - 1, iy + 0.5, fx, fy, push); // the centre of the eye (white + iris)
     const m = ease.outCubic(clamp(iris * 1.5));
     x = lerp(fx, ex, m);
     y = lerp(fy, ey, m);
-    rx = lerp(rx, 6, e);
-    ry = lerp(ry, 5, e);
+    rx = lerp(rx, 10, e);
+    ry = lerp(ry, 7.5, e);
     soft = lerp(SOFT, 2.5, e);
     spill = ramp * (1 - e) * (1 - e);
     beam = ramp * lerp(1, 0.35, e);
@@ -228,11 +244,11 @@ function poolLight(ctx: CanvasRenderingContext2D, p: Pool) {
   ctx.save();
   ctx.translate(p.x, p.y);
   ctx.scale(1, p.ry / p.rx);
-  const gr = ctx.createRadialGradient(p.rx * 0.06, -p.rx * 0.12, 0, 0, 0, R);
-  gr.addColorStop(0, 'rgb(220,208,222)');
-  gr.addColorStop(0.24, 'rgb(196,178,226)');
-  gr.addColorStop(0.5, 'rgb(140,108,214)');
-  gr.addColorStop(0.78, 'rgb(84,52,168)');
+  const gr = ctx.createRadialGradient(p.rx * 0.2, -p.rx * 0.3, 0, 0, 0, R);
+  gr.addColorStop(0, 'rgb(226,218,210)');
+  gr.addColorStop(0.38, 'rgb(206,194,226)');
+  gr.addColorStop(0.6, 'rgb(170,148,236)');
+  gr.addColorStop(0.82, 'rgb(104,68,204)');
   gr.addColorStop(1, 'rgb(42,22,96)');
   ctx.fillStyle = gr;
   ctx.fillRect(-R, -R, R * 2, R * 2);
@@ -356,6 +372,22 @@ function poolMotes(ctx: CanvasRenderingContext2D, p: Pool, t: number) {
   ctx.restore();
 }
 
+/** lampTitle's own layout (same font and measure), so the floor pools can sit under the words before they are drawn. */
+function titleLayout(ctx: CanvasRenderingContext2D): { cx: number; w: number }[] {
+  ctx.save();
+  ctx.font = `56px ${TITLE_FONT}`;
+  const ws = TITLE.map((g) => ctx.measureText(g).width);
+  let gx = VW / 2 - ws.reduce((a, b) => a + b, 0) / 2;
+  const out = TITLE.map((g, i) => {
+    const vw = ctx.measureText(g.trimEnd()).width;
+    const r = { cx: gx + vw / 2, w: vw };
+    gx += ws[i];
+    return r;
+  });
+  ctx.restore();
+  return out;
+}
+
 /** The lamps' filament decay after the CHUNK (1, then 0.42, 0.12, 0 on the next frames). */
 function lampsOn(t: number): number {
   if (t < T_OFF - 1e-6) return 1;
@@ -425,13 +457,23 @@ export const shotCountIn: Shot = {
       const f = Math.floor((t - at) * 60 + 1e-6);
       if (t < at - 1e-6 || f > 1) continue;
       ctx.globalAlpha = f === 0 ? 0.78 : 0.42;
-      for (const [cx, cy] of uncovered(env, from, to)) {
-        const [x0, y0] = facePt(env, cx, cy, p.fx, p.fy, p.push);
-        ctx.fillStyle = HEX.uv;
-        ctx.fillRect(x0, y0, s, s);
-        ctx.fillStyle = HEX.lilac;
-        ctx.fillRect(x0, y0, s, 1);
+      // One path per layer (no seams between the cells): the uv body, then the lilac rim on its top-right outer edges.
+      const cells = uncovered(env, from, to);
+      ctx.beginPath();
+      for (const c of cells) {
+        const [x0, y0] = facePt(env, c.x, c.y, p.fx, p.fy, p.push);
+        ctx.rect(x0, y0, s, s);
       }
+      ctx.fillStyle = HEX.uv;
+      ctx.fill();
+      ctx.beginPath();
+      for (const c of cells) {
+        const [x0, y0] = facePt(env, c.x, c.y, p.fx, p.fy, p.push);
+        if (c.top) ctx.rect(x0, y0, s, 1);
+        if (c.right) ctx.rect(x0 + s - 1, y0, 1, s);
+      }
+      ctx.fillStyle = HEX.lilac;
+      ctx.fill();
       ctx.globalAlpha = 1;
     }
     // Beat flare (0.45, 2 frames): the pool brightens (its growth is in poolAt). Local to the pool.
@@ -441,8 +483,8 @@ export const shotCountIn: Shot = {
       ctx.translate(p.x, p.y);
       ctx.scale(1, p.ry / p.rx);
       const fg = ctx.createRadialGradient(0, 0, 0, 0, 0, p.rx);
-      fg.addColorStop(0, 'rgba(246,240,223,0.14)');
-      fg.addColorStop(0.7, 'rgba(201,182,255,0.08)');
+      fg.addColorStop(0, 'rgba(246,240,223,0.06)');
+      fg.addColorStop(0.7, 'rgba(201,182,255,0.035)');
       fg.addColorStop(1, 'rgba(201,182,255,0)');
       ctx.fillStyle = fg;
       ctx.fillRect(-p.rx, -p.rx, p.rx * 2, p.rx * 2);
@@ -466,7 +508,7 @@ export const shotCountIn: Shot = {
       ctx.rect(-20, -60, VW + 40, VH + 80);
       ctx.ellipse(p.x, p.y, p.rx * 0.97, p.ry * 0.97, 0, 0, TAU);
       ctx.clip('evenodd');
-      stage.beam(ctx, lx, ly, p.x, p.y, 30, w1, 0.18 * p.beam, { t, motes: 28, seed: 7 });
+      stage.beam(ctx, lx, ly, p.x, p.y, 30, w1, 0.18 * p.beam, { t, motes: 40, seed: 7 });
       ctx.restore();
       ctx.save();
       drawGlow(ctx, glowOf(PAL.uvDeep), lx, ly, 92, 0.8 * p.ramp);
@@ -492,10 +534,16 @@ export const shotCountIn: Shot = {
     const on = lampsOn(t);
     if (on > 0) {
       const A = clamp((t - 0.48) / 0.12) * on;
-      const groups = lampTitle(ctx, TITLE, VW / 2, TITLE_Y, 56, t, CLICKS, { flareAt: CLICKS[3], alpha: A });
+      // Each lamp's light lands on the stage under its word (a small soft pool), so the cone reads at phone size.
+      const lay = titleLayout(ctx);
+      LIT.forEach((at, i) => {
+        if (t < at) return;
+        stage.floorPool(ctx, lay[i].cx, TITLE_Y + 7, lay[i].w * 0.62, 6, (t - at < 2 / 60 ? 0.5 : 0.3) * A);
+      });
+      const groups = lampTitle(ctx, TITLE, VW / 2, TITLE_Y, 56, t, LIT, { flareAt: LIT[3], alpha: A });
       ctx.save();
       ctx.translate(PADS_DX, PADS_DY);
-      fourCount(ctx, CLICKS, t, { alpha: A });
+      fourCount(ctx, LIT, t, { alpha: A });
       ctx.restore();
       const tt = t - T_TAG;
       if (tt >= 0) {

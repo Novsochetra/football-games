@@ -35,7 +35,7 @@ export const SPECIALS: SpecialDef[] = [
   { id: 'crescent', name: 'CRIMSON CRESCENT', kind: 'Bicycle kick', scenario: 'cross', cost: 90, shots: crimsonCrescent },
   { id: 'gale', name: 'GALE HAMMER', kind: 'Long-range power shot', scenario: 'longshot', cost: 60, shots: galeHammer },
   { id: 'solo', name: 'SPOTLIGHT SOLO', kind: 'Special dribble', scenario: 'gauntlet', cost: 50, result: 'breakthrough', shots: spotlightSolo, wip: true },
-  { id: 'meridian', name: 'MERIDIAN THREAD', kind: 'No-look trivela pass', scenario: 'through', cost: 50, shots: meridianThread, wip: true },
+  { id: 'meridian', name: 'MERIDIAN THREAD', kind: 'No-look trivela pass', scenario: 'through', cost: 50, shots: meridianThread },
 ];
 
 /** Specials shown on the review page (work-in-progress ones only with ?all). */

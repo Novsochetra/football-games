@@ -580,6 +580,9 @@ The whole pass in one frame: a meridian line drawn across the pitch.
   in one still.
 - **0.90–1.30** snap push-in toward No.7: zoom 0.85 → 1.5, `fx.radial` 0.3 centred on him (keep it
   at or below 0.35). Cut as his foot meets the ball.
+  *As built (whole-film review):* the cut lands one stride short of the X with the ball at No.7's heels and
+  no contact glint or reach, because shot 6 opens on that same picture and owns the one touch (0.35).
+  Cutting on the contact made the ball jump about 2.4 m back across the cut and the touch happen twice.
 
 **Audio**
 
@@ -909,7 +912,7 @@ swept low across the ball's line, toe reaching), `lungeL`, `lungeR`, `stumble`, 
 ## Quality bar (what reviewers check)
 
 1. **Still frames read instantly:** who, what, which direction. In shot 3's freeze, "eyes here, ball
-   there" reads without sound. In shot 5, ball and No.7 meet on the X.
+   there" reads without sound. In shot 5, ball and No.7 converge on the X (the one touch is shot 6's, at 0.35).
 2. **The ball is never lost.**
    - It is at least 20 px across in shot 4 and always the brightest point, with an ink outline and a
      pearl halo.

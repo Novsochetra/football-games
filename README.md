@@ -5,8 +5,9 @@ Special-shot scenes for No.10. The review page has a picker for each special:
 - **ZENITH METEOR** (sky volley, set up by a dribble)
 - **CRIMSON CRESCENT** (bicycle kick, set up by a high cross from No.7)
 - **GALE HAMMER** (long-range power shot from 30 m; a tier below Zenith Meteor)
-- In production: **MERIDIAN THREAD** (special pass) and **SPOTLIGHT SOLO** (special dribble), shown
-  only in the preview build (`npm run build:preview`, or open the page with `?all`)
+- **MERIDIAN THREAD** (no-look outside-of-the-boot through pass to No.7)
+- In production: **SPOTLIGHT SOLO** (special dribble), shown only in the preview build
+  (`npm run build:preview`, or open the page with `?all`)
 
 Other abilities (dribble, pass, block, keeper saves) come after these pass quality check.
 
@@ -75,6 +76,31 @@ and flings the defenders. Ice white, electric cyan and cobalt; 6 shots, 11.3 s. 
 New engine pieces: the pressure lens post effect, muffle/dry/crowd audio buses with new sounds,
 a squashable cobalt ball, the `'longshot'` field scenario, and `src/art/no10.ts` (No.10 library frames).
 
+## MERIDIAN THREAD
+
+No.10's special pass. Head up and eyes on the far side, he sells the whole back line one way, then
+without looking plays it with the outside of his right boot. The ball rolls low across the grass on a
+taut jade thread, through three needle-eye gaps and round the last defender's heel, into No.7's stride.
+From the read the stadium drains into a manga page of ink and paper; only the two red shirts, the ball
+and the thread keep their colour, until No.7's first touch pulls the thread tight and the colour washes
+back along it. No fire, no blasts: defenders are beaten by the disguise. Jade, emerald and pearl on ink
+and paper; 6 shots, 10.9 s. Brief: `docs/skills/MERIDIAN_THREAD.md` (copy in `src/cinematic/meridian/SPEC.md`).
+
+| # | Shot | What happens |
+|---|------|--------------|
+| 1 | Stitch-in | Manga panels stitched together by a needle: No.10's face and the boot on the ball; the title is sewn in |
+| 2 | Playmaker's eye | Back view: the stadium drains to ink as he looks far right; three needle eyes open in the back line |
+| 3 | Outside of the boot | The trivela, struck while looking the other way: an ink freeze with only No.10 and the ball in colour |
+| 4 | Needle's eye | The ball scene, three locked manga panels: the poke-tackle missed, the ball alone between two defenders, round the last heel |
+| 5 | Meridian | Overhead: the whole thread laid across the pitch, beaten defenders with question marks, No.7 converging on the X |
+| 6 | First touch | No.7 receives in stride, the colour washes back along the thread, he finishes; the two friends point at each other |
+
+No.7 is drawn in the studio too (project "No.7": Idle, Run, Receive, Point), and No.10's pass frames are
+the studio animations **Trivela**, **Carry**, **Scan** and **Point**. New engine pieces: the ink grade
+(`inkGrade` and the manga helpers in `src/art/fx.ts`), plucked-string audio (`pluck`, `strum`, `tick`,
+`zip`), the pearl ball, front-view pixel defenders (`src/art/figures.ts`), `src/art/no7.ts`, and the
+`'through'` field scenario.
+
 ## No.10 jump animation (Pixel Studio)
 
 A hand-crafted 10-frame side-view jump, drawn at the studio model's exact scale (128×128 canvas, 98 px
@@ -125,6 +151,9 @@ src/
   cinematic/specials.ts    registry: name, move type, field scenario, shots
   cinematic/zenith/        the 8 shots of ZENITH METEOR
   cinematic/crescent/      the 8 shots of CRIMSON CRESCENT (+ SPEC.md)
+  cinematic/gale/          the 6 shots of GALE HAMMER (+ SPEC.md)
+  cinematic/meridian/      the 6 shots of MERIDIAN THREAD (+ SPEC.md)
+  cinematic/solo/          SPOTLIGHT SOLO (in production)
   game/     field play (dribble → command window) and the top-level flow
 ```
 

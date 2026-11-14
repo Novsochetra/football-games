@@ -10,14 +10,16 @@
 //
 // Beats (shot-local t):
 //   0.00-0.18  panels slam in (top from the left, bottom 2 frames later from the right), cam.hit(0.25) on landing
-//   0.30       the look-off: G1 -> G2, sparkle + small jade lensFlare on his near eye, eye-dart lines, panels shake 1 px
+//   0.30       the look-off: G1 -> G2, eye-dart lines, panels shake 1 px; at 0.38 (clean pupils first) a small sparkle +
+//              jade lensFlare on the near eye's upper-outer corner, then a steady catch-light there
 //   0.42-0.95  the stitch: needle along y 204, letters pop in as it passes (scale 0 -> 1, pulled 3 px down), tag unrolls
 //   0.98       the yank: letters jerk 2 px onto the line, standing wave (2 nodes, 4 px, decays over 0.25 s)
 //   1.12-1.30  needle and thread leave right (0.12 s, inCubic), the top panel after it, the bottom one 2 frames behind,
 //              each sheared as cloth drawn from the thread line; paper flash 0.6 into the cut
 //
 // No.10 is never a puppet: the face is the hand-drawn sprite's head (the Glance G1 grid) at integer x4, G2 from the
-// Glance strip when it is exported, else the art team's G2 pixel edit (12 px, see G2_PATCH); the boot is Trivela T6.
+// studio's GlanceFace strip (the same face of record as shot 3's freeze inset), else the Glance strip's G2 when it is
+// exported, else the art team's G2 pixel edit (see G2_PATCH); the boot is Trivela T6.
 
 import type { Env, Shot } from '../timeline';
 import { VW, VH } from '../../engine/camera';
@@ -25,6 +27,7 @@ import { Rng, clamp, ease, lerp } from '../../engine/math';
 import { PK, drawGlow, glowOf } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { PIXEL_FONT, TITLE_FONT, focusLines, lensFlare, sparkle, type TrailPt } from '../../art/fx';
+import { anim, findFrame, hasAnim } from '../../art/studioAnim';
 import {
   HEX, JADE_FLARE, PAL, SHOT_NAME, THREAD_NOTES as N, drawBall, drawNo10, inkSmear, mangaPanels, meridianGrade, needleEye,
   needlePoint, no10, no10Final, no10Point, panelPoly, paperFlash, pulse, screentone, spinMarks, threadLine,
@@ -64,15 +67,16 @@ const HEAD = { x: 16, y: 0, w: 68, h: 50 };
 const CROP = { x: 26, y: 8 };
 const EYE_MID: [number, number] = [49, 23]; // sprite px
 // G2 (look-off: both irises to HIS left, screen-right) as drawn by the art team on the Glance grid (MOTION_LIBRARY
-// §3.8, art/final/G2): a 12-px edit of G1 in crop coordinates. Used only until the Glance strip exports G2 itself
-// (the studio project "Sochetra Face" was not open to the publisher); then the strip frame is drawn instead.
+// §3.8, art/final/G2): a 12-px edit of G1 in crop coordinates. Last-resort fallback only: the face of record is the
+// studio's GlanceFace G2 (src/art/anim/GlanceFace.png, project "Sochetra Face"), which shot 3's inset also draws.
 const G2_PATCH: readonly [number, number, string][] = [
   [17, 14, '#180411'], [18, 14, '#ffffff'], [27, 14, '#ffffff'], [28, 14, '#180411'], [29, 14, '#180411'],
   [18, 15, '#ffffff'], [20, 15, '#000000'], [26, 15, '#ffffff'], [27, 15, '#ffffff'], [28, 15, '#180411'],
   [29, 15, '#000000'], [28, 16, '#ffffff'],
 ];
-// G2 iris centres (crop coords): eyeL (19.5, 14.5), eyeR (28.5, 14.5). The near eye (screen-right) gets the glint.
-const G2_EYE_R: [number, number] = [CROP.x + 28.5, CROP.y + 14.5];
+// G2 near-eye (screen-right) iris centre in crop coords, pixel-edge convention (as StudioAnim.anchorOf returns it):
+// GlanceFace G2 eyeR [28.0, 14.5] + 0.5. Used only when the strip is missing; otherwise read from the strip's anchor.
+const G2_EYE_R_FALLBACK: [number, number] = [28.5, 15.0];
 
 interface Heads {
   g1: HTMLCanvasElement;
@@ -80,6 +84,8 @@ interface Heads {
   rim1: HTMLCanvasElement;
   rim2: HTMLCanvasElement;
   shade: HTMLCanvasElement;
+  /** G2's near-eye iris centre, sprite px (CROP + the strip's eyeR anchor). The look-off glint keys off it. */
+  eyeR: [number, number];
 }
 let heads: Heads | null = null;
 
@@ -122,7 +128,13 @@ function buildHeads(env: Env): Heads {
   const b = g2.getContext('2d')!;
   b.imageSmoothingEnabled = false;
   b.drawImage(g1, 0, 0);
-  const s2 = no10Final('G2') ? frameImg('G2') : null;
+  // G2: the studio GlanceFace strip first (the face of record, shared with shot 3), then the Glance strip's G2.
+  const gf = hasAnim('GlanceFace') ? anim('GlanceFace') : null;
+  const gi = gf ? findFrame(gf, 'G2') : -1;
+  const fromStrip = !!gf && gi >= 0 && gf.frames[gi].name === 'G2';
+  const s2 = fromStrip ? gf!.frames[gi].img : no10Final('G2') ? frameImg('G2') : null;
+  const [ax, ay] = fromStrip ? gf!.anchorOf(gi, 'eyeR') : G2_EYE_R_FALLBACK;
+  const eyeR: [number, number] = [CROP.x + ax, CROP.y + ay];
   if (s2 && s2.width === 48 && s2.height === 26) b.drawImage(s2, CROP.x - HEAD.x, CROP.y - HEAD.y);
   else
     for (const [x, y, col] of G2_PATCH) {
@@ -151,7 +163,7 @@ function buildHeads(env: Env): Heads {
   s.fillRect(0, 0, HEAD.w, HEAD.h);
   s.globalCompositeOperation = 'destination-in';
   s.drawImage(g1, 0, 0);
-  return { g1, g2, rim1: rimOf(g1), rim2: rimOf(g2), shade };
+  return { g1, g2, rim1: rimOf(g1), rim2: rimOf(g2), shade, eyeR };
 }
 
 // ---------------------------------------------------------------- deterministic decoration (fixed seeds, scrolled by t)
@@ -204,6 +216,24 @@ function letterDrop(t: number) {
   return t < YANK_T ? -2 : -2 + 2 * backOut(clamp((t - YANK_T) / (3 / 60)), 2.2);
 }
 
+/** The face's slow drift (the top panel's own push), whole art px only so the grid never swims against the border. */
+const faceDrift = (t: number) => Math.round(lerp(0, -6, ease.inOutQuad(clamp(t / DUR))));
+
+/** Top-left of the x4 head canvas in panel space at t. */
+function headOrigin(t: number): [number, number] {
+  const ex = EYE_X + faceDrift(t), ey = EYE_Y;
+  return [ex - (EYE_MID[0] - HEAD.x + 0.5) * F, ey - (EYE_MID[1] - HEAD.y + 0.5) * F];
+}
+
+/**
+ * The look-off glint's spot in panel space: the upper-outer corner of the near eye (1.5 art px right of and 2 above
+ * the G2 iris centre), off the iris so the 1 px pupils' flick to screen-right reads cleanly.
+ */
+function glintAt(h: Heads, t: number): [number, number] {
+  const [x0, y0] = headOrigin(t);
+  return [x0 + (h.eyeR[0] - HEAD.x + 1.5) * F, y0 + (h.eyeR[1] - HEAD.y - 2) * F];
+}
+
 // ---------------------------------------------------------------- module state (reset in init)
 let spin = new BallSpin();
 let landedTop = false, landedBot = false, looked = false, yanked = false;
@@ -212,6 +242,9 @@ let landedTop = false, landedBot = false, looked = false, yanked = false;
 
 /** The page: warm paper, ink speed lines streaming up-right at -18°, screentone darkening the four corners. */
 function drawPage(ctx: CanvasRenderingContext2D, t: number) {
+  // Into the paper flash the page's ink (streaks, corner tone) fades with it, so the last frame is the flat paper
+  // shot 2 opens on.
+  const fk = ease.inQuad(clamp((t - 1.19) / 0.09));
   ctx.fillStyle = HEX.paper;
   ctx.fillRect(-40, -40, VW + 80, VH + 80);
   ctx.save();
@@ -225,7 +258,7 @@ function drawPage(ctx: CanvasRenderingContext2D, t: number) {
     const run = (620 * t + 300 * (1 - Math.exp(-t / 0.12))) * s.sp;
     const x = ((s.u * SPAN + run) % SPAN) - SPAN / 2;
     const y = (s.v - 0.5) * SPANY;
-    ctx.globalAlpha = 0.35 * s.a;
+    ctx.globalAlpha = 0.35 * s.a * (1 - fk);
     ctx.lineWidth = s.w;
     ctx.beginPath();
     ctx.moveTo(x - s.len, y);
@@ -233,7 +266,7 @@ function drawPage(ctx: CanvasRenderingContext2D, t: number) {
     ctx.stroke();
   }
   ctx.restore();
-  screentone(ctx, [-24, -24, VW + 48, VH + 48], 6, 0.55, { corners: 0.6 });
+  screentone(ctx, [-24, -24, VW + 48, VH + 48], 6, 0.55 * (1 - fk), { corners: 0.6 });
 }
 
 /** Horizontal ink motion lines trailing a panel while it moves fast (dir +1 = moving right). */
@@ -334,8 +367,7 @@ function drawEyesPanel(env: Env, ctx: CanvasRenderingContext2D, t: number) {
   const h = heads ?? (heads = buildHeads(env));
   const rng = env.frng(7);
   // A slow drift (the panel's own push), whole art px only so the pixel grid never swims against the border.
-  const drift = Math.round(lerp(0, -6, ease.inOutQuad(clamp(t / DUR))));
-  const ex = EYE_X + drift, ey = EYE_Y;
+  const ex = EYE_X + faceDrift(t), ey = EYE_Y;
   // Jade light from screen-right.
   ctx.globalCompositeOperation = 'lighter';
   drawGlow(ctx, glowOf(PAL.emerald), 640, EYE_Y + 10, 330, 0.4, 0.9, 1.1);
@@ -346,7 +378,7 @@ function drawEyesPanel(env: Env, ctx: CanvasRenderingContext2D, t: number) {
   // The face.
   const look = t >= LOOK_T;
   const img = look ? h.g2 : h.g1;
-  const x0 = ex - (EYE_MID[0] - HEAD.x + 0.5) * F, y0 = ey - (EYE_MID[1] - HEAD.y + 0.5) * F;
+  const [x0, y0] = headOrigin(t);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, x0, y0, HEAD.w * F, HEAD.h * F);
   ctx.globalCompositeOperation = 'multiply';
@@ -360,7 +392,7 @@ function drawEyesPanel(env: Env, ctx: CanvasRenderingContext2D, t: number) {
   if (look) {
     const k = clamp(1 - (t - LOOK_T) / 0.4);
     const kin = ease.outCubic(clamp((t - LOOK_T + 1 / 60) / 0.07));
-    const gx = x0 + (G2_EYE_R[0] - HEAD.x) * F, gy = y0 + (G2_EYE_R[1] - HEAD.y) * F;
+    const [sx, sy] = glintAt(h, t);
     if (k > 0) {
       ctx.save();
       ctx.strokeStyle = HEX.paper;
@@ -376,14 +408,15 @@ function drawEyesPanel(env: Env, ctx: CanvasRenderingContext2D, t: number) {
       }
       ctx.restore();
     }
-    const gl = pulse(t, LOOK_T + 0.02, 0.38);
+    // The glint waits 0.08 s so the first frames of G2 show clean pupils, then bursts small on the eye's outer corner.
+    const gl = pulse(t, LOOK_T + 0.08, 0.3);
     if (gl > 0) {
-      sparkle(ctx, gx + 3, gy - 3, 7 + 9 * gl, ease.outCubic(gl), 0.25);
-      lensFlare(ctx, gx + 3, gy - 3, 20, 0.5 * gl, JADE_FLARE);
+      sparkle(ctx, sx, sy, 4 + 6 * gl, ease.outCubic(gl), 0.25);
+      lensFlare(ctx, sx, sy, 12, 0.25 * gl, JADE_FLARE);
     }
     // A steady small catch-light once the flick has landed.
     const hold = clamp((t - LOOK_T - 0.3) / 0.1) * (0.55 + 0.1 * Math.sin(t * 19));
-    if (hold > 0) sparkle(ctx, gx + 3, gy - 3, 5, hold, 0.25 + t * 0.8);
+    if (hold > 0) sparkle(ctx, sx, sy, 3, 0.8 * hold, 0.25 + t * 0.8);
   }
 }
 
@@ -412,7 +445,8 @@ function drawBootPanel(env: Env, ctx: CanvasRenderingContext2D, t: number) {
   ctx.lineWidth = 1.5;
   ctx.lineCap = 'round';
   for (const tf of TUFTS) {
-    const x = (((tf.x - t * 140) % 520) + 520) % 520 + 150;
+    // Static: T6 is a held frame and the plant never slides, so the ground under it must not scroll.
+    const x = tf.x + 150;
     for (let k = 0; k < tf.n; k++) {
       ctx.beginPath();
       ctx.moveTo(x + k * 3, GROUND_Y + 1);
@@ -612,15 +646,15 @@ export const shotStitch: Shot = {
       cam.hit(0.12);
       land(BOT, -1, 10);
     }
-    // The look-off: a few jade motes leave the near eye toward his left (screen-right).
+    // The look-off: a few jade motes leave the near eye's glint spot toward his left (screen-right).
     if (!looked && t >= LOOK_T) {
       looked = true;
-      const gx = EYE_X + (G2_EYE_R[0] - EYE_MID[0] - 0.5) * F, gy = EYE_Y + (G2_EYE_R[1] - EYE_MID[1] - 0.5) * F;
+      const [sx, sy] = glintAt(heads ?? (heads = buildHeads(env)), t);
       for (let i = 0; i < 7; i++) {
         const a = rng.range(-0.5, 0.35);
         const s = rng.range(90, 220);
         parts.spawn({
-          kind: PK.Pixel, x: gx + 6, y: gy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, drag: 7,
+          kind: PK.Pixel, x: sx, y: sy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, drag: 7,
           max: rng.range(0.18, 0.32), s0: rng.range(1.5, 2.5), s1: 1, ramp: 'jade', r0: 0.1, r1: 0.6, add: true, layer: 1,
         });
       }
@@ -675,7 +709,8 @@ export const shotStitch: Shot = {
     ctx.restore();
     ctx.save();
     ctx.transform(1, 0, -sBot, 1, sBot * LINE_Y, 0);
-    mangaPanels(ctx, [{ poly: BOT, dx: dBot, draw: (c) => (drawBootPanel(env, c, t), panelStreaks(c, BOT, vBot, HEX.ink, 82)) }], t);
+    // It overlaps the top panel, so its own gutter must be the full 6 px of paper between them.
+    mangaPanels(ctx, [{ poly: BOT, dx: dBot, gutter: 6, draw: (c) => (drawBootPanel(env, c, t), panelStreaks(c, BOT, vBot, HEX.ink, 82)) }], t);
     ctx.restore();
 
     // The stitch: thread, title, tag and needle, all pulled off with the needle.

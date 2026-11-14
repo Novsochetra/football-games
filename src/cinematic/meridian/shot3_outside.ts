@@ -10,38 +10,45 @@
 //   0.00  AP1, the last stride (head away: mop and ear). Opens out of shot 2's paper flash; the camera tracks right.
 //   0.09  AP3, the bound (airborne, on the pelvis path).
 //   0.18  T3 plant: the far foot lands wide of the ball and a little behind it; dustBurst(6), inked. Slow motion 0.35
-//         while the camera dollies from full figure to the legs (zoom 1 -> 1.35, centred between boot and ball).
+//         while the camera dollies in (zoom 1 -> 1.35, centred between boot and ball; the whole head stays in frame).
 //   0.40  T4 wind-up (knee flick).  0.55 T5 swing: ink smear arc with speed lines along the boot's path.
 //   0.62  HIT (T6), the technique freeze (hit-stop 0.03 for 0.20 s): 3 frames of pure ink and paper (doubled tone) with
 //         ink focus lines on the boot, 1 frame where only the background flips to its negative, then the 0.9 ink again.
 //         "Eyes here, ball there": a slanted inset drops in top-left (Glance G2, eyes away) while the main frame holds
 //         the boot on the ball (10 % squash). Technique diagram: two jade spin marks (clockwise from above), a dotted
-//         ink chalk arrow out from the ball bending right, and the note OUTSIDE OF THE BOOT.
+//         ink chalk arrow laid on the turf (out into depth, then bending right toward the lens), and the note
+//         OUTSIDE OF THE BOOT (readable from the freeze's 2nd frame to 6 frames past release).
 //   0.82  release: the ball rolls off right and a little up-screen (into depth), spinning; the thread unspools from the
 //         boot behind it and quivers like a plucked string.  0.84 T7 follow-through (leg out to his right).
-//   0.95  the reveal: the camera crane-slides up the follow-through leg to his face (0.35 s, inOutCubic), rising from
+//   0.95  the reveal: the camera crane-slides up the follow-through leg to his face (0.35 s, outCubic, so the move has
+//         settled by the wink), rising from
 //         boot height to eye height so the ground plane opens up: small and deep, the thread arcs away toward the inked
 //         line of defenders. T8a (3/4 to camera, smirk); 1.15 T8b, the wink: glint + small jade flare on the open eye.
-//   1.30  T9 recover (eyes follow the pass), T9b 1.50 (hair settled one beat late).
+//   1.30  T9 recover (eyes follow the pass), T9b 1.367 (the hair settles 4 frames later, on a still frame).
 //   1.45  thread wipe: the needle sews one taut jade thread across the top edge (0.08 s), then the thread is pulled
-//         straight down like a blind cord (0.17 s, inCubic), vibrating 1 px; shot 4's page is revealed above it.
+//         straight down like a blind cord (0.17 s, inCubic, fully down on the last frame), vibrating 1 px. Above it,
+//         shot 4's real first frame (rendered once into a cache) covers everything this shot drew, and the post blends
+//         to shot 4's, so the cut is clean.
 //
 // No.10 is never a puppet: Approach AP1/AP3 and Trivela T3-T9b studio frames at integer x2 (no10.ts falls back to studio
 // stand-ins if a frame is missing). The defenders are cached puppets (no puppet render per frame).
 
 import type { Env, Shot } from '../timeline';
+import { STEP } from '../timeline';
 import { VW, VH } from '../../engine/camera';
 import { Rng, clamp, ease, lerp } from '../../engine/math';
 import { PK, drawGlow, glowOf } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
+import { FxState } from '../../engine/post';
 import { focusLines, lensFlare, pixelText, sparkle, type TrailPt } from '../../art/fx';
 import { POSES, RIVAL_KIT, RIVAL_KIT_B, RIVAL_KIT_C, RIVAL_KIT_D } from '../../art/puppet';
 import { anim, drawAnim, findFrame, hasAnim, type StudioAnim } from '../../art/studioAnim';
 import {
-  HEX, JADE_FLARE, PAGE, THREAD_NOTES as N, cachePuppet, drawBall, drawGrassFore, drawNo10, dustBurst, inkGrade,
+  HEX, JADE_FLARE, THREAD_NOTES as N, cachePuppet, drawBall, drawGrassFore, drawNo10, dustBurst, inkGrade,
   inkNegative, inkSmear, mangaPanels, meridianGrade, needlePoint, no10Point, panelPoly, paperFlash, pluckLine, prepareGrassFore,
   prepareInk, pulse, spinMarks, warp, type No10Key,
 } from './common';
+import { shotNeedle } from './shot4_needle';
 
 const DUR = 1.7;
 
@@ -55,7 +62,8 @@ const RELEASE = 0.82;
 const FOLLOW = 0.84;
 const REVEAL0 = 0.95, REVEAL1 = 1.3;
 const WINK = 1.15;
-const SETTLE = 1.5;
+/** T9b: the hair settles 4 frames after the T9 landing, on a still frame, before the wipe. */
+const SETTLE = REVEAL1 + 4 / 60;
 const WIPE0 = 1.45, WIPE_ACROSS = 0.08;
 /** Hit-stops / slow motion: [start, length, rate]. */
 const STOPS: [number, number, number][] = [[PLANT, WIND - PLANT, 0.35], [HIT, RELEASE - HIT, 0.03]];
@@ -89,7 +97,8 @@ const HH_FACE = 158; // eye height (the crane)
 
 // Camera keys.
 const TRACK_X0 = 198, TRACK_X1 = 268; // trucking with him 0 -> 0.18 (his pelvis speed)
-const C_HIT = { x: 284, y: 256, z: 1.35 };
+// Full figure through the freeze: the top edge clears T6's hair (~13 px of headroom at the 3 % push), never the scalp.
+const C_HIT = { x: 284, y: 230, z: 1.35 };
 const C_FACE = { x: 345, y: 148, z: 1.85 };
 
 // The pass's ground track (far layer): lateral advance in his plane and depth scale s (1 = his plane).
@@ -107,8 +116,8 @@ const DEFENDERS = [
   { s: 0.16, X: 792, kit: RIVAL_KIT_D, pose: 'lookFar', facing: -1 }, // D4
 ] as const;
 
-// Freeze inset ("eyes here, ball there"), screen space.
-const INSET = panelPoly(126, 80, 216, 98, -5);
+// Freeze inset ("eyes here, ball there"), screen space; its paper gutter clears T6's hair by ~6 px at C_HIT.
+const INSET = panelPoly(120, 80, 212, 98, -5);
 const FACE_SCALE = 4; // face crops at integer x4 only
 
 // ---------------------------------------------------------------- module state (reset in init)
@@ -163,7 +172,8 @@ function camAt(t: number): Cam {
   let hh = HH0;
   // The crane: diagonally up the follow-through leg to his face, rising from boot height to eye height.
   if (t >= REVEAL0) {
-    const c = ease.inOutCubic(clamp((t - REVEAL0) / (REVEAL1 - REVEAL0)));
+    // outCubic: ~92 % of the move is done by the wink (1.15), so T8b lands on a near-still face.
+    const c = ease.outCubic(clamp((t - REVEAL0) / (REVEAL1 - REVEAL0)));
     x = lerp(x, C_FACE.x, c);
     y = lerp(y, C_FACE.y, c);
     z = lerp(z, C_FACE.z, c);
@@ -492,16 +502,18 @@ function threadPoints(c: Cam, t: number): WPt[] {
   return pts;
 }
 
-/** The chalk diagram's arrow path (screen space), from the ball out to the right, bending right (toward the camera). */
-function arrowPath(bx: number, by: number): TrailPt[] {
-  const p0 = [bx + 22, by - 6], p1 = [bx + 120, by - 64], p2 = [bx + 205, by - 52], p3 = [bx + 236, by + 6];
+/**
+ * The chalk diagram's arrow, laid on the turf with the shot's own perspective (1.5 px above the grass): out from the
+ * ball into depth (it sets off slightly to the far side), then curling back toward the lens (bending right). Screen px.
+ */
+function arrowPath(c: Cam, toScreen: (x: number, y: number) => [number, number]): TrailPt[] {
   const out: TrailPt[] = [];
   for (let i = 0; i <= 40; i++) {
-    const u = i / 40, a = 1 - u;
-    out.push({
-      x: a * a * a * p0[0] + 3 * a * a * u * p1[0] + 3 * a * u * u * p2[0] + u * u * u * p3[0],
-      y: a * a * a * p0[1] + 3 * a * a * u * p1[1] + 3 * a * u * u * p2[1] + u * u * u * p3[1],
-    });
+    const u = i / 40;
+    const s = 1 - 0.55 * Math.sin(Math.PI * 0.85 * u);
+    const [x, y] = ground(c, REST[0] + 16 + 200 * u, s, 1.5);
+    const [sx, sy] = toScreen(x, y);
+    out.push({ x: sx, y: sy });
   }
   return out;
 }
@@ -587,7 +599,7 @@ function drawInsetFace(env: Env, ctx: CanvasRenderingContext2D, t: number) {
   }
   ctx.globalAlpha = 1;
   // The eyes land on (cx, cy), on the crop's pixel grid.
-  const cx = 116, cy = 82;
+  const cx = 110, cy = 82;
   if (face) {
     const [ex, ey] = face.a.anchorOf(face.i, 'eye');
     drawAnim(ctx, face.a, null, face.i, Math.round(cx - ex * FACE_SCALE) + ex * FACE_SCALE, Math.round(cy - ey * FACE_SCALE) + ey * FACE_SCALE, FACE_SCALE, { pivot: [ex, ey] });
@@ -608,46 +620,50 @@ function drawInsetFace(env: Env, ctx: CanvasRenderingContext2D, t: number) {
   ctx.restore();
 }
 
-/** Shot 4's opening page under the wipe: panel 1's interior, an inked low side view (drawn before the grade). */
-function drawPagePreviewEnv(env: Env, t: number) {
-  const ctx = env.ctx;
-  const P = PAGE.panels[0].poly;
-  ctx.save();
-  ctx.beginPath();
-  P.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-  ctx.closePath();
-  ctx.clip();
-  // Panel camera: a low locked side view at ball height (logical px = panel px at t = 0 of shot 4).
-  const pc: Cam = { x: 320, y: 180, z: 1, hh: 18 };
-  ctx.save();
-  ctx.translate(0, -70);
-  drawEnvironment(env, pc, t, false, false);
-  ctx.restore();
-  drawGrassFore(ctx, 0, 0, { y: VH });
-  ctx.restore();
+/**
+ * Shot 4's real first frame (device px), rendered once per canvas size: the wipe reveals exactly the page shot 4 opens
+ * on, so nothing pops at the cut. Shot 4's render is a pure function of its clock and only reads ctx, fx and art.
+ * `fx4` keeps the post settings that frame asks for, so this shot's post can land on them as the wipe finishes.
+ */
+let page0: HTMLCanvasElement | null = null;
+let fx4: FxState | null = null;
+function shot4Frame0(env: Env): HTMLCanvasElement {
+  const W = env.ctx.canvas.width, H = env.ctx.canvas.height;
+  if (page0 && fx4 && page0.width === W && page0.height === H) return page0;
+  const cv = page0 ?? document.createElement('canvas');
+  cv.width = W;
+  cv.height = H;
+  const g = cv.getContext('2d')!;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.imageSmoothingEnabled = false;
+  const f = new FxState();
+  f.reset();
+  shotNeedle.render(
+    {
+      ...env,
+      ctx: g,
+      fx: f,
+      screen() {
+        g.setTransform(env.S, 0, 0, env.S, 0, 0);
+        g.imageSmoothingEnabled = false;
+      },
+      world() {
+        env.cam.apply(g, env.S);
+        g.imageSmoothingEnabled = false;
+      },
+    },
+    0,
+  );
+  page0 = cv;
+  fx4 = f;
+  return cv;
 }
 
-/** Shot 4's page paper, gutters and panel borders (MangaPage's look at t = 0), over everything above the wipe. */
-function pagePreviewPaper(ctx: CanvasRenderingContext2D) {
-  const P = PAGE.panels[0].poly;
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(-10, -10, VW + 20, VH + 20);
-  P.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-  ctx.closePath();
-  ctx.fillStyle = HEX.paper;
-  ctx.fill('evenodd');
-  ctx.lineJoin = 'miter';
-  for (const pass of [0, 1])
-    for (const p of PAGE.panels) {
-      ctx.beginPath();
-      p.poly.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-      ctx.closePath();
-      ctx.strokeStyle = pass === 0 ? HEX.paper : HEX.ink;
-      ctx.lineWidth = pass === 0 ? 9 : 3;
-      ctx.stroke();
-    }
-  ctx.restore();
+/** The wipe edge (logical y; -1 before the wipe): across the top edge, then pulled down, fully down on the last frame. */
+function wipeAt(t: number) {
+  if (t < WIPE0) return -1;
+  if (t < WIPE0 + WIPE_ACROSS) return 5;
+  return lerp(5, VH + 8, ease.inCubic(clamp((t - WIPE0 - WIPE_ACROSS) / (DUR - STEP - WIPE0 - WIPE_ACROSS))));
 }
 
 // ---------------------------------------------------------------- the shot
@@ -674,6 +690,7 @@ export const shotOutside: Shot = {
     buildDefenders();
     resolveFace();
     resolveAnchors(env);
+    shot4Frame0(env);
   },
   init(env) {
     env.sfx.clearBus();
@@ -757,7 +774,7 @@ export const shotOutside: Shot = {
     const c = camAt(t);
     const ff = freezeFrame(t);
     const pure = ff >= 0 && ff < 4;
-    const wipeY = t < WIPE0 ? -1 : t < WIPE0 + WIPE_ACROSS ? 5 : lerp(5, VH + 8, ease.inCubic(clamp((t - WIPE0 - WIPE_ACROSS) / (DUR - WIPE0 - WIPE_ACROSS))));
+    const wipeY = wipeAt(t);
     const toScreen = (x: number, y: number): [number, number] => {
       const [u, v] = env.cam.toUV(x, y);
       return [u * VW, v * VH];
@@ -769,15 +786,6 @@ export const shotOutside: Shot = {
     env.parts.draw(ctx, 0);
     env.screen();
     if (!pure) drawForeground(env, c);
-    // Shot 4's page under the wipe (its panel 1 environment, graded with this frame).
-    if (wipeY > 0) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, VW, wipeY);
-      ctx.clip();
-      drawPagePreviewEnv(env, t);
-      ctx.restore();
-    }
     // The ink page: 0.9; the freeze: pure ink and paper with doubled tone for 3 frames, the negative on the 4th.
     inkGrade(ctx, pure ? 1 : 0.9, undefined, pure ? { tone: 2 } : {});
     const [bsx, bsy] = toScreen(BOOT6[0], BOOT6[1]);
@@ -807,6 +815,8 @@ export const shotOutside: Shot = {
         path.push({ x: a * a * BOOT4[0] + 2 * a * u * via[0] + u * u * to[0], y: a * a * BOOT4[1] + 2 * a * u * via[1] + u * u * to[1] });
       }
       const fade = t < RELEASE ? 1 : clamp(1 - (t - RELEASE) / 0.06);
+      // A paper body under the ink edge, so the whip reads on the ink page (normal blend, ink and paper only).
+      inkSmear(ctx, path, 26, 0.5 * fade, { lines: 0, color: HEX.paper });
       inkSmear(ctx, path, 22, 0.35 * fade, { lines: 3 });
     }
     // The thread (behind him and the ball).
@@ -836,13 +846,12 @@ export const shotOutside: Shot = {
 
     // ---- screen-space overlays
     env.screen();
-    // The chalk diagram and the note, for the freeze.
-    if (ff >= 0) {
-      const [ballSx, ballSy] = toScreen(REST[0], REST[1]);
+    // The chalk diagram for the freeze; the note from frame 1 of the freeze to 6 frames past release (readable).
+    if (ff >= 0 || (t >= RELEASE && t < RELEASE + 0.1)) {
       const k = ease.outCubic(clamp((t - HIT - 2 / 60) / 0.1));
       const out = clamp((RELEASE - t) / 0.03);
-      drawChalkArrow(ctx, arrowPath(ballSx, ballSy), k, out);
-      drawNote(ctx, bsx, bsy, clamp((t - HIT - 3 / 60) / 0.04) * out);
+      drawChalkArrow(ctx, arrowPath(c, toScreen), k, out);
+      drawNote(ctx, bsx, bsy, clamp((t - HIT) / (2 / 60)) * clamp((RELEASE + 0.1 - t) / 0.05));
     }
     // "Eyes here, ball there": the inset drops in for the freeze, then is pulled back up.
     if (t >= HIT && t < RELEASE + 0.05) {
@@ -855,17 +864,22 @@ export const shotOutside: Shot = {
       const [ex, ey] = no10Point(env, 'T8b', 'eye', PLANT_TOE[0], PLANT_TOE[1], D);
       const [sx, sy] = toScreen(ex, ey);
       const g = pulse(t, WINK, 0.32);
-      sparkle(ctx, sx + 2, sy - 2, 8 + 12 * g, ease.outCubic(g) + 0.25, 0.3);
-      lensFlare(ctx, sx + 2, sy - 2, 34, 0.5 * g, JADE_FLARE);
+      // On the open eye's outer top corner (the pupil stays visible), with a short jade streak.
+      sparkle(ctx, sx + 8, sy - 7, 5 + 7 * g, ease.outCubic(g) + 0.2, 0.3);
+      lensFlare(ctx, sx + 8, sy - 7, 14, 0.4 * g, JADE_FLARE);
     }
     // ---- the thread wipe: the needle sews a taut thread across the top edge, then pulls it down like a blind cord.
+    // Shot 4's real first frame is revealed above the thread, over everything this shot drew (device-space blit).
     if (wipeY > 0) {
       ctx.save();
+      env.screen();
       ctx.beginPath();
       ctx.rect(0, 0, VW, wipeY);
       ctx.clip();
-      pagePreviewPaper(ctx);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(shot4Frame0(env), 0, 0);
       ctx.restore();
+      env.screen();
       const across = clamp((t - WIPE0) / WIPE_ACROSS);
       const nx = lerp(-12, VW + 30, ease.inOutQuad(across));
       const v = Math.floor(t * 60) % 2 ? 1 : -1;
@@ -879,6 +893,17 @@ export const shotOutside: Shot = {
     meridianGrade(fx, true);
     fx.vignette = 0.32;
     fx.ca = 0.003 * pulse(t, HIT, 0.1);
+    // As the wipe lands, blend toward the post shot 4 opens with, so the cut is clean.
+    if (wipeY > 0 && fx4) {
+      const wk = clamp(wipeY / VH);
+      fx.vignette = lerp(fx.vignette, fx4.vignette, wk);
+      fx.contrast = lerp(fx.contrast, fx4.contrast, wk);
+      fx.grain = lerp(fx.grain, fx4.grain, wk);
+      fx.bloom = lerp(fx.bloom, fx4.bloom, wk);
+      fx.bloomThresh = lerp(fx.bloomThresh, fx4.bloomThresh, wk);
+      fx.sat = lerp(fx.sat, fx4.sat, wk);
+      fx.ca = lerp(fx.ca, fx4.ca, wk);
+    }
     // Opens out of shot 2's paper flash (3-frame flash-out).
     paperFlash(fx, 0.6 * (1 - clamp(t / (3 / 60))));
   },
