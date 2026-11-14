@@ -300,7 +300,7 @@ export const shotZenith: Shot = {
     }
 
     // Ball / meteor.
-    if (hit) fireRibbon(ctx, trail.pts, 46);
+    if (hit) fireRibbon(ctx, trail.pts, 46, 1, 7 * 2);
     drawBall(env, spin, ball.x, ball.y, 7, 2, hit ? 1 : 0.3 + charge * 0.4, hit ? 1.4 : 0.2 + charge * 0.25);
 
     env.parts.draw(ctx, 1);

@@ -216,7 +216,7 @@ export const shotFlick: Shot = {
     env.parts.draw(ctx, 0);
 
     // Ball trail (behind ball).
-    if (launched) fireRibbon(ctx, trail.pts, 26);
+    if (launched) fireRibbon(ctx, trail.pts, 26, 1, BALL_R * D);
 
     // Hero (puppet for the flick, then the jump sprite), with a crimson aura glow behind.
     const fl = 0.7 + 0.3 * Math.sin(t * 50);

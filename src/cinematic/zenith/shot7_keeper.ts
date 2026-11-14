@@ -210,7 +210,7 @@ export const shotKeeper: Shot = {
     }
 
     // Ball.
-    fireRibbon(ctx, trail.pts, 30);
+    fireRibbon(ctx, trail.pts, 30, 1, 6 * D);
     drawBall(env, spin, ball.x, ball.y, 6, D, 1, 1.3);
     // Spin arcs around the ball while it grinds in the gloves.
     if (t > CATCH && !broke) {

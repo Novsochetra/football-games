@@ -31,15 +31,82 @@ export class Trail {
   }
 }
 
-/** Layered fire ribbon: crimson halo, orange body, white-hot core. */
-export function fireRibbon(ctx: CanvasRenderingContext2D, pts: TrailPt[], w: number, a = 1) {
+/**
+ * Layered fire ribbon: crimson halo, orange body, white-hot core.
+ * head = the ball's on-screen radius (art radius x draw scale). When given, every layer narrows into
+ * a round head centred on the ball (outer layers a little larger than the ball, the core about its
+ * radius), so the trail reads as a comet tail flowing out of the ball instead of ending in a flat band.
+ */
+export function fireRibbon(ctx: CanvasRenderingContext2D, pts: TrailPt[], w: number, a = 1, head?: number) {
   if (pts.length < 2) return;
   ctx.globalCompositeOperation = 'lighter';
-  ribbon(ctx, pts, 0, w * 2.4, 'rgb(170,20,40)', 0.35 * a);
-  ribbon(ctx, pts, 0, w * 1.5, 'rgb(255,90,30)', 0.55 * a);
-  ribbon(ctx, pts, 0, w * 0.8, 'rgb(255,200,90)', 0.75 * a);
-  ribbon(ctx, pts, 0, w * 0.32, 'rgb(255,255,235)', 0.95 * a);
+  if (head === undefined) {
+    ribbon(ctx, pts, 0, w * 2.4, 'rgb(170,20,40)', 0.35 * a);
+    ribbon(ctx, pts, 0, w * 1.5, 'rgb(255,90,30)', 0.55 * a);
+    ribbon(ctx, pts, 0, w * 0.8, 'rgb(255,200,90)', 0.75 * a);
+    ribbon(ctx, pts, 0, w * 0.32, 'rgb(255,255,235)', 0.95 * a);
+  } else {
+    cometLayer(ctx, pts, w * 2.4, head * 1.7, 'rgb(170,20,40)', 0.35 * a);
+    cometLayer(ctx, pts, w * 1.5, head * 1.4, 'rgb(255,90,30)', 0.55 * a);
+    cometLayer(ctx, pts, w * 0.8, head * 1.15, 'rgb(255,200,90)', 0.75 * a);
+    cometLayer(ctx, pts, w * 0.32, head, 'rgb(255,255,235)', 0.95 * a);
+  }
   ctx.globalCompositeOperation = 'source-over';
+}
+
+/**
+ * One fireRibbon layer with a round head. The tail grows from 0 to `w` along the trail as ribbon()
+ * does; near the head the half-width is softly limited by a flare that opens from `cap` at the ball
+ * (zero slope there) at about COMET_FLARE px per px of trail, and the head itself is a full circle of
+ * the resulting radius on the last point, so the outline wraps round the ball with no corners.
+ */
+const COMET_FLARE = 0.4;
+function cometLayer(ctx: CanvasRenderingContext2D, pts: TrailPt[], w: number, cap: number, color: string, alpha: number) {
+  const n = pts.length;
+  if (n < 2 || alpha <= 0) return;
+  // Arc length back from the head, and a fallback direction for repeated points.
+  const s: number[] = new Array(n).fill(0);
+  let fx = 0, fy = 0;
+  for (let i = n - 2; i >= 0; i--) {
+    const dx = pts[i + 1].x - pts[i].x, dy = pts[i + 1].y - pts[i].y;
+    const l = Math.hypot(dx, dy);
+    s[i] = s[i + 1] + l;
+    if (!fx && !fy && l > 1e-3) [fx, fy] = [dx / l, dy / l];
+  }
+  if (!fx && !fy) fx = 1;
+  const L: [number, number][] = [], R: [number, number][] = [];
+  let tx = fx, ty = fy, hw = 0;
+  for (let i = 0; i < n; i++) {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const l = Math.hypot(dx, dy);
+    if (l > 1e-3) [tx, ty] = [dx / l, dy / l];
+    const lin = 0.5 * w * (i / (n - 1));
+    const fl = Math.hypot(cap, COMET_FLARE * s[i]);
+    // Soft minimum of the tail width and the head flare (no ridge where they meet).
+    hw = lin > 0 ? Math.pow(Math.pow(lin, -4) + Math.pow(fl, -4), -0.25) : 0;
+    L.push([pts[i].x - ty * hw, pts[i].y + tx * hw]);
+    R.push([pts[i].x + ty * hw, pts[i].y - tx * hw]);
+  }
+  ctx.globalAlpha = clamp(alpha);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(L[0][0], L[0][1]);
+  for (let i = 1; i < n; i++) ctx.lineTo(L[i][0], L[i][1]);
+  for (let i = n - 1; i >= 0; i--) ctx.lineTo(R[i][0], R[i][1]);
+  ctx.closePath();
+  // Round head: a circle wound the same way as the body, so the union fills once (nonzero rule).
+  let area = 0;
+  const poly = L.concat(R.slice().reverse());
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length];
+    area += p[0] * q[1] - q[0] * p[1];
+  }
+  const h = pts[n - 1];
+  ctx.moveTo(h.x + hw, h.y);
+  ctx.arc(h.x, h.y, hw, 0, TAU, area < 0);
+  ctx.fill();
+  ctx.globalAlpha = 1;
 }
 
 /** Ball with optional heat glow. r = pixel radius of the art; D = draw scale. */

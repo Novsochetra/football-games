@@ -7,6 +7,7 @@ import { Sfx } from './engine/audio';
 import { Rng } from './engine/math';
 import { loadHero } from './art/heroSprite';
 import { loadHeroJump } from './art/heroJump';
+import { loadStudioAnims } from './art/studioAnim';
 import { buildStadium } from './art/stadium';
 import type { Env } from './cinematic/timeline';
 import { STEP } from './cinematic/timeline';
@@ -40,7 +41,7 @@ async function boot() {
   }
 
   // The jump frames live in a module singleton (heroJump()); preload them with the face sprite.
-  const [hero] = await Promise.all([loadHero(), loadHeroJump()]);
+  const [hero] = await Promise.all([loadHero(), loadHeroJump(), loadStudioAnims()]);
   const art = { hero, stadium: buildStadium() };
   const fx = new FxState();
   const cam = new Camera();

@@ -222,7 +222,7 @@ export const shotAscent: Shot = {
     drawJump(ctx, null, fi, hx, hy, JS, { anchor: 'pelvis' });
 
     // Ball + fire trail.
-    fireRibbon(ctx, trail.pts, 30);
+    fireRibbon(ctx, trail.pts, 30, 1, 6 * 2);
     drawBall(env, spin, bx, by, 6, 2, lerp(0.55, 1, alt), 1.1);
 
     drawClouds(true);

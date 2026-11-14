@@ -257,7 +257,7 @@ function renderWide(env: Env, tb: number) {
   }
 
   // Meteor.
-  fireRibbon(ctx, trail.pts, 26);
+  fireRibbon(ctx, trail.pts, 26, 1, 5 * 1);
   drawBall(env, spin, bx, by, 5, 1, 1, 1.3);
   drawGoal(ctx, 'front');
   env.parts.draw(ctx, 1);
