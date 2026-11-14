@@ -41,14 +41,35 @@ sky, in front of the full moon, somersaults and volleys it straight down like a 
 |---|------|--------------|---------|
 | 1 | Cut-in | Special-move declaration: eyes close-up, glint, name slammed in | Slanted panel, focus lines, letter slam, stinger |
 | 2 | Power-up | Low-angle hero shot charging up | Body-hugging flame aura, cracked pitch, floating debris, hair ignition, eye flash, zoom slam |
-| 3 | Flick-up | Scoops the ball into the sky | Hit-stop, black/white impact frame, shockwave refraction, camera whip-tilt |
-| 4 | Ascent | Camera rides the ball through the clouds; No.10 chases it | Speed lines, zoom blur, cloud punch-through ring, altitude-graded sky |
-| 5 | Zenith | Time slows before the moon; somersault volley | Rim-lit silhouette, sun corona, two-tone red impact frame, sky-wide shock ring |
+| 3 | Flick-up | Scoops the ball into the sky, crouches and launches after it (jump sprite F2-F7) | Hit-stop, black/white impact frame, shockwave refraction, camera whip-tilt, aura flare |
+| 4 | Ascent | Camera rides the ball through the clouds; No.10 chases it, reaching for the ball (jump sprite F6/F7 loop at 2×) | Speed lines, zoom blur, cloud punch-through ring, altitude-graded sky |
+| 5 | Zenith | Time slows before the moon; he tucks and somersaults (jump sprite F8-F10, spun about its centre), then volleys | Rim-lit silhouette, sun corona, two-tone red impact frame, sky-wide shock ring |
 | 6 | Descent | POV: meteor falls at the lens; then it skims the pitch | Scorched grass trail, two defenders blasted aside |
 | 7 | Keeper | Catch, grind, skid, gloves burn, keeper blown into the net | Spin arcs, sparks, skid marks, glove heat, double impact |
 | 8 | Net / Goal | Reverse angle: the net stretches toward the lens and tears | Spring-mesh net sim, strand snapping, GOAL slam, confetti, crowd |
 
 Total runtime about 17 s at 1×.
+
+## No.10 jump animation (Pixel Studio)
+
+A hand-crafted 10-frame side-view jump, drawn at the studio model's exact scale (128×128 canvas, 98 px
+tall) and palette, in the studio project "Sochetra" as the animation **Jump** (view Side), and in the game
+as `src/art/hero_jump_side.png` + `src/art/hero_jump.json` (frame names, holds, pelvis/contact anchors).
+
+| # | Frame | ms | # | Frame | ms |
+|---|---|---|---|---|---|
+| 1 | load | 100 | 6 | knee drive | 100 |
+| 2 | crouch | 130 | 7 | rise float (loops with 6) | 100 |
+| 3 | push | 60 | 8 | pre-tuck | 80 |
+| 4 | take-off | 60 | 9 | tuck | 100 |
+| 5 | leap | 80 | 10 | tuck roll | 120 |
+
+`src/art/heroJump.ts` loads the strip at boot and draws frames nearest-neighbour around their anchors
+(ground frames on the planted toe, airborne frames on the pelvis), with cached tinted and rim-lit
+silhouette copies for the shot effects and rotation about the tuck's centre for the somersault.
+ZENITH METEOR shots 3-5 use it for the take-off, ascent and tuck. The overhead volley itself still
+uses the skeletal puppet; three more side-view frames (volley load, strike, follow-through) would make
+the whole somersault-volley one design.
 
 ## Run
 
@@ -71,7 +92,8 @@ Dev pages: `dev/puppets.html` renders every pose for every kit (`?d=3&kits=1&onl
 ```
 src/
   engine/   math, camera (trauma shake), WebGL post FX, particles, pixel rasterizer, procedural audio
-  art/      hero sprite (your 100×100 pixel art) + derived masks, skeletal pixel puppets, stadium, FX drawing
+  art/      hero sprite (your 100×100 pixel art) + derived masks, jump sprite (heroJump.ts + hero_jump_side.png),
+            skeletal pixel puppets, stadium, FX drawing
   cinematic/timeline.ts    shot runner: cues, hit-stop time warps, deterministic seek
   cinematic/kit.ts         shared shot helpers (trails, ribbons, ball, flames, sparks, dust…)
   cinematic/specials.ts    registry: name, move type, field scenario, shots

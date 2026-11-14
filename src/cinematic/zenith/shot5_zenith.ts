@@ -1,25 +1,52 @@
 // SHOT 5 — ZENITH: at the top of the sky, the ball hangs in front of the full moon.
 // Time slows; No.10 (a rim-lit silhouette against the moon) somersaults over it and
 // volleys it straight down. Contact detonates: red impact frame, shock ring across the sky.
+// The rise (continuing shot 4's knee-drive loop) and the spinning tuck are the hand-drawn
+// jump frames, rotated by the track's spin around the tuck's centre of mass; the overhead-volley
+// load/strike/follow-through stay on the skeletal puppet, handed over under a rim-light flare.
 
 import type { Shot } from '../timeline';
 import { VW, VH } from '../../engine/camera';
-import { TAU, clamp, ease, lerp, keys } from '../../engine/math';
+import { TAU, clamp, ease, lerp, keys, mixRGB, smooth, type RGB } from '../../engine/math';
 import { PK, drawGlow, glowOf, glowSprite } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { focusLines } from '../../art/fx';
 import { HERO_KIT, P, POSES, drawPuppet, joints, poseAt, renderPuppet, type Pose } from '../../art/puppet';
+import { JF, drawJump, heroJump, jumpFrameAt, type Silhouette } from '../../art/heroJump';
 import { Trail, drawBall, fireRibbon, meteorFlames, pulse, ring, sparks, warp } from './common';
 
 const DUR = 2.6;
 const HIT = 1.38;
 const MOON_X = 352, MOON_Y = 142, MOON_S = 1.45;
 const B0X = MOON_X - 18, B0Y = MOON_Y + 26;
-const HK = 0.8, HD = 1.5;
+const HK = 0.95, HD = 1.5; // puppet px/unit and draw scale: same pixel size and body size as the sprite
+const JS = HD; // hero sprite: world px per sprite px
 const D = Math.PI / 180;
 const SHOT_DIR = 34 * D; // ball leaves down-right
 const STRIKE: Pose = P({ torso: -30 * D, head: 16 * D, thighN: 64 * D, kneeN: 0, footN: -8 * D, thighF: -36 * D, kneeF: 70 * D, footF: 10 * D, armN: -110 * D, elbowN: 10 * D, armF: 120 * D, elbowF: 20 * D, spin: TAU });
 const FOLLOW: Pose = P({ ...STRIKE, thighN: 96 * D, torso: -36 * D, spin: TAU + 0.2 });
+
+// Sprite frames by local time (spin comes from the pose track), then the puppet from SPR_END.
+const SPR_END = 1.16;
+// How much of the hero's colours read through the moon-lit silhouette: his kit shows on the
+// leap, dims as time stops (the tuck still reads as knees, arms and head), and is a pure
+// silhouette by the hand-off to the puppet volley. Stepped so the silhouette cache stays small.
+const detailAt = (t: number) => Math.round(lerp(0.3, 0.15, smooth(clamp((t - 0.62) / 0.3))) * (1 - smooth(clamp((t - 0.95) / (SPR_END - 0.95)))) * 40) / 40;
+// Opens on shot 4's F6/F7 knee-drive loop (no rewind to the F5 leap), then gathers into the tuck.
+const heroSeq: [number, number][] = [[0, JF.knee], [0.12, JF.float], [0.24, JF.knee], [0.34, JF.pretuck], [0.46, JF.tuck], [0.56, JF.roll], [1.06, JF.tuck]];
+// The somersault turns around the tuck's centre of mass, not the pelvis anchor (which sits ~19 sprite px
+// off it): 1 = pivot on the centre of mass. While the spin is 0 the pivot makes no difference; it eases
+// back to the pelvis before SPR_END so the hand-off to the hip-pivoted puppet stays registered.
+const comWeight = (t: number, fi: number) =>
+  fi === JF.pretuck || fi === JF.tuck || fi === JF.roll ? 1 - smooth(clamp((t - 1.06) / (SPR_END - 1.06))) : 0;
+// Sprite -> puppet hand-off flare around SPR_END, 0..1 (stepped so the silhouette cache stays small): the rims
+// go white-hot, the aura swells and the sky flashes, so the switch from the drawn tuck to the puppet's unfold
+// (whose hair and head differ) reads as him snapping open with a burst of power rather than as a model swap.
+// (The full fix is drawn overhead-volley frames so the whole somersault-volley is the sprite.)
+const FLARE = 0.04;
+const flareAt = (t: number) => Math.round(smooth(clamp(1 - Math.abs(t - SPR_END) / FLARE)) * 8) / 8;
+const FLARE_RIM: RGB = [255, 240, 220];
+const AURA: { fill: RGB; rim: RGB; rim2: RGB } = { fill: [255, 60, 40], rim: [255, 200, 120], rim2: [255, 120, 60] };
 
 const track: [number, Pose][] = [
   [0, POSES.leap],
@@ -239,15 +266,38 @@ export const shotZenith: Shot = {
     const [hx, hy] = hipPos(t);
     const lx = MOON_X - hx, ly = MOON_Y - hy;
     const ll = Math.hypot(lx, ly) || 1;
-    const aura = renderPuppet(HERO_KIT, pose, { k: HK, silhouette: { fill: [255, 60, 40], rim: [255, 200, 120], rim2: [255, 120, 60], lx: 1, ly: -1 } });
-    ctx.globalCompositeOperation = 'lighter';
-    drawPuppet(ctx, aura, hx, hy, HD * 1.1, 0.35 + 0.15 * Math.sin(t * 30));
-    ctx.globalCompositeOperation = 'source-over';
-    const sil = renderPuppet(HERO_KIT, pose, {
-      k: HK,
-      silhouette: { fill: [14, 6, 22], rim: [255, 120, 70], rim2: [150, 36, 48], lx: -lx / ll, ly: -ly / ll },
-    });
-    drawPuppet(ctx, sil, hx, hy, HD);
+    // Hand-off flare (sprite -> puppet at SPR_END): white-hot rims and a swollen aura on both sides of the swap.
+    const flare = flareAt(t);
+    const auraA = lerp(0.35 + 0.15 * Math.sin(t * 30), 0.9, flare);
+    // Back-lit by the moon: a dark figure with a hot rim (his colours showing through on the leap).
+    const dark: Silhouette = {
+      fill: [14, 6, 22],
+      rim: mixRGB([255, 120, 70], FLARE_RIM, flare),
+      rim2: mixRGB([150, 36, 48], FLARE_RIM, flare),
+      lx: -lx / ll,
+      ly: -ly / ll,
+      detail: detailAt(t),
+    };
+    if (t < SPR_END) {
+      const jm = heroJump();
+      const fi = jumpFrameAt(heroSeq, t);
+      const rot = pose.spin;
+      // Spin around the (weighted) centre of mass: that point keeps the offset it has from the pelvis at rest,
+      // so with no spin the pelvis still lands on the hip track.
+      const pa = jm.anchorOf(fi, 'pelvis'), com = jm.frames[fi].com, w = comWeight(t, fi);
+      const pivot: [number, number] = [lerp(pa[0], com[0], w), lerp(pa[1], com[1], w)];
+      const px = hx + (pivot[0] - pa[0]) * JS, py = hy + (pivot[1] - pa[1]) * JS;
+      ctx.globalCompositeOperation = 'lighter';
+      drawJump(ctx, jm.silhouette(fi, { ...AURA, lx: 1, ly: -1 }, rot), fi, px, py, JS * 1.1, { pivot, rot, alpha: auraA });
+      ctx.globalCompositeOperation = 'source-over';
+      drawJump(ctx, jm.silhouette(fi, dark, rot), fi, px, py, JS, { pivot, rot });
+    } else {
+      const aura = renderPuppet(HERO_KIT, pose, { k: HK, silhouette: { ...AURA, lx: 1, ly: -1 } });
+      ctx.globalCompositeOperation = 'lighter';
+      drawPuppet(ctx, aura, hx, hy, HD * 1.1, auraA);
+      ctx.globalCompositeOperation = 'source-over';
+      drawPuppet(ctx, renderPuppet(HERO_KIT, pose, { k: HK, silhouette: dark }), hx, hy, HD);
+    }
 
     // Ball / meteor.
     if (hit) fireRibbon(ctx, trail.pts, 46);
@@ -284,7 +334,7 @@ export const shotZenith: Shot = {
       fx.radialX = ux;
       fx.radialY = uy;
     }
-    fx.flash = Math.max(pulse(t, 0, 0.15) * 0.7, pulse(t, HIT + 0.16, 0.25) * 0.7, ease.inExpo(clamp((t - DUR + 0.12) / 0.12)) * 0.9);
+    fx.flash = Math.max(pulse(t, 0, 0.15) * 0.7, pulse(t, HIT + 0.16, 0.25) * 0.7, ease.inExpo(clamp((t - DUR + 0.12) / 0.12)) * 0.9, 0.15 * flare);
     void keys;
   },
 };

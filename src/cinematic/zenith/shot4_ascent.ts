@@ -1,6 +1,8 @@
 // SHOT 4 — ASCENT: the camera rides the ball up out of the stadium, past the floodlights,
 // punches through the cloud layer, and decelerates into a starfield as the moon rises.
-// No.10 rockets up from below, chasing it.
+// No.10 rockets up from below, chasing it (hand-drawn jump frames: leap, then the
+// knee-drive / rise-float pair looping to the end of the shot; he gathers into the tuck
+// only in shot 5, so the action never rewinds across the cut).
 
 import type { Shot } from '../timeline';
 import { VW, VH } from '../../engine/camera';
@@ -8,7 +10,7 @@ import { clamp, ease, lerp, mixRGB, rgb, type RGB } from '../../engine/math';
 import { PK, drawGlow, glowOf, glowSprite } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { speedStreaks, ribbon } from '../../art/fx';
-import { HERO_KIT, POSES, drawPuppet, poseAt, renderPuppet, type Pose } from '../../art/puppet';
+import { JF, drawJump, heroJump, jumpFrameAt } from '../../art/heroJump';
 import { Trail, drawBall, fireRibbon, meteorFlames } from './common';
 
 const DUR = 1.8;
@@ -16,7 +18,7 @@ const START_Y = 330;
 const RISE = 2950;
 const CLOUD_Y = -1300;
 const MOON_Y = -2860;
-const HK = 0.5, HD = 2; // hero puppet: px/unit and draw scale
+const JS = 2; // hero sprite: world px per sprite px (the shot's pixel size: ball, clouds)
 
 let spin = new BallSpin();
 let punched = -1;
@@ -24,10 +26,15 @@ const trail = new Trail(40);
 const heroTrail = new Trail(14);
 let clouds: { x: number; y: number; v: number; s: number; layer: number }[] = [];
 
+// The hero rides left of the ball's fire column so his face never sits in its glare.
+const heroX = (t: number) => VW / 2 - 78 + Math.sin(t * 3) * 6;
 const ballY = (t: number) => START_Y - RISE * ease.outQuad(clamp(t / DUR));
 const ballV = (t: number) => (RISE * 2 * (1 - clamp(t / DUR))) / DUR;
 const heroLag = (t: number) => lerp(760, 150, ease.outCubic(clamp((t - 0.25) / (DUR - 0.25))));
-const heroTrack: [number, Pose][] = [[0, POSES.leap], [1.2, POSES.leap], [DUR, POSES.tuck]];
+// Jump frames by local time: leap, then the F6/F7 loop while rising, all the way to the cut
+// (shot 5 picks the loop up and does the tuck).
+const heroSeq: [number, number][] = [[0, JF.leap]];
+for (let k = 0, at = 0.84; at < DUR; k++, at += 0.1) heroSeq.push([at, k % 2 ? JF.float : JF.knee]);
 
 export const shotAscent: Shot = {
   name: 'Ascent',
@@ -87,7 +94,7 @@ export const shotAscent: Shot = {
 
     // Hero rising with an aura trail.
     const hy = by + heroLag(t);
-    const hx = VW / 2 - 40 + Math.sin(t * 3) * 8;
+    const hx = heroX(t);
     heroTrail.push(hx, hy);
     if (rng.next() < 0.9) {
       parts.spawn({
@@ -206,13 +213,13 @@ export const shotAscent: Shot = {
     ribbon(ctx, heroTrail.pts, 0, 16, 'rgb(255,160,80)', 0.4);
     ctx.globalCompositeOperation = 'source-over';
     const hy = by + heroLag(t);
-    const hx = VW / 2 - 40 + Math.sin(t * 3) * 8;
-    const pose = poseAt(heroTrack, t);
-    const aura = renderPuppet(HERO_KIT, pose, { k: HK, silhouette: { fill: [255, 90, 40], rim: [255, 220, 140], rim2: [255, 140, 60], lx: 1, ly: -1 } });
+    const hx = heroX(t);
+    const fi = jumpFrameAt(heroSeq, t);
+    const aura = heroJump().silhouette(fi, { fill: [255, 90, 40], rim: [255, 220, 140], rim2: [255, 140, 60], lx: 1, ly: -1 });
     ctx.globalCompositeOperation = 'lighter';
-    drawPuppet(ctx, aura, hx, hy, HD * 1.08, 0.5);
+    drawJump(ctx, aura, fi, hx, hy, JS * 1.08, { anchor: 'pelvis', alpha: 0.5 });
     ctx.globalCompositeOperation = 'source-over';
-    drawPuppet(ctx, renderPuppet(HERO_KIT, pose, { k: HK }), hx, hy, HD);
+    drawJump(ctx, null, fi, hx, hy, JS, { anchor: 'pelvis' });
 
     // Ball + fire trail.
     fireRibbon(ctx, trail.pts, 30);

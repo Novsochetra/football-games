@@ -1,0 +1,67 @@
+{
+  "frameW": 128,
+  "frameH": 128,
+  "facing": "east",
+  "frames": [
+    {
+      "name": "load",
+      "ms": 100,
+      "pelvis": [62, 67],
+      "contact": [69, 102]
+    },
+    {
+      "name": "crouch",
+      "ms": 130,
+      "pelvis": [55, 76],
+      "contact": [69, 102]
+    },
+    {
+      "name": "push",
+      "ms": 60,
+      "pelvis": [68, 64],
+      "contact": [73, 102]
+    },
+    {
+      "name": "take-off",
+      "ms": 60,
+      "pelvis": [79, 58],
+      "contact": [72, 102]
+    },
+    {
+      "name": "leap",
+      "ms": 80,
+      "pelvis": [73, 69],
+      "contact": null
+    },
+    {
+      "name": "knee drive",
+      "ms": 100,
+      "pelvis": [72, 68],
+      "contact": null
+    },
+    {
+      "name": "rise float",
+      "ms": 100,
+      "pelvis": [72, 68],
+      "contact": null
+    },
+    {
+      "name": "pre-tuck",
+      "ms": 80,
+      "pelvis": [69, 65],
+      "contact": null
+    },
+    {
+      "name": "tuck",
+      "ms": 100,
+      "pelvis": [67, 65],
+      "contact": null
+    },
+    {
+      "name": "tuck roll",
+      "ms": 120,
+      "pelvis": [65, 62],
+      "contact": null
+    }
+  ]
+}

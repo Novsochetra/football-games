@@ -6,6 +6,7 @@ import { Particles } from './engine/particles';
 import { Sfx } from './engine/audio';
 import { Rng } from './engine/math';
 import { loadHero } from './art/heroSprite';
+import { loadHeroJump } from './art/heroJump';
 import { buildStadium } from './art/stadium';
 import type { Env } from './cinematic/timeline';
 import { STEP } from './cinematic/timeline';
@@ -38,7 +39,9 @@ async function boot() {
     ctx2dView = view.getContext('2d');
   }
 
-  const art = { hero: await loadHero(), stadium: buildStadium() };
+  // The jump frames live in a module singleton (heroJump()); preload them with the face sprite.
+  const [hero] = await Promise.all([loadHero(), loadHeroJump()]);
+  const art = { hero, stadium: buildStadium() };
   const fx = new FxState();
   const cam = new Camera();
   const env: Env = {
