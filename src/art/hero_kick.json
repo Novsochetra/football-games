@@ -1,0 +1,63 @@
+{
+  "frameW": 128,
+  "frameH": 128,
+  "facing": "east",
+  "frames": [
+    {
+      "name": "stand",
+      "ms": 200,
+      "pelvis": [65, 64],
+      "contact": [72, 102],
+      "ballContact": null
+    },
+    {
+      "name": "flick load",
+      "ms": 120,
+      "pelvis": [64, 64],
+      "contact": [72, 102],
+      "ballContact": null
+    },
+    {
+      "name": "flick hit",
+      "ms": 60,
+      "pelvis": [66, 64],
+      "contact": [72, 102],
+      "ballContact": [87, 97]
+    },
+    {
+      "name": "flick follow",
+      "ms": 140,
+      "pelvis": [66, 62],
+      "contact": [72, 102],
+      "ballContact": null
+    },
+    {
+      "name": "snap open",
+      "ms": 60,
+      "pelvis": [69, 63],
+      "contact": null,
+      "ballContact": null
+    },
+    {
+      "name": "volley load",
+      "ms": 100,
+      "pelvis": [67, 61],
+      "contact": null,
+      "ballContact": null
+    },
+    {
+      "name": "strike",
+      "ms": 80,
+      "pelvis": [60, 57],
+      "contact": null,
+      "ballContact": [87, 84]
+    },
+    {
+      "name": "follow",
+      "ms": 160,
+      "pelvis": [59, 61],
+      "contact": null,
+      "ballContact": null
+    }
+  ]
+}

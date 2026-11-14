@@ -1,5 +1,5 @@
-// WebGL post-processing: shockwave refraction, zoom blur, chromatic aberration,
-// bloom, impact frames (2-tone posterize), flash, grading, vignette, grain.
+// WebGL post-processing: shockwave refraction, pressure lens (pinch/bulge), zoom blur, chromatic
+// aberration, bloom, impact frames (2-tone posterize), flash, grading, vignette, grain.
 // The game draws everything with Canvas2D; this pass turns it into the final image.
 
 import type { RGB } from './math';
@@ -52,6 +52,15 @@ export class FxState {
   /** Limit the cut to an arc between these angles (radians, canvas convention: 0 = +x, PI/2 = down). Equal = full circle. */
   cutA0 = 0;
   cutA1 = 0;
+  /**
+   * Pressure lens (GALE HAMMER): a radial pinch / bulge of the frame around (lensX, lensY).
+   * lens = strength k: positive bulges (magnifies the centre), negative pinches (pulls the
+   * surroundings inward). lensR = radius in screen-height units. 0 = off (neutral).
+   */
+  lens = 0;
+  lensX = 0.5;
+  lensY = 0.5;
+  lensR = 0.2;
 
   reset() {
     this.shocks.length = 0;
@@ -84,6 +93,10 @@ export class FxState {
     this.cutColor = [255, 240, 250];
     this.cutA0 = 0;
     this.cutA1 = 0;
+    this.lens = 0;
+    this.lensX = 0.5;
+    this.lensY = 0.5;
+    this.lensR = 0.2;
   }
 }
 
@@ -178,6 +191,7 @@ void main(){
     float w = uCutW + abs(uCut.w) * 0.6;
     cutLine = exp(-(sd * sd) / (w * w)) * win;
   }
+  //LENS
   for (int i = 0; i < 4; i++) {
     vec4 s = uShock[i];
     if (s.w != 0.0) {
@@ -230,6 +244,23 @@ void main(){
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }`;
 
+// Pressure lens (GALE HAMMER), compiled into a second FINAL program that is used only on frames with fx.lens != 0,
+// so every other frame runs the exact original shader:
+// uv -= (d / (aspect,1)) * k * (1 - r^2)^2 inside radius R (d = (uv - c)*(aspect,1), r = |d| / R).
+const FINAL_LENS = FINAL.replace('void main(){', 'uniform vec4 uLens;\nvoid main(){').replace(
+  '  //LENS',
+  `  {
+    vec2 ld = uv - uLens.xy;
+    ld.x *= aspect;
+    float lr = length(ld) / max(uLens.z, 0.0001);
+    if (lr < 1.0) {
+      float f = 1.0 - lr * lr;
+      ld.x /= aspect;
+      uv -= ld * uLens.w * f * f;
+    }
+  }`,
+);
+
 interface Target {
   fb: WebGLFramebuffer;
   tex: WebGLTexture;
@@ -242,6 +273,7 @@ export class PostFX {
   private progBright: WebGLProgram;
   private progBlur: WebGLProgram;
   private progFinal: WebGLProgram;
+  private progFinalLens: WebGLProgram;
   private sceneTex: WebGLTexture;
   private quad: WebGLBuffer;
   private a?: Target;
@@ -266,6 +298,7 @@ export class PostFX {
     this.progBright = this.program(VERT, BRIGHT);
     this.progBlur = this.program(VERT, BLUR);
     this.progFinal = this.program(VERT, FINAL);
+    this.progFinalLens = this.program(VERT, FINAL_LENS);
     this.quad = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
@@ -380,8 +413,9 @@ export class PostFX {
       this.draw(p, A);
     }
 
-    // Final composite.
-    p = this.progFinal;
+    // Final composite (the lens variant only while a pressure lens is active).
+    const lens = fx.lens !== 0;
+    p = lens ? this.progFinalLens : this.progFinal;
     gl.useProgram(p);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
@@ -426,6 +460,7 @@ export class PostFX {
     gl.uniform4f(this.u(p, 'uCutGlow'), fx.cutColor[0] / 255, fx.cutColor[1] / 255, fx.cutColor[2] / 255, fx.cutGlow);
     gl.uniform1f(this.u(p, 'uCutW'), fx.cutWidth);
     gl.uniform2f(this.u(p, 'uCutArc'), fx.cutA0, fx.cutA1 < fx.cutA0 ? fx.cutA1 + Math.PI * 2 : fx.cutA1);
+    if (lens) gl.uniform4f(this.u(p, 'uLens'), fx.lensX, 1 - fx.lensY, fx.lensR, fx.lens);
     this.draw(p, null);
   }
 }

@@ -2,9 +2,10 @@
 // fire/crimson ribbons, the ball, flames, rings, sparks, dust, grass, and time-warp helpers.
 
 import type { Env } from './timeline';
-import { PK, drawGlow, glowSprite, glowOf } from '../engine/particles';
+import { PK, drawGlow, glowSprite, glowOf, type RampName } from '../engine/particles';
 import { ribbon, type TrailPt } from '../art/fx';
-import { BallSpin, renderBall, type BallPalette } from '../engine/pixel';
+import { BallSpin, renderBall, type BallPalette, type BallSquash } from '../engine/pixel';
+import type { FxState, Shock } from '../engine/post';
 import { clamp, TAU, type Rng } from '../engine/math';
 
 
@@ -109,34 +110,50 @@ function cometLayer(ctx: CanvasRenderingContext2D, pts: TrailPt[], w: number, ca
   ctx.globalAlpha = 1;
 }
 
-/** Ball with optional heat glow. r = pixel radius of the art; D = draw scale. */
-export function drawBall(env: Env, spin: BallSpin, x: number, y: number, r: number, D: number, heat = 0, glow = 0, palette: BallPalette = 'fire') {
+/**
+ * Ball with optional heat glow. r = pixel radius of the art; D = draw scale.
+ * squash (optional, see BallSquash): squash-and-stretch with a flattened contact face on the −x side.
+ * 'cobalt' (GALE HAMMER): a navy halo (normal blend) under a cobalt halo and an ice core, so the glow never
+ * blows out on pale grass or in front of the floodlights.
+ */
+export function drawBall(
+  env: Env, spin: BallSpin, x: number, y: number, r: number, D: number, heat = 0, glow = 0, palette: BallPalette = 'fire',
+  squash?: BallSquash,
+) {
   const ctx = env.ctx;
   if (glow > 0) {
-    ctx.globalCompositeOperation = 'lighter';
-    if (palette === 'crimson') {
-      drawGlow(ctx, glowSprite('aura', 0.55), x, y, r * D * 5, glow * 0.6);
-      drawGlow(ctx, glowOf([255, 220, 235]), x, y, r * D * 2, glow * 0.7);
+    if (palette === 'cobalt') {
+      ctx.globalCompositeOperation = 'source-over';
+      drawGlow(ctx, glowOf([10, 18, 56]), x, y, r * D * 3.4, glow * 0.6);
+      ctx.globalCompositeOperation = 'lighter';
+      drawGlow(ctx, glowSprite('cobalt', 0.55), x, y, r * D * 4.6, glow * 0.5);
+      drawGlow(ctx, glowOf([238, 251, 255]), x, y, r * D * 1.9, glow * 0.6);
     } else {
-      drawGlow(ctx, glowSprite('fire', 0.35), x, y, r * D * 5, glow * 0.7);
-      drawGlow(ctx, glowSprite('fire', 0.05), x, y, r * D * 2.2, glow);
+      ctx.globalCompositeOperation = 'lighter';
+      if (palette === 'crimson') {
+        drawGlow(ctx, glowSprite('aura', 0.55), x, y, r * D * 5, glow * 0.6);
+        drawGlow(ctx, glowOf([255, 220, 235]), x, y, r * D * 2, glow * 0.7);
+      } else {
+        drawGlow(ctx, glowSprite('fire', 0.35), x, y, r * D * 5, glow * 0.7);
+        drawGlow(ctx, glowSprite('fire', 0.05), x, y, r * D * 2.2, glow);
+      }
     }
     ctx.globalCompositeOperation = 'source-over';
   }
-  const cv = renderBall(r, spin, heat, true, palette);
+  const cv = renderBall(r, spin, heat, true, palette, squash);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(cv, x - (cv.width / 2) * D, y - (cv.height / 2) * D, cv.width * D, cv.height * D);
   if (heat > 0.6) {
     ctx.globalCompositeOperation = 'lighter';
-    drawGlow(ctx, glowOf([255, 250, 230]), x, y, r * D * 1.3, (heat - 0.6) * 2);
+    drawGlow(ctx, glowOf(palette === 'cobalt' ? [238, 251, 255] : [255, 250, 230]), x, y, r * D * 1.3, (heat - 0.6) * 2);
     ctx.globalCompositeOperation = 'source-over';
   }
 }
 
 /** Meteor head: corona flames around a white-hot ball. dir = travel direction (radians). */
 export function meteorFlames(env: Env, x: number, y: number, R: number, dir: number, intensity: number, dt: number, palette: BallPalette = 'fire') {
-  const flameRamp = palette === 'crimson' ? 'crimson' : 'fire';
-  const sparkRamp = palette === 'crimson' ? 'silver' : 'ember';
+  const flameRamp: RampName = palette === 'crimson' ? 'crimson' : palette === 'cobalt' ? 'cobalt' : 'fire';
+  const sparkRamp: RampName = palette === 'crimson' ? 'silver' : palette === 'cobalt' ? 'dew' : 'ember';
   const p = env.parts;
   const rng = env.rng;
   const back = dir + Math.PI;
@@ -161,12 +178,12 @@ export function meteorFlames(env: Env, x: number, y: number, R: number, dir: num
 }
 
 /** Expanding ring particles (shock rings) */
-export function ring(env: Env, x: number, y: number, r0: number, r1: number, dur: number, squash = 1, rampName: 'gold' | 'white' | 'cyan' | 'fire' | 'aura' | 'crimson' | 'silver' = 'gold', rot = 0) {
+export function ring(env: Env, x: number, y: number, r0: number, r1: number, dur: number, squash = 1, rampName: RampName = 'gold', rot = 0) {
   env.parts.spawn({ kind: PK.Ring, x, y, s0: r0, s1: r1, max: dur, k: squash, ramp: rampName, r0: 0, r1: 0.9, a0: 1, a1: 0, rot });
 }
 
 /** Burst of sparks in all directions (or a cone). */
-export function sparks(env: Env, x: number, y: number, n: number, speed: number, cone = TAU, dir = 0, rampName: 'ember' | 'gold' | 'cyan' | 'white' | 'crimson' | 'silver' = 'ember') {
+export function sparks(env: Env, x: number, y: number, n: number, speed: number, cone = TAU, dir = 0, rampName: RampName = 'ember') {
   const rng = env.rng;
   for (let i = 0; i < n; i++) {
     const a = dir + rng.range(-cone / 2, cone / 2);
@@ -224,4 +241,20 @@ export function crimsonRibbon(ctx: CanvasRenderingContext2D, pts: TrailPt[], w: 
   ribbon(ctx, pts, 0, w * 0.8, 'rgb(255,120,150)', 0.7 * a);
   ribbon(ctx, pts, 0, w * 0.3, 'rgb(245,245,255)', 0.95 * a);
   ctx.globalCompositeOperation = 'source-over';
+}
+
+/**
+ * Add a post-FX shock ring, respecting the shader's 4-slot limit: when all 4 slots are taken, the new ring
+ * replaces the weakest one (smallest |s|) if it is stronger, otherwise it is dropped. Returns true if kept.
+ */
+export function pushShock(fx: FxState, sh: Shock): boolean {
+  if (fx.shocks.length < 4) {
+    fx.shocks.push(sh);
+    return true;
+  }
+  let k = 0;
+  for (let i = 1; i < 4; i++) if (Math.abs(fx.shocks[i].s) < Math.abs(fx.shocks[k].s)) k = i;
+  if (Math.abs(fx.shocks[k].s) >= Math.abs(sh.s)) return false;
+  fx.shocks[k] = sh;
+  return true;
 }

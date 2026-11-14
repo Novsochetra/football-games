@@ -216,7 +216,11 @@ export const PIXEL_FONT = '"Silkscreen", "Press Start 2P", monospace';
  */
 export function slamTitle(
   ctx: CanvasRenderingContext2D, text: string, x: number, y: number, size: number, t: number,
-  opts: { stagger?: number; fill?: string; stroke?: string; outer?: string; skew?: number; align?: 'center' | 'left'; glow?: string } = {},
+  opts: {
+    stagger?: number; fill?: string; stroke?: string; outer?: string; skew?: number; align?: 'center' | 'left'; glow?: string;
+    /** Bottom colour of the fill gradient (default warm orange '#ffb43a'; GALE HAMMER uses an ice/cyan). */
+    fill2?: string;
+  } = {},
 ) {
   const stagger = opts.stagger ?? 0.045;
   const skew = opts.skew ?? -0.22;
@@ -252,7 +256,7 @@ export function slamTitle(
       const g = ctx.createLinearGradient(0, -size * 0.8, 0, 0);
       g.addColorStop(0, '#ffffff');
       g.addColorStop(0.55, opts.fill ?? '#fff3c4');
-      g.addColorStop(1, '#ffb43a');
+      g.addColorStop(1, opts.fill2 ?? '#ffb43a');
       ctx.fillStyle = g;
       ctx.fillText(c, 0, 0);
       // impact flash on landing

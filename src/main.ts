@@ -7,16 +7,18 @@ import { Sfx } from './engine/audio';
 import { Rng } from './engine/math';
 import { loadHero } from './art/heroSprite';
 import { loadHeroJump } from './art/heroJump';
+import { loadHeroKick } from './art/heroKick';
 import { loadStudioAnims } from './art/studioAnim';
 import { buildStadium } from './art/stadium';
 import type { Env } from './cinematic/timeline';
 import { STEP } from './cinematic/timeline';
 import { Game } from './game/game';
-import { SPECIALS, type SpecialId } from './cinematic/specials';
+import { visibleSpecials, type SpecialId } from './cinematic/specials';
 
 const BLURBS: Record<SpecialId, string> = {
   zenith: 'No.10 flicks the ball into the sky, leaps after it, and volleys it down from in front of the full moon like a falling star.',
   crescent: 'Back to goal, No.10 flips upside down under a high cross. The stadium turns over with him, and his boot carves a crescent of crimson fire that carries the ball into the net.',
+  gale: 'From 30 m out, No.10 hits the ball so hard it never touches the grass again. It skims on cushions of crushed air, the world goes quiet, and the thunder only arrives after the ball has gone past.',
 };
 
 async function boot() {
@@ -40,8 +42,8 @@ async function boot() {
     ctx2dView = view.getContext('2d');
   }
 
-  // The jump frames live in a module singleton (heroJump()); preload them with the face sprite.
-  const [hero] = await Promise.all([loadHero(), loadHeroJump(), loadStudioAnims()]);
+  // The jump and flick/volley frames live in module singletons (heroJump(), heroKick()); preload them with the face sprite.
+  const [hero] = await Promise.all([loadHero(), loadHeroJump(), loadHeroKick(), loadStudioAnims()]);
   const art = { hero, stadium: buildStadium() };
   const fx = new FxState();
   const cam = new Camera();
@@ -164,10 +166,11 @@ async function boot() {
     }
   };
 
+  const VISIBLE = visibleSpecials(new URLSearchParams(location.search).has('all'));
   const titleEl = $('title');
   const kindEl = $('kind');
   const blurbEl = $('blurb');
-  SPECIALS.forEach((d) => {
+  VISIBLE.forEach((d) => {
     const id = `sp-${d.id}`;
     const input = document.createElement('input');
     input.type = 'radio';
@@ -268,11 +271,12 @@ async function boot() {
   let initial: SpecialId = 'crescent';
   try {
     const saved = localStorage.getItem('special');
-    if (saved === 'zenith' || saved === 'crescent') initial = saved;
+    if (saved && VISIBLE.some((d) => d.id === saved)) initial = saved as SpecialId;
   } catch {
     /* ignore */
   }
-  if (params.has('special')) initial = params.get('special') as SpecialId;
+  const qs = params.get('special');
+  if (qs && VISIBLE.some((d) => d.id === qs)) initial = qs as SpecialId;
   selectSpecial(initial);
   if (params.has('seek')) {
     game.unleash(0);

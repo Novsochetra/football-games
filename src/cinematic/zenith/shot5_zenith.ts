@@ -1,63 +1,67 @@
 // SHOT 5 — ZENITH: at the top of the sky, the ball hangs in front of the full moon.
 // Time slows; No.10 (a rim-lit silhouette against the moon) somersaults over it and
 // volleys it straight down. Contact detonates: red impact frame, shock ring across the sky.
-// The rise (continuing shot 4's knee-drive loop) and the spinning tuck are the hand-drawn
-// jump frames, rotated by the track's spin around the tuck's centre of mass; the overhead-volley
-// load/strike/follow-through stay on the skeletal puppet, handed over under a rim-light flare.
+// The whole move is hand-drawn No.10: the rise (continuing shot 4's knee-drive loop) and the
+// spinning tuck are the jump frames, rotated by the spin track around the tuck's centre of mass;
+// out of the tuck he snaps open (V0), cocks the volley (V1), strikes (V2: his instep meets the ball
+// on HIT, the leg drawn along the shot line) and follows through (V3) to the end of the shot
+// (heroKick frames, rotated around the pelvis).
 
 import type { Shot } from '../timeline';
 import { VW, VH } from '../../engine/camera';
-import { TAU, clamp, ease, lerp, keys, mixRGB, smooth, type RGB } from '../../engine/math';
+import { TAU, clamp, ease, lerp, keys, smooth, type RGB } from '../../engine/math';
 import { PK, drawGlow, glowOf, glowSprite } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { focusLines } from '../../art/fx';
-import { HERO_KIT, P, POSES, drawPuppet, joints, poseAt, renderPuppet, type Pose } from '../../art/puppet';
-import { JF, drawJump, heroJump, jumpFrameAt, type Silhouette } from '../../art/heroJump';
+import { JF, drawStrip, heroJump, type HeroStrip, type Silhouette } from '../../art/heroJump';
+import { KF, heroKick, kickBallOf } from '../../art/heroKick';
 import { Trail, drawBall, fireRibbon, meteorFlames, pulse, ring, sparks, warp } from './common';
 
 const DUR = 2.6;
 const HIT = 1.38;
 const MOON_X = 352, MOON_Y = 142, MOON_S = 1.45;
 const B0X = MOON_X - 18, B0Y = MOON_Y + 26;
-const HK = 0.95, HD = 1.5; // puppet px/unit and draw scale: same pixel size and body size as the sprite
-const JS = HD; // hero sprite: world px per sprite px
+const JS = 1.5; // hero sprite: world px per sprite px
 const D = Math.PI / 180;
 const SHOT_DIR = 34 * D; // ball leaves down-right
-const STRIKE: Pose = P({ torso: -30 * D, head: 16 * D, thighN: 64 * D, kneeN: 0, footN: -8 * D, thighF: -36 * D, kneeF: 70 * D, footF: 10 * D, armN: -110 * D, elbowN: 10 * D, armF: 120 * D, elbowF: 20 * D, spin: TAU });
-const FOLLOW: Pose = P({ ...STRIKE, thighN: 96 * D, torso: -36 * D, spin: TAU + 0.2 });
+const BALL_R = 7 * 2; // world px (drawBall r 7 at scale 2)
 
-// Sprite frames by local time (spin comes from the pose track), then the puppet from SPR_END.
-const SPR_END = 1.16;
-// How much of the hero's colours read through the moon-lit silhouette: his kit shows on the
-// leap, dims as time stops (the tuck still reads as knees, arms and head), and is a pure
-// silhouette by the hand-off to the puppet volley. Stepped so the silhouette cache stays small.
-const detailAt = (t: number) => Math.round(lerp(0.3, 0.15, smooth(clamp((t - 0.62) / 0.3))) * (1 - smooth(clamp((t - 0.95) / (SPR_END - 0.95)))) * 40) / 40;
-// Opens on shot 4's F6/F7 knee-drive loop (no rewind to the F5 leap), then gathers into the tuck.
-const heroSeq: [number, number][] = [[0, JF.knee], [0.12, JF.float], [0.24, JF.knee], [0.34, JF.pretuck], [0.46, JF.tuck], [0.56, JF.roll], [1.06, JF.tuck]];
+// Drawn frames by local time. Opens on shot 4's F6/F7 knee-drive loop (no rewind to the F5 leap),
+// gathers into the tuck and somersaults, then snaps open into the volley.
+const V0_AT = 1.13; // snap open out of the tuck
+const V1_AT = 1.22; // volley load (scissor wind-up)
+const V2_AT = HIT - 0.02; // strike: on the frame before contact, held through the impact frames
+const V3_AT = 1.62; // follow-through, held to the end of the shot
+type Strip = 'jump' | 'kick';
+const heroSeq: [number, Strip, number][] = [
+  [0, 'jump', JF.knee], [0.12, 'jump', JF.float], [0.24, 'jump', JF.knee], [0.34, 'jump', JF.pretuck], [0.46, 'jump', JF.tuck],
+  [0.56, 'jump', JF.roll], [1.06, 'jump', JF.tuck],
+  [V0_AT, 'kick', KF.v0], [V1_AT, 'kick', KF.v1], [V2_AT, 'kick', KF.v2], [V3_AT, 'kick', KF.v3],
+];
+function heroFrameAt(t: number): { s: HeroStrip; fi: number; tuck: boolean } {
+  let key = heroSeq[0];
+  for (const k of heroSeq) if (t >= k[0]) key = k;
+  const fi = key[2];
+  if (key[1] === 'kick') return { s: heroKick(), fi, tuck: false };
+  return { s: heroJump(), fi, tuck: fi === JF.pretuck || fi === JF.tuck || fi === JF.roll };
+}
+// Spin (radians, clockwise on screen). The rise and the somersault keep the original track; the volley
+// frames have the opening and the lean drawn into the pose, so they turn only a little: V0/V1 settle from
+// about -9 deg to level, V2 is exactly level (its leg is drawn along SHOT_DIR, the meteor's exit line),
+// and V3 tips on from +8 deg through the hold as the follow-through carries him round.
+const TUCK_SPIN: [number, number][] = [[0, 0], [0.5, 0], [0.62, 0.6], [1.1, TAU - 0.9], [1.26, TAU - 0.15]];
+const VOLLEY_SPIN: [number, number][] = [[V0_AT, -9 * D], [V2_AT, 0], [V3_AT, 0]];
+const FOLLOW_SPIN: [number, number][] = [[V3_AT, 8 * D], [1.75, 11 * D], [DUR, 24 * D]];
+const spinAt = (t: number) => (t < V0_AT ? keys(TUCK_SPIN, t) : t < V3_AT ? keys(VOLLEY_SPIN, t) : keys(FOLLOW_SPIN, t));
+// How much of the hero's colours read through the moon-lit silhouette: his kit shows on the leap and
+// dims as time stops; from then on a little of it (red jersey, white boots) keeps reading through the
+// tuck and the volley. Stepped so the silhouette cache stays small.
+const detailAt = (t: number) => Math.round(lerp(0.3, 0.15, smooth(clamp((t - 0.62) / 0.3))) * 40) / 40;
 // The somersault turns around the tuck's centre of mass, not the pelvis anchor (which sits ~19 sprite px
 // off it): 1 = pivot on the centre of mass. While the spin is 0 the pivot makes no difference; it eases
-// back to the pelvis before SPR_END so the hand-off to the hip-pivoted puppet stays registered.
-const comWeight = (t: number, fi: number) =>
-  fi === JF.pretuck || fi === JF.tuck || fi === JF.roll ? 1 - smooth(clamp((t - 1.06) / (SPR_END - 1.06))) : 0;
-// Sprite -> puppet hand-off flare around SPR_END, 0..1 (stepped so the silhouette cache stays small): the rims
-// go white-hot, the aura swells and the sky flashes, so the switch from the drawn tuck to the puppet's unfold
-// (whose hair and head differ) reads as him snapping open with a burst of power rather than as a model swap.
-// (The full fix is drawn overhead-volley frames so the whole somersault-volley is the sprite.)
-const FLARE = 0.04;
-const flareAt = (t: number) => Math.round(smooth(clamp(1 - Math.abs(t - SPR_END) / FLARE)) * 8) / 8;
-const FLARE_RIM: RGB = [255, 240, 220];
+// back to the pelvis by the snap open, where the volley frames take over on the pelvis (hip track).
+const comWeight = (t: number, tuck: boolean) => (tuck ? 1 - smooth(clamp((t - 1.06) / (V0_AT - 1.06))) : 0);
 const AURA: { fill: RGB; rim: RGB; rim2: RGB } = { fill: [255, 60, 40], rim: [255, 200, 120], rim2: [255, 120, 60] };
-
-const track: [number, Pose][] = [
-  [0, POSES.leap],
-  [0.5, POSES.tuck],
-  [0.62, { ...POSES.tuck, spin: 0.6 }],
-  [1.1, { ...POSES.tuck, spin: TAU - 0.9 }],
-  [1.26, { ...POSES.ohLoad, spin: TAU - 0.15 }],
-  [HIT, STRIKE],
-  [1.75, FOLLOW],
-  [DUR, { ...FOLLOW, spin: TAU + 0.5 }],
-];
 
 let spin = new BallSpin();
 let ball = { x: B0X, y: B0Y, vx: 0, vy: 0 };
@@ -65,10 +69,14 @@ let hit = false;
 const trail = new Trail(30);
 let hipAtHit: [number, number] = [0, 0];
 
+// Top of the rise (where the somersault turns over), in world px. Kept where the rise has always peaked
+// so the knee drive and the tuck frame the same way; the strike then settles from here onto hipAtHit.
+const APEX: [number, number] = [246.24, 85.45];
+
 function hipPos(t: number): [number, number] {
   // Rise from below-left, arc over the ball, settle so the boot meets the ball at HIT.
   const start: [number, number] = [150, 470];
-  const apex: [number, number] = [hipAtHit[0] - 26, hipAtHit[1] - 60];
+  const apex = APEX;
   if (t <= 0.95) {
     const u = ease.outCubic(clamp(t / 0.95));
     return [lerp(start[0], apex[0], u), lerp(start[1], apex[1], u)];
@@ -97,9 +105,16 @@ export const shotZenith: Shot = {
     hit = false;
     trail.clear();
     ball = { x: B0X, y: B0Y, vx: 0, vy: 0 };
-    const j = joints(STRIKE);
-    // Place the hip so the boot (toe) meets the back-top of the ball.
-    hipAtHit = [B0X - 8 - j.toeN[0] * HK * HD, B0Y - 6 - j.toeN[1] * HK * HD];
+    // Place the hip so the V2 instep (its ball-contact pixel) meets the back-top of the ball on HIT: the ball
+    // centre sits along SHOT_DIR from the contact, slightly inside one radius (the ball is drawn over the toe).
+    // The ball still bobs until contact: use where it is on the first step at or after HIT.
+    const km = heroKick();
+    const pa = km.anchorOf(KF.v2, 'pelvis');
+    const [cx, cy] = kickBallOf(KF.v2)!;
+    const r = (BALL_R * 0.9) / JS;
+    const bx = cx + Math.cos(SHOT_DIR) * r, by = cy + Math.sin(SHOT_DIR) * r;
+    const yHit = B0Y + Math.sin(Math.ceil(HIT * 60 - 1e-6) / 60 * 2.2) * 2;
+    hipAtHit = [B0X - (bx - pa[0]) * JS, yHit - (by - pa[1]) * JS];
     env.cam.set(VW / 2, VH / 2, 1, 0);
   },
   update(env, t, dt) {
@@ -262,41 +277,24 @@ export const shotZenith: Shot = {
     env.parts.draw(ctx, 0);
 
     // Hero: silhouette against the moon, rim-lit from the moon side, with a crimson aura.
-    const pose = poseAt(track, t);
     const [hx, hy] = hipPos(t);
     const lx = MOON_X - hx, ly = MOON_Y - hy;
     const ll = Math.hypot(lx, ly) || 1;
-    // Hand-off flare (sprite -> puppet at SPR_END): white-hot rims and a swollen aura on both sides of the swap.
-    const flare = flareAt(t);
-    const auraA = lerp(0.35 + 0.15 * Math.sin(t * 30), 0.9, flare);
-    // Back-lit by the moon: a dark figure with a hot rim (his colours showing through on the leap).
-    const dark: Silhouette = {
-      fill: [14, 6, 22],
-      rim: mixRGB([255, 120, 70], FLARE_RIM, flare),
-      rim2: mixRGB([150, 36, 48], FLARE_RIM, flare),
-      lx: -lx / ll,
-      ly: -ly / ll,
-      detail: detailAt(t),
-    };
-    if (t < SPR_END) {
-      const jm = heroJump();
-      const fi = jumpFrameAt(heroSeq, t);
-      const rot = pose.spin;
+    const auraA = 0.35 + 0.15 * Math.sin(t * 30);
+    // Back-lit by the moon: a dark figure with a hot rim (his colours showing through).
+    const dark: Silhouette = { fill: [14, 6, 22], rim: [255, 120, 70], rim2: [150, 36, 48], lx: -lx / ll, ly: -ly / ll, detail: detailAt(t) };
+    {
+      const { s, fi, tuck } = heroFrameAt(t);
+      const rot = spinAt(t);
       // Spin around the (weighted) centre of mass: that point keeps the offset it has from the pelvis at rest,
       // so with no spin the pelvis still lands on the hip track.
-      const pa = jm.anchorOf(fi, 'pelvis'), com = jm.frames[fi].com, w = comWeight(t, fi);
+      const pa = s.anchorOf(fi, 'pelvis'), com = s.frames[fi].com, w = comWeight(t, tuck);
       const pivot: [number, number] = [lerp(pa[0], com[0], w), lerp(pa[1], com[1], w)];
       const px = hx + (pivot[0] - pa[0]) * JS, py = hy + (pivot[1] - pa[1]) * JS;
       ctx.globalCompositeOperation = 'lighter';
-      drawJump(ctx, jm.silhouette(fi, { ...AURA, lx: 1, ly: -1 }, rot), fi, px, py, JS * 1.1, { pivot, rot, alpha: auraA });
+      drawStrip(ctx, s, s.silhouette(fi, { ...AURA, lx: 1, ly: -1 }, rot), fi, px, py, JS * 1.1, { pivot, rot, alpha: auraA });
       ctx.globalCompositeOperation = 'source-over';
-      drawJump(ctx, jm.silhouette(fi, dark, rot), fi, px, py, JS, { pivot, rot });
-    } else {
-      const aura = renderPuppet(HERO_KIT, pose, { k: HK, silhouette: { ...AURA, lx: 1, ly: -1 } });
-      ctx.globalCompositeOperation = 'lighter';
-      drawPuppet(ctx, aura, hx, hy, HD * 1.1, auraA);
-      ctx.globalCompositeOperation = 'source-over';
-      drawPuppet(ctx, renderPuppet(HERO_KIT, pose, { k: HK, silhouette: dark }), hx, hy, HD);
+      drawStrip(ctx, s, s.silhouette(fi, dark, rot), fi, px, py, JS, { pivot, rot });
     }
 
     // Ball / meteor.
@@ -334,7 +332,6 @@ export const shotZenith: Shot = {
       fx.radialX = ux;
       fx.radialY = uy;
     }
-    fx.flash = Math.max(pulse(t, 0, 0.15) * 0.7, pulse(t, HIT + 0.16, 0.25) * 0.7, ease.inExpo(clamp((t - DUR + 0.12) / 0.12)) * 0.9, 0.15 * flare);
-    void keys;
+    fx.flash = Math.max(pulse(t, 0, 0.15) * 0.7, pulse(t, HIT + 0.16, 0.25) * 0.7, ease.inExpo(clamp((t - DUR + 0.12) / 0.12)) * 0.9);
   },
 };

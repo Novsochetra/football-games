@@ -49,6 +49,11 @@ export interface Shot {
   rate?(t: number): number;
   /** Sound/one-shot cues: fired once when local time crosses `at`. */
   cues?: { at: number; fn: (env: Env) => void }[];
+  /**
+   * Master muffle level (0 = open, 1 = fully muffled) at local time t, on the runner's unwarped clock.
+   * Applied with sfx.muffle() on every step and right after init, so seek and replay are exact. Default 0.
+   */
+  muffle?(t: number): number;
 }
 
 export const STEP = 1 / 60;
@@ -90,6 +95,9 @@ export class Cinematic {
     env.cam.reset();
     env.rng = new Rng(this.shots[i].seed);
     this.shots[i].init(env);
+    // Same JS tick as init (which may clearBus()): the new shot's level wins, so a muffle that carries over
+    // a cut never opens for a frame.
+    env.sfx.muffle(this.shots[i].muffle?.(0) ?? 0);
   }
 
   start(i = 0) {
@@ -116,6 +124,7 @@ export class Cinematic {
     const r = s.rate ? s.rate(t1) : 1;
     this.t = t1;
     this.frame++;
+    env.sfx.muffle(s.muffle?.(t1) ?? 0);
     s.update(env, t1, dt * r);
     env.parts.update(dt * r);
     env.cam.update(dt);
@@ -152,6 +161,8 @@ export class Cinematic {
     while (i < this.shots.length - 1 && acc + this.shots[i].dur <= gt) acc += this.shots[i++].dur;
     const local = Math.max(0, Math.min(gt - acc, this.shots[i].dur - 1e-4));
     this.done = false;
+    // A jump in time: open the muffle, release ducks and choke every held voice before fast-forwarding.
+    env.sfx.clearBus({ tails: true });
     this.enter(i);
     env.sfx.silent = true;
     const n = Math.floor(local / STEP + 1e-6);

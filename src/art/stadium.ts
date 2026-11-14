@@ -258,8 +258,21 @@ export function drawFieldBackdrop(ctx: CanvasRenderingContext2D, st: Stadium, ca
   if (right > FIELD.width) ctx.fillRect(FIELD.width, FIELD.horizon, right - FIELD.width + 200, 400);
 }
 
-/** Goal frame + net, side view. `bulge` pushes the back net outward (0..1+). part: 'back' draws net, 'front' draws the near post. */
-export function drawGoal(ctx: CanvasRenderingContext2D, part: 'back' | 'front', bulge = 0, shake = 0) {
+/** A local bulge of the back net (side view): (u, v) on the back panel (u far->near post, v 0 top..1 ground). */
+export interface NetDimple {
+  u: number;
+  v: number;
+  /** Strength, in the same units as `bulge` (1 = 46 px). */
+  amt: number;
+  /** Radius in panel units (default 0.22). */
+  r?: number;
+}
+
+/**
+ * Goal frame + net, side view. `bulge` pushes the back net outward (0..1+). part: 'back' draws net, 'front' draws the near post.
+ * `dimple` (optional) adds a local bulge on the back net (e.g. the ball punching into the top corner).
+ */
+export function drawGoal(ctx: CanvasRenderingContext2D, part: 'back' | 'front', bulge = 0, shake = 0, dimple?: NetDimple) {
   const gx = FIELD.goalX, far = FIELD.goalFar, near = FIELD.goalNear, H = FIELD.goalH, D = FIELD.goalDepth;
   const ob = 0.35;
   const fx = gx + (far - FIELD.horizon) * ob, nx = gx + (near - FIELD.horizon) * ob;
@@ -273,7 +286,11 @@ export function drawGoal(ctx: CanvasRenderingContext2D, part: 'back' | 'front', 
       // u along depth (far->near), v height (0 top .. 1 ground)
       const baseX = lerp(fx, nx, u) + D;
       const y = lerp(far, near, u) - H * (1 - v) * 0.92;
-      const b = Math.sin(u * Math.PI) * Math.sin(v * Math.PI * 0.9 + 0.1) * bulge * 46;
+      let b = Math.sin(u * Math.PI) * Math.sin(v * Math.PI * 0.9 + 0.1) * bulge * 46;
+      if (dimple) {
+        const r = dimple.r ?? 0.22;
+        b += Math.exp(-((u - dimple.u) ** 2 + (v - dimple.v) ** 2) / (r * r)) * dimple.amt * 46;
+      }
       return [baseX + b, y + b * 0.1];
     };
     for (let i = 0; i <= cols; i++) {
@@ -328,4 +345,243 @@ export function drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, 
   ctx.beginPath();
   ctx.ellipse(x, y, w, w * 0.28, 0, 0, Math.PI * 2);
   ctx.fill();
+}
+
+// ---------------------------------------------------------------- Down-the-pitch ground (back views)
+
+/**
+ * A perspective view straight down the pitch toward the goal (+x), for back views: the eye stands at field
+ * (x, z) at height h (world px; 10 px ~ 1 m; the goal line is FIELD.goalX = 1180 and the goal centre is z 257),
+ * looking along +x with a level horizon. Screen x grows with field z (looking east, the near touchline is
+ * to the right). f = focal length (screen px per world px at 1 world px of depth): scale it to zoom.
+ */
+export interface DownPitchView {
+  x: number;
+  z: number;
+  h: number;
+  f: number;
+  /** Screen y of the horizon. */
+  horizon: number;
+  /** Screen x of the view axis. */
+  cx: number;
+}
+
+/** A starting view: ~4 m behind a striker 30 m out, eye at 1.8 m. */
+export const DOWN_PITCH_VIEW: DownPitchView = { x: 840, z: GOAL_Z(), h: 18, f: 560, horizon: 112, cx: 320 };
+
+function GOAL_Z() {
+  return (FIELD.goalFar + FIELD.goalNear) / 2;
+}
+
+let lastView: DownPitchView = DOWN_PITCH_VIEW;
+
+export interface Projected {
+  /** Screen position. */
+  x: number;
+  y: number;
+  /** Screen px per world px at that depth. */
+  s: number;
+  /** Ground foreshortening: a ground circle of radius R draws as an ellipse R*s wide and R*s*k tall. */
+  k: number;
+  /** Depth from the eye (world px). */
+  d: number;
+}
+
+/**
+ * Project a field point (x along the pitch, z across, h height above the turf) into the screen of `v`
+ * (default: the view last passed to drawDownPitch). Use it to place stamps, players and the ball on the
+ * down-the-pitch ground. Points at or behind the eye are clamped to 2 px of depth.
+ */
+export function projectDecal(x: number, z: number, h = 0, v: DownPitchView = lastView): Projected {
+  const d = Math.max(2, x - v.x);
+  const s = v.f / d;
+  return { x: v.cx + (z - v.z) * s, y: v.horizon + (v.h - h) * s, s, k: Math.min(1, Math.max(0, (v.h - h) / d)), d };
+}
+
+export interface DownPitchOpts {
+  /** How far the net is ballooned away from us (0..1). */
+  bulge?: number;
+  /** A ripple of camera flashes across the far stand, left to right: 0..1 = the wave front's position. */
+  flashWave?: number;
+  /** Strength of the flash wave (default 1). */
+  flashAmt?: number;
+  /** Ambient crowd camera flashes (default true). */
+  ambientFlashes?: boolean;
+}
+
+/**
+ * Draw the down-the-pitch ground in screen space (call env.screen() first): the far stand and floodlights
+ * behind the goal, projected mowing stripes, the box lines, and the goal small at the vanishing area.
+ * Shared by GALE HAMMER (shot 6) and MERIDIAN THREAD. Remembers `v` for projectDecal().
+ */
+export function drawDownPitch(ctx: CanvasRenderingContext2D, st: Stadium, v: DownPitchView, time: number, o: DownPitchOpts = {}) {
+  lastView = v;
+  const W = 640, H = 360;
+  const gx = FIELD.goalX, gz = GOAL_Z();
+  const P = (x: number, z: number, h = 0) => projectDecal(x, z, h, v);
+
+  // Night sky (only a sliver ever shows above the stand: no moon, no stars here).
+  const standD = gx + 90 - v.x;
+  const standTop = v.horizon + (v.h - 170) * (v.f / standD);
+  const sky = ctx.createLinearGradient(0, standTop - 120, 0, v.horizon);
+  sky.addColorStop(0, '#05030d');
+  sky.addColorStop(1, '#1a1036');
+  ctx.fillStyle = sky;
+  ctx.fillRect(-20, -20, W + 40, v.horizon + 22);
+
+  // Floodlight towers in the far corners (behind the stand's ends).
+  for (const side of [-1, 1]) {
+    const base = P(gx + 150, gz + side * 520, 0), top = P(gx + 150, gz + side * 520, 320);
+    const tw = Math.max(2, 3 * base.s);
+    ctx.fillStyle = '#1b1830';
+    ctx.fillRect(base.x - tw / 2, top.y, tw, base.y - top.y);
+    ctx.fillStyle = '#2b2746';
+    ctx.fillRect(top.x - 18 * top.s, top.y - 14 * top.s, 36 * top.s, 16 * top.s);
+  }
+
+  // Far stand behind the goal: the crowd strip as a vertical plane (smoothed: it is far away and the camera cranes).
+  const sL = P(gx + 90, gz - 900, 0), sR = P(gx + 90, gz + 900, 0), sT = P(gx + 90, gz, 150);
+  ctx.save();
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(st.crowd, 0, 0, st.crowd.width, st.crowd.height, sL.x, sT.y, sR.x - sL.x, sL.y - sT.y);
+  ctx.restore();
+  // Roof edge.
+  ctx.fillStyle = '#07050f';
+  const roof = P(gx + 90, gz, 168);
+  ctx.fillRect(-20, roof.y, W + 40, Math.max(2, sT.y - roof.y));
+  // Camera flashes: ambient twinkles plus an optional wave rippling left to right.
+  ctx.globalCompositeOperation = 'lighter';
+  const fw = o.flashWave, famt = o.flashAmt ?? 1;
+  for (const fl of st.flashes) {
+    const u = fl.x / st.crowd.width;
+    const x = lerp(sL.x, sR.x, u), y = lerp(sT.y, sL.y, fl.y / st.crowd.height);
+    if (x < -10 || x > W + 10) continue;
+    let a = 0;
+    if (o.ambientFlashes !== false) {
+      const ph = (time * 0.9 + fl.t) % 3.2;
+      if (ph < 0.12) a = 1 - ph / 0.12;
+    }
+    if (fw !== undefined) {
+      // Map the visible part of the stand to the wave 0..1 so it crosses the frame.
+      const sx = clamp(x / W);
+      const dx = Math.abs(sx - fw);
+      if (dx < 0.06) a = Math.max(a, (1 - dx / 0.06) * famt * (0.55 + 0.45 * ((fl.t * 7.3) % 1)));
+    }
+    if (a > 0) drawGlow(ctx, glowSprite('white', 0), x, y, 5, a);
+  }
+  // Lamp glows (warm floodlights).
+  for (const side of [-1, 1]) {
+    const top = P(gx + 150, gz + side * 520, 312);
+    drawGlow(ctx, glowOf([255, 250, 220]), top.x, top.y, 60, 0.5);
+    drawGlow(ctx, glowOf([255, 255, 255]), top.x, top.y, 20, 0.85);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+
+  // Turf: run-off behind the goal line, then 5 m mowing stripes toward the eye.
+  ctx.fillStyle = '#245f2d';
+  ctx.fillRect(-20, sL.y, W + 40, H - sL.y + 20);
+  const near = v.x + 3;
+  const step = 50;
+  for (let x = Math.floor(near / step) * step; x < gx; x += step) {
+    const a = P(Math.max(near, x), gz), b = P(Math.min(gx, x + step), gz);
+    if (b.y > H + 20) continue;
+    ctx.fillStyle = Math.round(x / step) % 2 === 0 ? '#2f8a3c' : '#287a35';
+    ctx.fillRect(-20, b.y, W + 40, Math.min(H + 20, a.y) - b.y + 1);
+  }
+  // Depth haze toward the horizon.
+  const hz = ctx.createLinearGradient(0, sL.y, 0, sL.y + 80);
+  hz.addColorStop(0, 'rgba(10,14,40,0.45)');
+  hz.addColorStop(1, 'rgba(10,14,40,0)');
+  ctx.fillStyle = hz;
+  ctx.fillRect(-20, sL.y, W + 40, 80);
+
+  // Lines: a ground polyline projected in pieces, its width shrinking with depth.
+  ctx.strokeStyle = 'rgba(240,245,255,0.85)';
+  ctx.lineCap = 'butt';
+  const groundLine = (pts: [number, number][]) => {
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [x0, z0] = pts[i], [x1, z1] = pts[i + 1];
+      const n = Math.max(1, Math.ceil(Math.abs(x1 - x0) / 20));
+      for (let k = 0; k < n; k++) {
+        let xa = lerp(x0, x1, k / n), xb = lerp(x0, x1, (k + 1) / n);
+        let za = lerp(z0, z1, k / n), zb = lerp(z0, z1, (k + 1) / n);
+        if (Math.max(xa, xb) <= near) continue;
+        if (xa < near) {
+          const u = (near - xa) / (xb - xa);
+          xa = near;
+          za = lerp(za, zb, u);
+        }
+        if (xb < near) {
+          const u = (near - xb) / (xa - xb);
+          xb = near;
+          zb = lerp(zb, za, u);
+        }
+        const a = P(xa, za), b = P(xb, zb);
+        ctx.lineWidth = Math.max(1, 1.2 * Math.min(a.s, b.s));
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+    }
+  };
+  groundLine([[gx, gz - 340], [gx, gz + 340]]); // goal line
+  groundLine([[gx, gz - 92], [gx - 55, gz - 92], [gx - 55, gz + 92], [gx, gz + 92]]); // six-yard box
+  groundLine([[gx, gz - 202], [gx - 165, gz - 202], [gx - 165, gz + 202], [gx, gz + 202]]); // penalty box
+  // The "D": the part of the 9.15 m circle round the spot that lies outside the box.
+  const arc: [number, number][] = [];
+  for (let i = 0; i <= 16; i++) {
+    const a = Math.PI - 0.92 + (1.84 * i) / 16;
+    arc.push([gx - 110 + Math.cos(a) * 91.5, gz + Math.sin(a) * 91.5]);
+  }
+  groundLine(arc);
+  const spot = P(gx - 110, gz);
+  ctx.fillStyle = 'rgba(240,245,255,0.85)';
+  ctx.fillRect(spot.x - Math.max(1, spot.s), spot.y - 0.5, Math.max(2, 2 * spot.s), 1);
+
+  // Goal: net (behind) then posts and crossbar. 7.32 m x 2.44 m, net 2 m deep, ballooning away from us.
+  const bulge = o.bulge ?? 0;
+  const half = 37, GH = 24, GD = 20;
+  ctx.strokeStyle = 'rgba(230,235,255,0.5)';
+  ctx.lineWidth = 1;
+  const netPt = (u: number, w: number): [number, number] => {
+    const bump = Math.sin(u * Math.PI) * Math.sin(w * Math.PI * 0.9 + 0.1);
+    const q = P(gx + GD + bump * bulge * 26, gz + (u - 0.5) * 2 * half * (1 + bump * bulge * 0.12), GH * (1 - w) * 0.92);
+    return [q.x, q.y];
+  };
+  for (let i = 0; i <= 8; i++) {
+    ctx.beginPath();
+    for (let j = 0; j <= 6; j++) {
+      const [x, y] = netPt(i / 8, j / 6);
+      j ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+  }
+  for (let j = 0; j <= 6; j++) {
+    ctx.beginPath();
+    for (let i = 0; i <= 8; i++) {
+      const [x, y] = netPt(i / 8, j / 6);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // Side and roof nets: from the frame back to the back panel's edges.
+  for (const u of [0, 1]) {
+    const post = P(gx, gz + (u - 0.5) * 2 * half, 0), top = P(gx, gz + (u - 0.5) * 2 * half, GH);
+    const [bx0, by0] = netPt(u, 1), [bx1, by1] = netPt(u, 0);
+    ctx.beginPath();
+    ctx.moveTo(post.x, post.y);
+    ctx.lineTo(bx0, by0);
+    ctx.moveTo(top.x, top.y);
+    ctx.lineTo(bx1, by1);
+    ctx.stroke();
+  }
+  const pl = P(gx, gz - half, 0), pr = P(gx, gz + half, 0), tl = P(gx, gz - half, GH), tr = P(gx, gz + half, GH);
+  const pw = Math.max(1.5, 1.2 * pl.s);
+  ctx.fillStyle = '#180411';
+  ctx.fillRect(tl.x - pw / 2 - 1, tl.y - pw / 2 - 1, tr.x - tl.x + pw + 2, pw + 2);
+  ctx.fillStyle = '#f4f6ff';
+  ctx.fillRect(tl.x - pw / 2, tl.y, pw, pl.y - tl.y);
+  ctx.fillRect(tr.x - pw / 2, tr.y, pw, pr.y - tr.y);
+  ctx.fillRect(tl.x - pw / 2, tl.y - pw / 2, tr.x - tl.x + pw, pw);
 }

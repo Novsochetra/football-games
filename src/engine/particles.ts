@@ -2,7 +2,9 @@
 
 import { clamp, lerp, ramp, type RGB } from './math';
 
-export type RampName = 'fire' | 'gold' | 'aura' | 'cyan' | 'smoke' | 'dust' | 'grass' | 'white' | 'ember' | 'night' | 'crimson' | 'silver';
+export type RampName =
+  | 'fire' | 'gold' | 'aura' | 'cyan' | 'smoke' | 'dust' | 'grass' | 'white' | 'ember' | 'night' | 'crimson' | 'silver'
+  | 'cobalt' | 'dew';
 
 export const RAMPS: Record<RampName, RGB[]> = {
   fire: [[255, 255, 238], [255, 228, 120], [255, 152, 44], [232, 62, 26], [125, 16, 26], [36, 10, 20]],
@@ -17,6 +19,10 @@ export const RAMPS: Record<RampName, RGB[]> = {
   night: [[200, 220, 255], [120, 150, 230], [60, 70, 150]],
   crimson: [[255, 245, 250], [255, 150, 180], [235, 40, 80], [150, 10, 50], [50, 4, 30]],
   silver: [[255, 255, 255], [225, 232, 255], [160, 172, 235], [90, 92, 170]],
+  // GALE HAMMER: ice > electric cyan > cobalt > navy (energy, rings, auras).
+  cobalt: [[238, 251, 255], [70, 216, 255], [45, 82, 224], [10, 18, 56]],
+  // GALE HAMMER: dew beads and glints.
+  dew: [[255, 255, 255], [214, 248, 255], [140, 220, 255], [70, 150, 210]],
 };
 
 const STEPS = 24;

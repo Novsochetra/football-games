@@ -2,7 +2,8 @@
 // ZENITH METEOR take-off, ascent and somersault in place of the skeletal puppet.
 //
 // Loaded once at boot (like heroSprite) and kept in a module singleton, so shots read it
-// with heroJump() without widening the Env art type.
+// with heroJump() without widening the Env art type. The strip machinery (loadStrip / drawStrip)
+// is shared with the other drawn No.10 strips (heroKick: the flick and the overhead volley).
 //
 // Every frame has an anchor:
 //  - ground frames F1-F4 sit on their planted toe ('contact'): the bottom edge of the
@@ -30,6 +31,8 @@ export interface JumpFrame {
   contact: [number, number] | null;
   /** Centre of mass of the opaque pixels, in frame coordinates (pixel centres, like the pelvis anchor). */
   com: [number, number];
+  /** Pixel where the foot meets the ball on a strike frame (kick strips), or null. */
+  ball: [number, number] | null;
   img: HTMLCanvasElement;
   /** RGBA pixels of the frame. */
   px: Uint8ClampedArray;
@@ -59,7 +62,8 @@ export interface JumpDraw {
   alpha?: number;
 }
 
-export interface HeroJump {
+/** A loaded strip of drawn No.10 frames (all strips share the 128x128 east-facing model and its anchors). */
+export interface HeroStrip {
   w: number;
   h: number;
   frames: JumpFrame[];
@@ -71,6 +75,15 @@ export interface HeroJump {
   anchorOf(i: number, a?: 'pelvis' | 'contact'): [number, number];
   /** Pelvis position relative to the contact anchor, in frame pixels (ground frames). */
   pelvisFromContact(i: number): [number, number];
+}
+
+export type HeroJump = HeroStrip;
+
+/** Strip metadata as exported with the PNG (one row of frameW x frameH frames). */
+export interface StripMeta {
+  frameW: number;
+  frameH: number;
+  frames: { name: string; ms: number; pelvis: number[]; contact: number[] | null; ballContact?: number[] | null }[];
 }
 
 let J: HeroJump | null = null;
@@ -116,8 +129,13 @@ class Lru<V> {
 }
 
 export async function loadHeroJump(): Promise<HeroJump> {
-  if (J) return J;
-  const im = await loadImage(stripUrl);
+  if (!J) J = await loadStrip(stripUrl, meta);
+  return J;
+}
+
+/** Load a strip PNG + its metadata into frames with anchors and cached derived images. */
+export async function loadStrip(url: string, meta: StripMeta): Promise<HeroStrip> {
+  const im = await loadImage(url);
   const fw = meta.frameW, fh = meta.frameH;
   const frames: JumpFrame[] = meta.frames.map((f, i) => {
     const img = canvas(fw, fh);
@@ -130,6 +148,7 @@ export async function loadHeroJump(): Promise<HeroJump> {
       pelvis: [f.pelvis[0], f.pelvis[1]],
       contact: f.contact ? [f.contact[0], f.contact[1]] : null,
       com: centroid(px, fw, fh, f.pelvis),
+      ball: f.ballContact ? [f.ballContact[0], f.ballContact[1]] : null,
       img,
       px,
     };
@@ -145,7 +164,7 @@ export async function loadHeroJump(): Promise<HeroJump> {
     return [f.pelvis[0] + 0.5, f.pelvis[1] + 0.5];
   };
 
-  J = {
+  return {
     w: fw,
     h: fh,
     frames,
@@ -181,7 +200,6 @@ export async function loadHeroJump(): Promise<HeroJump> {
       });
     },
   };
-  return J;
 }
 
 /** Alpha-weighted centre of the frame's pixels (pixel centres); falls back to the pelvis anchor on an empty frame. */
@@ -228,7 +246,11 @@ function silhouettePixels(src: Uint8ClampedArray, w: number, h: number, cv: HTML
  * (x, y) at `scale` world px per sprite px. Nearest-neighbour; rotation and mirror pivot on that point.
  */
 export function drawJump(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement | null, i: number, x: number, y: number, scale: number, o: JumpDraw = {}) {
-  const jm = heroJump();
+  drawStrip(ctx, heroJump(), img, i, x, y, scale, o);
+}
+
+/** drawJump for any strip. */
+export function drawStrip(ctx: CanvasRenderingContext2D, jm: HeroStrip, img: HTMLCanvasElement | null, i: number, x: number, y: number, scale: number, o: JumpDraw = {}) {
   const [ax, ay] = o.pivot ?? jm.anchorOf(i, o.anchor);
   ctx.save();
   ctx.imageSmoothingEnabled = false;

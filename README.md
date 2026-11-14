@@ -41,9 +41,9 @@ sky, in front of the full moon, somersaults and volleys it straight down like a 
 |---|------|--------------|---------|
 | 1 | Cut-in | Special-move declaration: eyes close-up, glint, name slammed in | Slanted panel, focus lines, letter slam, stinger |
 | 2 | Power-up | Low-angle hero shot charging up | Body-hugging flame aura, cracked pitch, floating debris, hair ignition, eye flash, zoom slam |
-| 3 | Flick-up | Scoops the ball into the sky, crouches and launches after it (jump sprite F2-F7) | Hit-stop, black/white impact frame, shockwave refraction, camera whip-tilt, aura flare |
+| 3 | Flick-up | Stands, winds up and scoops the ball into the sky (Flick K1-K3), then crouches and launches after it (Jump F1-F7) | Hit-stop, black/white impact frame, shockwave refraction, camera whip-tilt, aura flare |
 | 4 | Ascent | Camera rides the ball through the clouds; No.10 chases it, reaching for the ball (jump sprite F6/F7 loop at 2×) | Speed lines, zoom blur, cloud punch-through ring, altitude-graded sky |
-| 5 | Zenith | Time slows before the moon; he tucks and somersaults (jump sprite F8-F10, spun about its centre), then volleys | Rim-lit silhouette, sun corona, two-tone red impact frame, sky-wide shock ring |
+| 5 | Zenith | Time slows before the moon; he tucks and somersaults (Jump F8-F10, spun about its centre), snaps open and volleys it down (Volley V0-V3) | Rim-lit silhouette, sun corona, two-tone red impact frame, sky-wide shock ring |
 | 6 | Descent | POV: meteor falls at the lens; then it skims the pitch | Scorched grass trail, two defenders blasted aside |
 | 7 | Keeper | Catch, grind, skid, gloves burn, keeper blown into the net | Spin arcs, sparks, skid marks, glove heat, double impact |
 | 8 | Net / Goal | Reverse angle: the net stretches toward the lens and tears | Spring-mesh net sim, strand snapping, GOAL slam, confetti, crowd |
@@ -67,9 +67,10 @@ as `src/art/hero_jump_side.png` + `src/art/hero_jump.json` (frame names, holds, 
 `src/art/heroJump.ts` loads the strip at boot and draws frames nearest-neighbour around their anchors
 (ground frames on the planted toe, airborne frames on the pelvis), with cached tinted and rim-lit
 silhouette copies for the shot effects and rotation about the tuck's centre for the somersault.
-ZENITH METEOR shots 3-5 use it for the take-off, ascent and tuck. The overhead volley itself still
-uses the skeletal puppet; three more side-view frames (volley load, strike, follow-through) would make
-the whole somersault-volley one design.
+ZENITH METEOR shots 3-5 use it for the take-off, ascent and tuck. The flick (Flick, 3 frames) and the
+overhead volley (Volley, 4 frames) are drawn too (`src/art/heroKick.ts`, `hero_kick_side.png`), so No.10
+is the drawn character in every Zenith shot. New animations go in `src/art/anim/` and load through
+`src/art/studioAnim.ts`; the plan for every skill's frames is `docs/skills/MOTION_LIBRARY.md`.
 
 ## Run
 

@@ -40,6 +40,7 @@ export class Game {
 
   kickoff() {
     this.phase = 'field';
+    this.env.sfx.clearBus({ tails: true });
     this.field.reset();
     this.onPhase?.('field');
   }
@@ -47,6 +48,7 @@ export class Game {
   /** Fire the special shot from the start of the cinematic. */
   unleash(fromShot = 0) {
     this.env.sfx.unlock();
+    this.env.sfx.clearBus({ tails: true });
     this.phase = 'special';
     this.special.start(fromShot);
     this.onPhase?.('special');
@@ -62,8 +64,8 @@ export class Game {
       } else if (this.field.mode === 'result') {
         this.kickoff();
       } else if (this.field.mode === 'intro') {
-        // Skip ahead to the command window.
-        this.field.hero.x = Math.max(this.field.hero.x, 924);
+        // Skip ahead to the command window (the long shot opens it at 30 m, x 880).
+        this.field.hero.x = Math.max(this.field.hero.x, this.def.scenario === 'longshot' ? 879 : 924);
       }
     }
   }

@@ -1,91 +1,80 @@
-// SHOT 3 — THE FLICK: side view at grass level. No.10 loads, scoops under the ball,
-// and launches it straight up. Contact = hit-stop + black/white impact frame +
-// shockwave; then the camera whips upward chasing the rising ball. No.10 lands the
-// follow-through into a crouch, his aura flares white-gold, and out of the flare the
-// hand-drawn jump takes over: crouch (held), push, take-off, and he launches after the
-// ball as the camera leaves the pitch.
+// SHOT 3 — THE FLICK: side view at grass level. No.10 (hand-drawn for the whole shot) stands
+// over the ball, loads, scoops under it and launches it straight up. Contact = hit-stop +
+// black/white impact frame + shockwave; then the camera whips upward chasing the rising ball.
+// His kicking leg follows through high, lands into the jump's load and crouch (held), and he
+// pushes off and launches after the ball as the camera leaves the pitch.
+//
+// Frames: stand, K1 load, K2 scoop, K3 follow-through (heroKick), then the jump F1 load,
+// F2 crouch, push, take-off, leap... (heroJump). Every ground frame stands on the same far
+// boot, so his standing foot never slides.
 
 import type { Shot, Env } from '../timeline';
 import { VW, VH } from '../../engine/camera';
-import { clamp, ease, lerp, type RGB } from '../../engine/math';
+import { clamp, ease, lerp } from '../../engine/math';
 import { PK, drawGlow, glowOf, glowSprite } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { focusLines, speedStreaks } from '../../art/fx';
-import { HERO_KIT, POSES, joints, jointWorld, poseAt, renderPuppet, drawPuppet, mixPose, type Pose } from '../../art/puppet';
-import { JF, drawJump, heroJump, jumpFrameAt, type Silhouette } from '../../art/heroJump';
+import { JF, drawStrip, heroJump, type HeroStrip, type Silhouette } from '../../art/heroJump';
+import { KF, KICK_CONTACT_DX, heroKick, kickBallOf } from '../../art/heroKick';
 import { Trail, drawBall, dustBurst, fireRibbon, grassChunks, pulse, ring, sparks, warp } from './common';
 
 const DUR = 1.35;
 const HIT = 0.5;
 const GROUND = 300;
-const K = 1; // puppet px per unit
-const D = 2.0; // draw scale
-const HIP_X = 250;
-const HIP_Y = GROUND - 40 * K * D;
+const D = 2.0; // ball draw scale
 const BALL_R = 5;
 
-// Hand-drawn jump after the follow-through. Ground frames are pinned on the planted toe,
-// airborne frames ride the pelvis from the take-off frame's pelvis upward.
-const JS = 2; // world px per sprite px (= the puppet's pixel size K * D)
-const LAND = 0.76; // follow-through held while the ball leaves; then the kicking leg comes down into a crouch
-const SWAP = 0.85; // puppet -> sprite (the puppet has finished landing by SWAP - 0.01), under an aura flare
-const FLARE_IN = 0.03; // the puppet's white-gold silhouette ramps up over this before SWAP...
-const FLARE_OUT = 0.07; // ...and the sprite's white-gold tint fades off over this after it
+// Ground frames are pinned on the standing boot (their contact anchor), airborne frames ride the
+// pelvis from the take-off frame's pelvis upward.
+const JS = 2; // world px per sprite px
+const LOAD = 0.24; // stand -> K1 load (the opening flash has cleared)
+const SCOOP = HIT - 0.03; // K2: the toe slides under the ball one frame before contact, held through the impact frames
+const FOLLOW = HIT + 0.14; // K3: the leg flies up in front as the hit-stop ends and the ball starts to climb
+const LAND = 0.76; // follow-through held while the ball leaves; then the kicking leg comes down (jump F1 load)...
+const CROUCH = 0.85; // ...into the crouch
 const LIFT = 1.05; // toes leave the turf (the crouch holds ~0.12 s first so it reads as anticipation)
 const SOLE = GROUND + 4; // soles sit in the middle of the contact shadow
-const CX = HIP_X - 4; // planted toe: keeps him just left of the ball's fire column
-const heroSeq: [number, number][] = [
-  [SWAP, JF.crouch], [0.97, JF.push], [1.01, JF.takeoff], [LIFT, JF.leap], [1.13, JF.knee], [1.23, JF.float], [1.33, JF.knee],
+const CX = 246; // jump F1/F2 contact (near boot): keeps him just left of the ball's fire column
+const KX = CX + KICK_CONTACT_DX * JS; // stand/K frames' contact (far boot): the same standing boot as F1/F2
+type Strip = 'kick' | 'jump';
+const heroSeq: [number, Strip, number][] = [
+  [0, 'kick', KF.stand], [LOAD, 'kick', KF.k1], [SCOOP, 'kick', KF.k2], [FOLLOW, 'kick', KF.k3],
+  [LAND, 'jump', JF.load], [CROUCH, 'jump', JF.crouch], [0.97, 'jump', JF.push], [1.01, 'jump', JF.takeoff],
+  [LIFT, 'jump', JF.leap], [1.13, 'jump', JF.knee], [1.23, 'jump', JF.float], [1.33, 'jump', JF.knee],
 ];
 const AURA: Silhouette = { fill: [255, 80, 40], rim: [255, 220, 120], rim2: [255, 140, 60], lx: 1, ly: -1 };
-const FLARE: RGB = [255, 236, 200];
-const FLARE_SIL = { fill: FLARE, rim: [255, 255, 255] as RGB, rim2: [255, 220, 160] as RGB, lx: 1, ly: -1 };
 
-/** Sprite frame and its pelvis in world space (after SWAP). */
-function heroJumpAt(t: number): { fi: number; x: number; y: number; air: number } {
-  const jm = heroJump();
-  const fi = jumpFrameAt(heroSeq, t);
+/** Frame (strip + index) and its pelvis in world space. */
+function heroAt(t: number): { s: HeroStrip; fi: number; x: number; y: number; air: number } {
+  let key = heroSeq[0];
+  for (const k of heroSeq) if (t >= k[0]) key = k;
+  const fi = key[2];
+  const s = key[1] === 'kick' ? heroKick() : heroJump();
   if (t < LIFT) {
-    const [dx, dy] = jm.pelvisFromContact(fi);
-    return { fi, x: CX + dx * JS, y: SOLE + dy * JS, air: 0 };
+    const [dx, dy] = s.pelvisFromContact(fi);
+    return { s, fi, x: (key[1] === 'kick' ? KX : CX) + dx * JS, y: SOLE + dy * JS, air: 0 };
   }
   // Launch: continue from the take-off pelvis, accelerating upward (the aura carries him).
-  const [dx, dy] = jm.pelvisFromContact(JF.takeoff);
+  const [dx, dy] = heroJump().pelvisFromContact(JF.takeoff);
   const u = t - LIFT;
   const rise = 1100 * u + 1600 * u * u;
-  return { fi, x: CX + dx * JS - 30 * u, y: SOLE + dy * JS - rise, air: rise };
+  return { s, fi, x: CX + dx * JS - 30 * u, y: SOLE + dy * JS - rise, air: rise };
 }
 
-const track: [number, Pose][] = [
-  [0, POSES.stand],
-  [0.36, POSES.flickLoad],
-  [HIT, POSES.flickHit],
-  [0.75, POSES.flickFollow],
-  [LAND, POSES.flickFollow],
-  [SWAP - 0.01, POSES.crouch],
-  [DUR, POSES.crouch],
-];
+/** The ball's resting centre: on the turf (its bottom on the soles' line) in front of the standing boot,
+ *  with the K2 toe (its ball-contact pixel) tucked 1 sprite px under its back edge, so the scoop meets it. */
+function ballRest(): [number, number] {
+  const c = heroKick().anchorOf(KF.k2, 'contact');
+  const [tx, ty] = kickBallOf(KF.k2)!;
+  const r = (BALL_R * D) / JS, cy = c[1] - r; // sprite px
+  const cx = tx + Math.sqrt(Math.max(0, r * r - (cy - ty) ** 2)) - 1;
+  return [KX + (cx - c[0]) * JS, SOLE + (cy - c[1]) * JS];
+}
 
 let spin = new BallSpin();
 let bx = 0, by = 0, bvx = 0, bvy = 0;
 let launched = false;
-let swapped = false;
 const trail = new Trail(16);
-
-function poseNow(t: number) {
-  // Hip dips during load, rises on follow-through.
-  return poseAt(track, t);
-}
-
-function toeWorld(t: number): [number, number] {
-  const j = joints(poseNow(t));
-  return jointWorld(j.toeN, HIP_X, HIP_Y + hipDip(t), K, D);
-}
-
-function hipDip(t: number) {
-  const land = lerp(0, 34, ease.inOutQuad(clamp((t - LAND) / (SWAP - 0.01 - LAND))));
-  return (t < HIT ? lerp(0, 8, ease.inOutQuad(clamp(t / 0.36))) : lerp(8, -4, ease.outCubic(clamp((t - HIT) / 0.3)))) + land;
-}
 
 export const shotFlick: Shot = {
   name: 'Flick-up',
@@ -100,11 +89,8 @@ export const shotFlick: Shot = {
   init(env) {
     spin = new BallSpin();
     launched = false;
-    swapped = false;
     trail.clear();
-    const [tx] = toeWorld(HIT);
-    bx = tx + BALL_R * D * 0.4;
-    by = GROUND - BALL_R * D;
+    [bx, by] = ballRest();
     bvx = bvy = 0;
     env.cam.set(VW / 2 + 20, VH / 2 + 20, 1, 0);
   },
@@ -137,15 +123,10 @@ export const shotFlick: Shot = {
     } else {
       spin.rotate(0, 1, 0, dt * 3);
     }
-    // Puppet -> sprite hand-off: an aura ring bursts off the body with the flare.
-    if (!swapped && t >= SWAP) {
-      swapped = true;
-      ring(env, CX, GROUND - 60, 6, 120, 0.3, 0.3, 'aura');
-    }
-    // Aura motes around the hero before contact.
+    // Aura motes around the hero before contact (spawned around his neck: ~30 sprite px above the pelvis).
     if (t < HIT + 0.3 && rng.next() < 0.9) {
-      const j = joints(poseNow(t));
-      const [hx, hy] = jointWorld(j.neck, HIP_X, HIP_Y, K, D);
+      const h = heroAt(t);
+      const hx = h.x + 3 * JS, hy = h.y - 30 * JS;
       parts.spawn({
         kind: PK.Glow, x: hx + rng.range(-40, 40), y: hy + rng.range(-20, 90), vx: rng.range(-20, 20), vy: rng.range(-120, -40),
         max: rng.range(0.3, 0.6), s0: rng.range(4, 9), s1: 1, ramp: 'aura', r0: 0.1, r1: 1, a0: 0.8, a1: 0, layer: 0,
@@ -199,17 +180,15 @@ export const shotFlick: Shot = {
     }
     // Ground glow under the hero.
     ctx.globalCompositeOperation = 'lighter';
-    drawGlow(ctx, glowSprite('aura', 0.5), HIP_X + 10, GROUND, 120, 0.45, 1.6, 0.3);
+    drawGlow(ctx, glowSprite('aura', 0.5), CX + 14, GROUND, 120, 0.45, 1.6, 0.3);
     ctx.globalCompositeOperation = 'source-over';
-    // Shadow (shrinks and fades as he leaves the ground).
-    const jump = t >= SWAP ? heroJumpAt(t) : null;
-    const sh = jump ? clamp(1 - jump.air / 240) : 1;
+    // Shadow under his feet (shrinks and fades as he leaves the ground).
+    const hero = heroAt(t);
+    const sh = clamp(1 - hero.air / 240);
     if (sh > 0) {
       ctx.fillStyle = `rgba(0,0,0,${0.4 * sh})`;
       ctx.beginPath();
-      // Slides under the sprite's planted foot just after the hand-off (hidden by the flare).
-      const shx = lerp(HIP_X + 6, CX - 10, clamp((t - SWAP) / 0.08));
-      ctx.ellipse(shx, GROUND + 2, 46 * (0.4 + 0.6 * sh), 7 * (0.5 + 0.5 * sh), 0, 0, Math.PI * 2);
+      ctx.ellipse(CX - 10, GROUND + 2, 46 * (0.4 + 0.6 * sh), 7 * (0.5 + 0.5 * sh), 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -218,33 +197,16 @@ export const shotFlick: Shot = {
     // Ball trail (behind ball).
     if (launched) fireRibbon(ctx, trail.pts, 26, 1, BALL_R * D);
 
-    // Hero (puppet for the flick, then the jump sprite), with a crimson aura glow behind.
+    // Hero (the drawn No.10 throughout), with a crimson aura glow behind.
     const fl = 0.7 + 0.3 * Math.sin(t * 50);
-    if (!jump) {
-      const pose = poseNow(t);
-      const hipY = HIP_Y + hipDip(t);
-      const aura = renderPuppet(HERO_KIT, pose, { k: K, silhouette: AURA });
+    {
+      const { s, fi, x, y } = hero;
+      const aura = s.silhouette(fi, AURA);
       ctx.globalCompositeOperation = 'lighter';
-      drawPuppet(ctx, aura, HIP_X - 2, hipY - 3, D * 1.04, 0.35 * fl);
-      drawPuppet(ctx, aura, HIP_X, hipY, D * 1.015, 0.4);
+      drawStrip(ctx, s, aura, fi, x - 2, y - 3, JS * 1.04, { anchor: 'pelvis', alpha: 0.35 * fl });
+      drawStrip(ctx, s, aura, fi, x, y, JS * 1.015, { anchor: 'pelvis', alpha: 0.4 });
       ctx.globalCompositeOperation = 'source-over';
-      const body = renderPuppet(HERO_KIT, pose, { k: K });
-      drawPuppet(ctx, body, HIP_X, hipY, D);
-      // Flare in: the body burns white-gold just before the hand-off.
-      const fin = clamp((t - (SWAP - FLARE_IN)) / FLARE_IN);
-      if (fin > 0) drawPuppet(ctx, renderPuppet(HERO_KIT, pose, { k: K, silhouette: FLARE_SIL }), HIP_X, hipY, D, fin);
-    } else {
-      const { fi, x, y } = jump;
-      const jm = heroJump();
-      const aura = jm.silhouette(fi, AURA);
-      ctx.globalCompositeOperation = 'lighter';
-      drawJump(ctx, aura, fi, x - 2, y - 3, JS * 1.04, { anchor: 'pelvis', alpha: 0.35 * fl });
-      drawJump(ctx, aura, fi, x, y, JS * 1.015, { anchor: 'pelvis', alpha: 0.4 });
-      ctx.globalCompositeOperation = 'source-over';
-      drawJump(ctx, null, fi, x, y, JS, { anchor: 'pelvis' });
-      // Flare out: the sprite steps out of the white-gold burn.
-      const fout = pulse(t, SWAP, FLARE_OUT);
-      if (fout > 0) drawJump(ctx, jm.tinted(fi, FLARE), fi, x, y, JS, { anchor: 'pelvis', alpha: fout });
+      drawStrip(ctx, s, null, fi, x, y, JS, { anchor: 'pelvis' });
     }
 
     // Ball
@@ -274,7 +236,7 @@ export const shotFlick: Shot = {
     fx.impact = t >= HIT && t < HIT + 0.07 ? 1 : t >= HIT + 0.07 && t < HIT + 0.12 ? 0.6 : 0;
     fx.impA = [8, 4, 10];
     fx.impB = [255, 248, 236];
-    fx.flash = Math.max(pulse(t, 0, 0.2) * 0.9, pulse(t, HIT + 0.12, 0.15) * 0.5, 0.25 * pulse(t, SWAP, 0.08));
+    fx.flash = Math.max(pulse(t, 0, 0.2) * 0.9, pulse(t, HIT + 0.12, 0.15) * 0.5);
     fx.radial = launched ? 0.06 * clamp((t - HIT - 0.12) * 4) : 0;
     fx.radialX = ux;
     fx.radialY = uy;
@@ -285,4 +247,3 @@ export const shotFlick: Shot = {
 };
 
 export type { Env };
-void mixPose;

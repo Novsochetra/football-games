@@ -73,6 +73,12 @@ export interface StudioAnim {
   tinted(i: number, c: RGB): HTMLCanvasElement;
   /** Dark rim-lit silhouette of frame i drawn with this rot/flip (rim stays on the world-space light side). */
   silhouette(i: number, s: Silhouette, rot?: number, flip?: boolean): HTMLCanvasElement;
+  /**
+   * Box-filtered (area-averaged) copy of frame i at `scale` < 1, for wide shots and the field view (0.4x, 0.5x).
+   * Its pixel (u, v) covers frame pixels [u/scale, (u+1)/scale): a frame-space point p lands at p*scale.
+   * `west` boxes the pre-mirrored west frame when there is one. Cached; build them in prepare().
+   */
+  boxed(i: number, scale: number, west?: boolean): HTMLCanvasElement;
 }
 
 const LIB = new Map<string, StudioAnim>();
@@ -172,6 +178,7 @@ function build(name: string, meta: StudioMeta, im: HTMLImageElement, westIm: HTM
   });
   const tints = new Lru<HTMLCanvasElement>(64);
   const sils = new Lru<HTMLCanvasElement>(128);
+  const boxes = new Lru<HTMLCanvasElement>(96);
   const anchorOf = (i: number, a?: string): [number, number] => {
     const f = frames[i];
     const use = a ?? (f.contact ? 'contact' : 'pelvis');
@@ -216,7 +223,116 @@ function build(name: string, meta: StudioMeta, im: HTMLImageElement, westIm: HTM
         return cv;
       });
     },
+    boxed(i, scale, west = false) {
+      const useWest = west && !!frames[i].west;
+      return boxes.get(`${i}|${scale}|${useWest ? 'w' : 'e'}`, () => {
+        const px = useWest ? frames[i].west!.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, fw, fh).data : frames[i].px;
+        return boxFilter(px, fw, fh, scale);
+      });
+    },
   };
+}
+
+/** Area-weighted downscale of RGBA pixels by `scale` (premultiplied, so edges do not darken). */
+export function boxFilter(src: Uint8ClampedArray, w: number, h: number, scale: number): HTMLCanvasElement {
+  const ow = Math.max(1, Math.ceil(w * scale)), oh = Math.max(1, Math.ceil(h * scale));
+  const taps = (n: number, on: number) => {
+    const out: [number, number][][] = [];
+    for (let o = 0; o < on; o++) {
+      const a = o / scale, b = Math.min(n, (o + 1) / scale);
+      const list: [number, number][] = [];
+      for (let k = Math.floor(a); k < b; k++) {
+        const wgt = Math.min(b, k + 1) - Math.max(a, k);
+        if (wgt > 0) list.push([k, wgt]);
+      }
+      out.push(list);
+    }
+    return out;
+  };
+  const tx = taps(w, ow), ty = taps(h, oh);
+  const cv = canvas(ow, oh);
+  const g = cv.getContext('2d')!;
+  const img = g.createImageData(ow, oh);
+  const d = img.data;
+  for (let oy = 0; oy < oh; oy++)
+    for (let ox = 0; ox < ow; ox++) {
+      let r = 0, gg = 0, b = 0, a = 0, area = 0;
+      for (const [sy, wy] of ty[oy])
+        for (const [sx, wx] of tx[ox]) {
+          const k = (sy * w + sx) * 4, wt = wx * wy, al = src[k + 3] * wt;
+          r += src[k] * al;
+          gg += src[k + 1] * al;
+          b += src[k + 2] * al;
+          a += al;
+          area += wt;
+        }
+      const o = (oy * ow + ox) * 4;
+      if (a > 0) {
+        d[o] = r / a;
+        d[o + 1] = gg / a;
+        d[o + 2] = b / a;
+        d[o + 3] = a / area;
+      }
+    }
+  g.putImageData(img, 0, 0);
+  return cv;
+}
+
+const snake = (s: string) => s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+
+/**
+ * Find a loaded strip by its Pixel Studio animation name (e.g. 'Strike', 'StrikeMacro', 'Stand') and view,
+ * trying the usual export stems: strike, strike_side, hero_strike_side, no10_strike, strike_macro, strikemacro,
+ * stand_back, ... (for 'front' / 'back' / 'face' views only stems that name the view are accepted, so a Front
+ * strip is never mistaken for a Back one). Returns null while the art is not exported yet.
+ */
+export function findAnim(studioName: string, view: 'side' | 'front' | 'back' | 'face' = 'side'): StudioAnim | null {
+  const bases = [...new Set([snake(studioName), studioName.toLowerCase(), studioName])];
+  const views = view === 'side' ? [`_${view}`, '', '_s'] : [`_${view}`, view === 'back' ? '_b' : view === 'front' ? '_f' : '_face'];
+  for (const v of views)
+    for (const pre of ['', 'hero_', 'no10_', 'hero_no10_'])
+      for (const b of bases) {
+        const a = LIB.get(pre + b + v);
+        if (a) return a;
+        const c = LIB.get(pre + b + v.replace('_', ''));
+        if (c) return c;
+      }
+  return null;
+}
+
+/**
+ * Index of the first frame of `a` named like one of `names` (in order of preference): exact, then
+ * case-insensitive, then as the last word of a longer name ("Strike F5a", "strike_F5a"). -1 if none.
+ */
+export function findFrame(a: StudioAnim, ...names: string[]): number {
+  for (const n of names) {
+    const lo = n.toLowerCase();
+    let i = a.frames.findIndex((f) => f.name === n);
+    if (i < 0) i = a.frames.findIndex((f) => f.name.toLowerCase() === lo);
+    if (i < 0) i = a.frames.findIndex((f) => f.name.toLowerCase().split(/[\s_\-·.:]+/).pop() === lo);
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+/**
+ * Draw the box-filtered cache of frame i at `scale` (see StudioAnim.boxed) so its anchor (or pivot) lands on (x, y),
+ * at 1 world px per cache px. `flip` mirrors (using the west strip when there is one).
+ */
+export function drawAnimBoxed(ctx: CanvasRenderingContext2D, a: StudioAnim, i: number, x: number, y: number, scale: number, o: AnimDraw = {}) {
+  const f = a.frames[i];
+  let [ax, ay] = o.pivot ?? a.anchorOf(i, o.anchor);
+  const useWest = !!o.flip && !!f.west;
+  const img = a.boxed(i, scale, useWest);
+  if (useWest) ax = a.w - ax;
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.globalAlpha = o.alpha ?? 1;
+  ctx.translate(x, y);
+  if (o.rot) ctx.rotate(o.rot);
+  if (o.flip && !useWest) ctx.scale(-1, 1);
+  ctx.drawImage(img, -ax * scale, -ay * scale);
+  ctx.restore();
 }
 
 function centroid(px: Uint8ClampedArray, w: number, h: number, pelvis: number[]): [number, number] {

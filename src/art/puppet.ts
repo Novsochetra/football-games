@@ -168,6 +168,13 @@ export const POSES = {
   // Crosser: planting and whipping the ball in.
   crossKick: P({ torso: -12 * D, head: -6 * D, thighN: 80 * D, kneeN: 10 * D, footN: -10 * D, thighF: -6 * D, kneeF: 24 * D, armN: -70 * D, elbowN: 20 * D, armF: 90 * D, elbowF: 10 * D }),
   celebrate: P({ torso: -6 * D, head: -20 * D, thighN: 20 * D, kneeN: 60 * D, thighF: -10 * D, kneeF: 30 * D, armN: 175 * D, elbowN: 0, armF: 30 * D, elbowF: 100 * D }),
+  // GALE HAMMER defenders and keeper (joint angles only).
+  // The safe jump-block young defenders are taught: airborne, legs together, knees soft, arms tucked behind the back, chin down.
+  jumpBlock: P({ torso: 4 * D, head: 16 * D, thighN: 14 * D, kneeN: 30 * D, footN: 12 * D, thighF: 8 * D, kneeF: 26 * D, footF: 12 * D, armN: -38 * D, elbowN: 34 * D, armF: -30 * D, elbowF: 30 * D }),
+  // Flinch: shoulders turned away from the ball, arms up shielding the head, one knee lifted.
+  flinch: P({ torso: -16 * D, head: 28 * D, thighN: 34 * D, kneeN: 62 * D, footN: 10 * D, thighF: -12 * D, kneeF: 22 * D, armN: 148 * D, elbowN: 62 * D, armF: 128 * D, elbowF: 74 * D }),
+  // Keeper swept off his feet by the pressure ring: body tilted back, legs taken from under him.
+  gkSwept: P({ torso: -30 * D, head: 24 * D, thighN: 64 * D, kneeN: 18 * D, footN: -10 * D, thighF: 46 * D, kneeF: 34 * D, armN: 118 * D, elbowN: 24 * D, armF: 64 * D, elbowF: 40 * D, spin: -0.45 }),
 };
 
 // Skeleton dimensions (units; standing hero ~100u tall).

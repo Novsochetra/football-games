@@ -219,14 +219,65 @@ export class BallSpin {
 
 const ballBufs = new Map<number, PixelBuffer>();
 
-/** 'fire' = white-hot/orange (ZENITH METEOR); 'crimson' = silver core with crimson seams (CRIMSON CRESCENT). */
-export type BallPalette = 'fire' | 'crimson';
+/**
+ * 'fire' = white-hot/orange (ZENITH METEOR); 'crimson' = silver core with crimson seams (CRIMSON CRESCENT);
+ * 'cobalt' = ice core with cyan/cobalt panels and a navy outline (GALE HAMMER).
+ */
+export type BallPalette = 'fire' | 'crimson' | 'cobalt';
+
+/**
+ * Squash and stretch for renderBall (GALE HAMMER). sx/sy scale the ball's x/y semi-axes (1 = round;
+ * sx 0.58, sy 1.25 = squashed flat against a boot on its left). dent 0..1 flattens a contact face on the
+ * ball's −x side: the silhouette is cut by a vertical plane at x = −(1 − dent)·r·sx, and the panel seams
+ * bunch up against that face (they bend). Values are quantised to 0.02, so a slow squash renders the
+ * same pixels on every machine and a seek lands on the same frame.
+ */
+export interface BallSquash {
+  sx: number;
+  sy: number;
+  dent?: number;
+}
+
+const q02 = (v: number) => Math.round(v * 50) / 50;
+
+/** Colour of one ball pixel from its light term and whether it lies on a dark panel. */
+function ballColor(lam: number, patch: boolean, h: number, palette: BallPalette): RGB {
+  let col: RGB;
+  if (patch) col = lam > 0.45 ? [74, 66, 104] : [30, 24, 44];
+  else col = lam > 0.55 ? [255, 255, 255] : lam > 0.05 ? [222, 218, 234] : [146, 138, 178];
+  if (h > 0) {
+    const hot: RGB =
+      palette === 'crimson'
+        ? patch
+          ? [230, 30 + 40 * lam, 80]
+          : lam > 0.4 ? [250, 248, 255] : lam > -0.1 ? [255, 170, 196] : [214, 50, 96]
+        : palette === 'cobalt'
+          ? patch
+            ? [45, 82 + 50 * lam, 224]
+            : lam > 0.4 ? [238, 251, 255] : lam > -0.1 ? [140, 220, 255] : [70, 150, 230]
+          : patch
+            ? [255, 120 + 60 * lam, 40]
+            : lam > 0.4 ? [255, 252, 226] : lam > -0.1 ? [255, 214, 120] : [255, 140, 52];
+    col = [col[0] + (hot[0] - col[0]) * h, col[1] + (hot[1] - col[1]) * h, col[2] + (hot[2] - col[2]) * h];
+  }
+  return col;
+}
+
+function ballOutline(h: number, palette: BallPalette) {
+  if (h <= 0.5) return OUTLINE;
+  return palette === 'crimson' ? pack(110, 10, 50) : palette === 'cobalt' ? pack(10, 18, 56) : pack(150, 30, 20);
+}
 
 /**
  * Rasterize a soccer ball of pixel radius `r` into a cached buffer canvas.
  * heat 0..1 blends it into a white-hot core with glowing seams.
+ * squash (optional): see BallSquash. Without it (or with sx = sy = 1, dent = 0) the ball is the round ball.
  */
-export function renderBall(r: number, spin: BallSpin, heat = 0, outline = true, palette: BallPalette = 'fire'): HTMLCanvasElement {
+export function renderBall(r: number, spin: BallSpin, heat = 0, outline = true, palette: BallPalette = 'fire', squash?: BallSquash): HTMLCanvasElement {
+  if (squash) {
+    const sx = Math.max(0.2, q02(squash.sx)), sy = Math.max(0.2, q02(squash.sy)), dent = clamp(q02(squash.dent ?? 0), 0, 0.9);
+    if (sx !== 1 || sy !== 1 || dent !== 0) return renderSquashedBall(r, spin, heat, outline, palette, sx, sy, dent);
+  }
   r = Math.max(2, Math.round(r));
   const size = r * 2 + 4;
   let buf = ballBufs.get(size);
@@ -254,23 +305,60 @@ export function renderBall(r: number, spin: BallSpin, heat = 0, outline = true, 
       }
       const lam = (nx * L[0] + ny * L[1] + nz * L[2]) / ll;
       const patch = best > 0.925;
-      let col: RGB;
-      if (patch) col = lam > 0.45 ? [74, 66, 104] : [30, 24, 44];
-      else col = lam > 0.55 ? [255, 255, 255] : lam > 0.05 ? [222, 218, 234] : [146, 138, 178];
-      if (h > 0) {
-        const hot: RGB =
-          palette === 'crimson'
-            ? patch
-              ? [230, 30 + 40 * lam, 80]
-              : lam > 0.4 ? [250, 248, 255] : lam > -0.1 ? [255, 170, 196] : [214, 50, 96]
-            : patch
-              ? [255, 120 + 60 * lam, 40]
-              : lam > 0.4 ? [255, 252, 226] : lam > -0.1 ? [255, 214, 120] : [255, 140, 52];
-        col = [col[0] + (hot[0] - col[0]) * h, col[1] + (hot[1] - col[1]) * h, col[2] + (hot[2] - col[2]) * h];
-      }
-      buf.data[y * size + x] = packRGB(col);
+      buf.data[y * size + x] = packRGB(ballColor(lam, patch, h, palette));
     }
   }
-  if (outline) buf.outline(h > 0.5 ? (palette === 'crimson' ? pack(110, 10, 50) : pack(150, 30, 20)) : OUTLINE);
+  if (outline) buf.outline(ballOutline(h, palette));
+  return buf.flush();
+}
+
+/** renderBall's squashed path: ellipsoid normals for the light, unit-sphere "material" coordinates for the panels. */
+function renderSquashedBall(r0: number, spin: BallSpin, heat: number, outline: boolean, palette: BallPalette, sx: number, sy: number, dent: number): HTMLCanvasElement {
+  const r = Math.max(2, Math.round(r0));
+  const ax = r * sx, ay = r * sy;
+  const size = Math.ceil(Math.max(ax, ay)) * 2 + 4;
+  let buf = ballBufs.get(size);
+  if (!buf) ballBufs.set(size, (buf = new PixelBuffer(size, size)));
+  buf.clear();
+  const m = spin.m;
+  const c0 = size / 2;
+  const L = [-0.5, -0.62, 0.6];
+  const ll = Math.hypot(L[0], L[1], L[2]);
+  const h = clamp(heat);
+  const xf = -(1 - dent); // contact face plane, in units of ax
+  const faceBand = 1.5 / ax; // the 1-2 px strip along the face reads as the flat, side-lit contact face
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const ex = (x + 0.5 - c0) / ax, ey = (y + 0.5 - c0) / ay;
+      const d2 = ex * ex + ey * ey;
+      if (d2 > 1 || ex < xf) continue;
+      const ez = Math.sqrt(1 - d2);
+      // Material point on the undeformed ball: the −x half is compressed against the face, so seams bend.
+      const mx = dent > 0 && ex < 0 ? ex / (1 - dent) : ex;
+      let mz = 1 - mx * mx - ey * ey;
+      mz = mz > 0 ? Math.sqrt(mz) : 0;
+      const ml = Math.hypot(mx, ey, mz) || 1;
+      const ux = mx / ml, uy = ey / ml, uz = mz / ml;
+      const lx = m[0] * ux + m[3] * uy + m[6] * uz;
+      const ly = m[1] * ux + m[4] * uy + m[7] * uz;
+      const lz = m[2] * ux + m[5] * uy + m[8] * uz;
+      let best = -1;
+      for (const v of ICO) {
+        const d = v[0] * lx + v[1] * ly + v[2] * lz;
+        if (d > best) best = d;
+      }
+      // Lighting normal of the ellipsoid (semi-axes ax, ay, r); the face strip faces −x.
+      let nx = ex / sx, ny = ey / sy, nz = ez;
+      if (dent > 0 && ex - xf < faceBand) {
+        nx = -0.8;
+        ny = ey * 0.3;
+        nz = 0.55;
+      }
+      const nl = Math.hypot(nx, ny, nz) || 1;
+      const lam = (nx * L[0] + ny * L[1] + nz * L[2]) / (nl * ll);
+      buf.data[y * size + x] = packRGB(ballColor(lam, best > 0.925, h, palette));
+    }
+  }
+  if (outline) buf.outline(ballOutline(h, palette));
   return buf.flush();
 }
