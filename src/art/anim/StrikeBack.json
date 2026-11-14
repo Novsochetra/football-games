@@ -1,0 +1,174 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "back",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "StrikeBack",
+  "view": "Back",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Back view (from behind; the goal is far up-screen), not mirrored. Registration = Idle Back: body centre x 64, soles on row 102. contact = [64,102] (body centre) except B9 = [77,102], the centre of the planted right sole (B9's right boot is the Idle Back right boot pixel for pixel). soleL/soleR = sole centres (screen-left = his left); soleLiftL = B9's lifted left sole; tip = the raised right hand (the breath mist starts there). GALE 6: B9 0.00, Stand b 0.85-1.05, B11h 1.05, B11 1.12, B12 1.30, B11 1.60, B11h 1.72, Stand a 1.79. Shot 6 draws at x2 with (64,102) on screen (320,330). Points are pixel indices (studioAnim adds 0.5). Studio layer: Art only.",
+ "frames": [
+  {
+   "name": "B9",
+   "id": "B9",
+   "label": "hop landing",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    68,
+    69
+   ],
+   "contact": [
+    77,
+    102
+   ],
+   "anchors": {
+    "head": [
+     72,
+     24
+    ],
+    "soleR": [
+     77,
+     102
+    ],
+    "soleLiftL": [
+     56,
+     90
+    ],
+    "bbox": [
+     32,
+     12,
+     102,
+     102
+    ]
+   },
+   "gale": "s6 0.00-0.25"
+  },
+  {
+   "name": "B11h",
+   "id": "B11h",
+   "label": "half-raise",
+   "type": "B (breakdown) of B11",
+   "ms": 70,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     65,
+     18
+    ],
+    "tip": [
+     90,
+     39
+    ],
+    "soleL": [
+     51,
+     102
+    ],
+    "soleR": [
+     77,
+     102
+    ],
+    "bbox": [
+     41,
+     5,
+     96,
+     102
+    ]
+   },
+   "gale": "s6 1.05-1.12 (b -> B11h -> B11, the lift) and 1.72-1.79 (B11 -> B11h -> Stand a, the drop)"
+  },
+  {
+   "name": "B11",
+   "id": "B11",
+   "label": "palm raise",
+   "type": "N",
+   "ms": 160,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     65,
+     19
+    ],
+    "tip": [
+     84,
+     29
+    ],
+    "soleL": [
+     51,
+     102
+    ],
+    "soleR": [
+     77,
+     102
+    ],
+    "bbox": [
+     41,
+     6,
+     97,
+     102
+    ]
+   },
+   "gale": "s6 1.12 (after Stand b 0.85-1.05 and B11h 1.05-1.12), 1.60-1.72 (= 1.70 + the 1-game-frame hold-out, the mist still drifting), then B11h 1.72-1.79 and Stand a"
+  },
+  {
+   "name": "B12",
+   "id": "B12",
+   "label": "the blow",
+   "type": "V of B11",
+   "ms": 120,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     67,
+     18
+    ],
+    "tip": [
+     85,
+     28
+    ],
+    "soleL": [
+     51,
+     102
+    ],
+    "soleR": [
+     77,
+     102
+    ],
+    "bbox": [
+     41,
+     4,
+     97,
+     102
+    ]
+   },
+   "gale": "s6 1.30"
+  }
+ ]
+}

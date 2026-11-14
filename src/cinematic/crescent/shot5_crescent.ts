@@ -9,12 +9,12 @@
 
 import type { Shot, Env } from '../timeline';
 import { VW, VH } from '../../engine/camera';
-import { TAU, clamp, ease, lerp } from '../../engine/math';
+import { TAU, clamp, ease, lerp, type RGB } from '../../engine/math';
 import { PK, drawGlow, glowOf, glowSprite } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { PIXEL_FONT, focusLines, sparkle, speedStreaks, type TrailPt } from '../../art/fx';
-import { HERO_KIT, P, POSES, drawPuppet, joints, jointWorld, mixPose, renderPuppet, type Pose } from '../../art/puppet';
-import { HERO_FACING, Trail, crescentArc, crescentPath, crimsonRibbon, drawBall, meteorFlames, pulse, ring, sparks } from './common';
+import { Trail, crescentArc, crescentPath, crimsonRibbon, drawBall, meteorFlames, pulse, ring, sparks } from './common';
+import { S45, STRIKE_ROT, at, bike, drawPlace, fi, keyAt, place, silOf, strikeBallOffset, type Place } from './hero';
 
 const DUR = 1.7;
 const HIT = 0.45; // boot meets ball
@@ -24,14 +24,16 @@ const REL = 0.92; // the ball is let go at full speed
 const WIND_T = 0.08; // last wind-up before the swing
 const D = Math.PI / 180;
 
-// Hero puppet: same scale/placement as shot 4 (1.2 px/unit at 2x).
-const K = 1.2, HD = 2, KD = K * HD;
-const FACE = HERO_FACING;
+// No.10: the drawn Bicycle frames (west strip), same scale/placement as shot 4.
+const HS = S45;
 const HIP_X = 292, HIP_Y = 173;
 const BALL_R = 6;
 
-// The crescent carved by the boot: centered on the hip, outer edge just past the toe.
-const R_ARC = 98, THICK = 32;
+// The crescent carved by the boot: centered on the hip, its tip on the ball. R_ARC (outer edge) is set
+// in init from the drawn strike: the ball's distance from the hip + 8, so the blade's tip ends inside
+// the ball while the boot's laces ride the blade.
+let R_ARC = 95;
+const THICK = 32;
 
 // World layout: an exact copy of shot4_inverted.ts (the stand seen from below with its 2x crowd
 // and lettered boards, the pitch overhead with its markings and the upside-down goal, the
@@ -68,14 +70,28 @@ const WHIP_DIR = -0.3; // screen heading of the whip (shot 6 opens on the comet 
 const GRADE_AMT = 0.7; // cold time-stop grade until color floods back out of the ball
 const TURF_GREEN = 0.6; // keeps the overhead turf green under the grade (as shot 4 does)
 
-// Poses. The kicking (near) leg starts in shot 4's held coil -> one last coil -> whipped
-// straight through the ball. COCK only sets where the crescent starts (its geometry).
-const COCK: Pose = POSES.bikeCock;
-const COIL4: Pose = { ...POSES.bikeCock, thighN: -24 * D, kneeN: 128 * D, footN: 26 * D, thighF: 126 * D, armN: -108 * D, armF: -147 * D };
-const WIND: Pose = { ...COIL4, thighN: -29 * D, kneeN: 133 * D, footN: 28 * D, thighF: 130 * D, armN: -112 * D, armF: -151 * D, spin: -1.72 };
-const STRIKE: Pose = POSES.bikeStrike;
-const FOLLOW: Pose = POSES.bikeFollow;
-const FALL: Pose = P({ ...POSES.bikeFollow, torso: -16 * D, thighN: 100 * D, kneeN: 30 * D, thighF: 44 * D, kneeF: 80 * D, armN: -150 * D, armF: -176 * D, head: -6 * D, spin: -4.0 });
+// No.10's frames (shot time, library 3.4 round 2): shot 4's held coil trembling into one last wind
+// (BK8 <-> BK8b, no hold over 0.25 s), the whip as a 3-frame smear (BK9), the STRIKE on HIT (held
+// through the hit-stop and both impact frames), then follow-through and the tumble over the top.
+const KEYS: [number, string][] = [
+  [0, 'BK8'], [0.08, 'BK8b'], [0.22, 'BK8'], [0.3, 'BK8b'], [0.4, 'BK9'], [HIT, 'BK10'],
+  [0.66, 'BK11'], [0.85, 'BK12'], [1.15, 'BK12b'], [1.4, 'BK12c'],
+];
+// Whole-body spin (the old pose track's spin keys): coil -1.75 -> wind -1.72 -> strike -2.0 (at HIT,
+// the boot on the ball) -> follow -2.5 -> tumbling on to -4.0 as he drops. rot = -spin.
+function preSpin(s: number) {
+  if (s < WIND_T) return lerp(-1.75, -1.72, ease.inOutQuad(s / WIND_T));
+  const u = clamp((s - WIND_T) / (HIT - WIND_T));
+  return lerp(-1.72, -STRIKE_ROT, Math.pow(u, 1.4));
+}
+function postSpin(u: number) {
+  if (u < 0.2) return lerp(-STRIKE_ROT, -2.5, ease.outCubic(u / 0.2));
+  // Keeps tumbling over at a steady rate as he drops (linear: no settling into a headstand).
+  return lerp(-2.5, -4.0, clamp((u - 0.2) / 0.7));
+}
+// Effect passes (silhouette copies of the drawn frame).
+const AURA = { fill: [235, 26, 66] as RGB, rim: [255, 180, 205] as RGB, rim2: [255, 70, 110] as RGB, lx: 0, ly: -1 };
+const RIM = { fill: [0, 0, 0] as RGB, rim: [210, 216, 255] as RGB, rim2: [170, 20, 60] as RGB, lx: -0.7, ly: -0.8 };
 
 let spin = new BallSpin();
 let simT = 0, simHit = 0;
@@ -93,20 +109,15 @@ const streakPts: TrailPt[] = [];
 
 // ---------------------------------------------------------------- motion
 
-function prePose(s: number): Pose {
-  if (s < WIND_T) return mixPose(COIL4, WIND, ease.inOutQuad(s / WIND_T));
-  const u = clamp((s - WIND_T) / (HIT - WIND_T));
-  return mixPose(WIND, STRIKE, Math.pow(u, 1.4));
+function heroSpin(): number {
+  return hit ? postSpin(simT - simHit) : preSpin(Math.min(simT, HIT));
 }
 
-function postPose(u: number): Pose {
-  if (u < 0.2) return mixPose(STRIKE, FOLLOW, ease.outCubic(u / 0.2));
-  // Keeps tumbling over at a steady rate as he drops (linear: no settling into a headstand).
-  return mixPose(FOLLOW, FALL, clamp((u - 0.2) / 0.7));
-}
-
-function heroPose(): Pose {
-  return hit ? postPose(simT - simHit) : prePose(Math.min(simT, HIT));
+/** No.10 at shot time t (frame by shot time, spin and hip by the warped sim clock). */
+function heroAt(t: number): Place {
+  const b = bike();
+  const [hx, hy] = hipNow();
+  return place(b, fi(b, keyAt(KEYS, t)), hx, hy, HS, -heroSpin(), true);
 }
 
 function hipNow(): [number, number] {
@@ -115,10 +126,10 @@ function hipNow(): [number, number] {
   return [HIP_X - 30 * u, HIP_Y + 6 * u + 120 * u * u];
 }
 
-/** World angle of the kicking toe around the hip. */
-function toeAng(pose: Pose): number {
-  const j = joints(pose).toeN;
-  return Math.atan2(j[1], j[0] * FACE);
+/** World angle of the kicking toe around the hip (pelvis pivot). */
+function toeAng(p: Place): number {
+  const [tx, ty] = at(p, 'toeN');
+  return Math.atan2(ty - p.y, tx - p.x);
 }
 
 function unwrap(a: number, ref: number) {
@@ -127,10 +138,12 @@ function unwrap(a: number, ref: number) {
   return a;
 }
 
-/** How far the crescent has grown (0..1), following the boot. */
-function arcProgress(): number {
+/** How far the crescent has grown (0..1), following the drawn boot: nothing while the leg is coiled
+ *  behind the cocked angle, then it tears in behind the whip smear (BK9, three game frames) and is
+ *  complete on the strike, its tip in the ball. */
+function arcProgress(t: number): number {
   if (hit) return 1;
-  return clamp((unwrap(toeAng(heroPose()), A0) - A0) / (A1 - A0));
+  return clamp((unwrap(toeAng(heroAt(t)), A0) - A0) / (A1 - A0));
 }
 
 /** The crescent swells outward after contact as it hangs in the sky. */
@@ -674,17 +687,20 @@ export const shotCrescent: Shot = {
     path.length = 0;
     streakPts.length = 0;
 
-    // Ball waits exactly where the striking toe will meet it (same rule as shot 4).
-    const ts = joints(STRIKE).toeN;
-    const tl = Math.hypot(ts[0], ts[1]);
-    [BX, BY] = jointWorld([ts[0] + (ts[0] / tl) * 5, ts[1] + (ts[1] / tl) * 5], HIP_X, HIP_Y, K, HD, FACE);
+    // Ball waits exactly where the strike meets it (same rule as shot 4): tangent to the BK10 instep
+    // at the strike rotation, so on HIT the drawn boot is on the ball.
+    const bo = strikeBallOffset(HS, STRIKE_ROT, BALL_R * 2);
+    [BX, BY] = [HIP_X + bo[0], HIP_Y + bo[1]];
     ball = { x: BX, y: BY, vx: 0, vy: 0 };
     relX = BX;
     relY = BY;
     relDir = 0;
 
-    A0 = toeAng(COCK);
-    A1 = unwrap(toeAng(STRIKE), A0);
+    // The crescent: from the cocked boot (BK7, as shot 4 opened on it) to the ball the BK10 instep meets.
+    const b = bike();
+    A0 = toeAng(place(b, fi(b, 'BK7'), HIP_X, HIP_Y, HS, 1.75, true));
+    A1 = unwrap(Math.atan2(BY - HIP_Y, BX - HIP_X), A0);
+    R_ARC = Math.round(Math.hypot(BX - HIP_X, BY - HIP_Y)) + 8;
 
     // Camera flashes that pop all over the stand once time restarts.
     flashes = [];
@@ -702,13 +718,12 @@ export const shotCrescent: Shot = {
     const { rng, parts, cam } = env;
     simT += dt;
     spin.rotate(0.3, 1, 0.25, dt * (hit ? 40 : 8));
-    const pose = heroPose();
+    const hp = heroAt(t);
     const [hx, hy] = hipNow();
 
     // Swing: the boot sheds embers and silver sparks off the crescent's leading tip.
     if (!hit) {
-      const j = joints(pose);
-      const [tx, ty] = jointWorld(j.toeN, hx, hy, K, HD, FACE);
+      const [tx, ty] = at(hp, 'toeN');
       const a = Math.atan2(ty - hy, tx - hx);
       const sw = clamp((simT - WIND_T) / (HIT - WIND_T));
       const n = Math.round(2 + sw * 6);
@@ -818,9 +833,7 @@ export const shotCrescent: Shot = {
 
     // His aura keeps shedding embers.
     if (rng.next() < 0.7) {
-      const j = joints(pose);
-      const p = rng.pick([j.neck, j.head, j.kneeN, j.toeN, j.toeF, j.hip]);
-      const [x, y] = jointWorld(p, hx, hy, K, HD, FACE);
+      const [x, y] = at(hp, rng.pick(['neck', 'head', 'kneeN', 'toeN', 'toeF', 'pelvis'] as const));
       parts.spawn({
         kind: PK.Glow, x: x + rng.range(-8, 8), y: y + rng.range(-8, 8), vx: rng.range(-30, 30), vy: rng.range(-60, 0),
         max: rng.range(0.4, 0.8), s0: rng.range(2, 4), s1: 0.5, ramp: 'crimson', r0: 0.2, r1: 0.9, a0: 0.8, a1: 0, layer: 1,
@@ -836,10 +849,9 @@ export const shotCrescent: Shot = {
     const rng = env.frng();
     const sinceHit = t - HIT;
     const sinceRel = t - REL;
-    const pose = heroPose();
+    const hp = heroAt(t);
     const [hx, hy] = hipNow();
-    const j = joints(pose);
-    const prog = arcProgress();
+    const prog = arcProgress(t);
     const burn = burnAt(t);
     const RA = arcR(t);
     const whipU = clamp((t - WHIP0) / (WHIP1 - WHIP0));
@@ -964,28 +976,25 @@ export const shotCrescent: Shot = {
     if (impWin) {
       // A thin night-colored gap cuts him out of the crescent behind, so blade and body stay
       // two separate shapes after the posterize.
-      const gap = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [4, 2, 14], rim: [4, 2, 14], rim2: [4, 2, 14], lx: 0, ly: -1 } });
-      for (let i = 0; i < 8; i++) drawPuppet(ctx, gap, hx + Math.cos((i / 8) * TAU) * 3, hy + Math.sin((i / 8) * TAU) * 3, HD);
-      const sil = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [255, 255, 255], rim: [255, 255, 255], rim2: [255, 255, 255], lx: 0, ly: -1 } });
-      drawPuppet(ctx, sil, hx, hy, HD);
+      const gap = hp.a.tinted(hp.i, [4, 2, 14]);
+      for (let i = 0; i < 8; i++) drawPlace(ctx, hp, gap, 1, 1, Math.cos((i / 8) * TAU) * 3, Math.sin((i / 8) * TAU) * 3);
+      drawPlace(ctx, hp, hp.a.tinted(hp.i, [255, 255, 255]));
     } else {
       const auraA = 0.5 + 0.06 * Math.sin(t * 30) + pulse(t, HIT, 0.4) * 0.4;
-      const aura = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [235, 26, 66], rim: [255, 180, 205], rim2: [255, 70, 110], lx: 0, ly: -1 } });
+      const aura = silOf(hp, AURA);
       ctx.globalCompositeOperation = 'lighter';
-      drawPuppet(ctx, aura, hx, hy, HD * 1.13, auraA * 0.55);
-      drawPuppet(ctx, aura, hx, hy, HD * 1.05, auraA);
+      drawPlace(ctx, hp, aura, auraA * 0.55, 1.13);
+      drawPlace(ctx, hp, aura, auraA, 1.05);
       ctx.globalCompositeOperation = 'source-over';
-      const body = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE });
-      drawPuppet(ctx, body, hx, hy, HD);
-      const rim = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [0, 0, 0], rim: [210, 216, 255], rim2: [170, 20, 60], lx: -0.7, ly: -0.8 } });
+      drawPlace(ctx, hp);
       ctx.globalCompositeOperation = 'lighter';
-      drawPuppet(ctx, rim, hx, hy, HD, 0.9);
+      drawPlace(ctx, hp, silOf(hp, RIM), 0.9);
       ctx.globalCompositeOperation = 'source-over';
     }
 
     // Boot flare riding the crescent's leading tip.
     if (!hit && prog > 0.02) {
-      const [tx, ty] = jointWorld(j.toeN, hx, hy, K, HD, FACE);
+      const [tx, ty] = at(hp, 'toeN');
       ctx.globalCompositeOperation = 'lighter';
       drawGlow(ctx, glowSprite('crimson', 0.3), tx, ty, 26 + prog * 14, 0.5 + prog * 0.3);
       drawGlow(ctx, glowOf([255, 236, 244]), tx, ty, 9, 0.7);

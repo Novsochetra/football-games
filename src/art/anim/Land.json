@@ -1,0 +1,257 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Land",
+  "view": "Front",
+  "layers": [
+   "Art",
+   "Num",
+   "Ball"
+  ]
+ },
+ "notes": "Front view (toward the camera), not mirrored (no west strip). Registration: body centre x 64, soles on row 102; contact = [64, 102] (centre between the planted boots; contactL / contactR = the outer sole pixels, soleL / soleR = sole centres); airborne frames sit on pelvis. hands = [screen-left x, y, screen-right x, y] (also handL / handR); num = chest \"10\" box. Points are pixel indices (studioAnim adds 0.5).",
+ "frames": [
+  {
+   "name": "L1",
+   "id": "L1",
+   "label": "drop",
+   "ms": 120,
+   "pelvis": [
+    64,
+    65
+   ],
+   "contact": null,
+   "anchors": {
+    "hands": [
+     40.2,
+     22.2,
+     86.9,
+     21.7
+    ],
+    "handL": [
+     40.2,
+     22.2
+    ],
+    "handR": [
+     86.9,
+     21.7
+    ],
+    "head": [
+     64,
+     16
+    ],
+    "num": [
+     62,
+     44,
+     69,
+     50
+    ],
+    "bbox": [
+     36,
+     2,
+     92,
+     103
+    ],
+    "toeL": [
+     52,
+     103
+    ],
+    "toeR": [
+     76,
+     103
+    ]
+   }
+  },
+  {
+   "name": "L2",
+   "id": "L2",
+   "label": "impact",
+   "ms": 60,
+   "pelvis": [
+    64,
+    68
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "hands": [
+     32.8,
+     58.4,
+     96.1,
+     57.9
+    ],
+    "handL": [
+     32.8,
+     58.4
+    ],
+    "handR": [
+     96.1,
+     57.9
+    ],
+    "head": [
+     64,
+     20
+    ],
+    "num": [
+     62,
+     47,
+     69,
+     53
+    ],
+    "bbox": [
+     27,
+     7,
+     101,
+     102
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ]
+   }
+  },
+  {
+   "name": "L3",
+   "id": "L3",
+   "label": "absorb",
+   "ms": 100,
+   "pelvis": [
+    64,
+    78
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "hands": [
+     48.5,
+     79.6,
+     79.3,
+     79.4
+    ],
+    "handL": [
+     48.5,
+     79.6
+    ],
+    "handR": [
+     79.3,
+     79.4
+    ],
+    "head": [
+     64,
+     34
+    ],
+    "num": [
+     62,
+     60,
+     69,
+     65
+    ],
+    "bbox": [
+     38,
+     29,
+     90,
+     102
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ]
+   }
+  },
+  {
+   "name": "L4",
+   "id": "L4",
+   "label": "rebound",
+   "ms": 80,
+   "pelvis": [
+    64,
+    67
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "hands": [
+     39.3,
+     62.9,
+     89.7,
+     62.8
+    ],
+    "handL": [
+     39.3,
+     62.9
+    ],
+    "handR": [
+     89.7,
+     62.8
+    ],
+    "head": [
+     64,
+     19
+    ],
+    "num": [
+     62,
+     45,
+     69,
+     51
+    ],
+    "bbox": [
+     34,
+     6,
+     94,
+     102
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ]
+   }
+  }
+ ]
+}

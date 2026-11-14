@@ -1,0 +1,282 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Run",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view, facing east (No.10 is right-footed: near/right leg kicks, far/left leg plants). GALE never mirrors, so there is no west strip. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (constant while the foot is planted; the toe outline is 1 px further right); airborne frames (contact null) sit on pelvis. ball = the 12 px ball guide centre at rest (never drawn in the frame); boot = instep point; head = skull point; eye = the side eye; bbox = [x0,y0,x1,y1] measured on the art. Layers in the studio: Art only (no Num/Ball layer; numbers are in Art). Run: R1-R4 plant the near (right) toe-tip at (73,102), R5-R8 the far (left) toe-tip at (76,102). The sprite origin advances by originDx = 27 px at R5 and again at the next R1 (world stride R->L 30 px, L->R 24 px); at 70 ms that is 96 px/s at x1. GALE 2: R1 0.00, R2 0.07, R3 0.14, R4 0.21-0.30.",
+ "frames": [
+  {
+   "name": "R1",
+   "id": "R1",
+   "label": "R-contact",
+   "type": "N (key)",
+   "ms": 70,
+   "pelvis": [
+    58,
+    65
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     20
+    ],
+    "eye": [
+     71,
+     27
+    ],
+    "bbox": [
+     33,
+     7,
+     86,
+     102
+    ]
+   },
+   "originDx": 0,
+   "gale": "s2 0.00"
+  },
+  {
+   "name": "R2",
+   "id": "R2",
+   "label": "R-down",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    64,
+    67
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     69,
+     21
+    ],
+    "eye": [
+     75,
+     29
+    ],
+    "bbox": [
+     45,
+     7,
+     87,
+     102
+    ]
+   },
+   "originDx": 0,
+   "gale": "s2 0.07"
+  },
+  {
+   "name": "R3",
+   "id": "R3",
+   "label": "L-pass",
+   "type": "N (key)",
+   "ms": 70,
+   "pelvis": [
+    71,
+    66
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     77,
+     21
+    ],
+    "eye": [
+     84,
+     28
+    ],
+    "bbox": [
+     57,
+     8,
+     92,
+     102
+    ]
+   },
+   "originDx": 0,
+   "gale": "s2 0.14"
+  },
+  {
+   "name": "R4",
+   "id": "R4",
+   "label": "R-push",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    78,
+    63
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     86,
+     19
+    ],
+    "eye": [
+     93,
+     26
+    ],
+    "bbox": [
+     58,
+     6,
+     105,
+     102
+    ]
+   },
+   "originDx": 0,
+   "gale": "s2 0.21-0.30"
+  },
+  {
+   "name": "R5",
+   "id": "R5",
+   "label": "L-contact",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    58,
+    65
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     20
+    ],
+    "eye": [
+     71,
+     27
+    ],
+    "bbox": [
+     30,
+     7,
+     81,
+     102
+    ]
+   },
+   "originDx": 27,
+   "gale": null
+  },
+  {
+   "name": "R6",
+   "id": "R6",
+   "label": "L-down",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    64,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     69,
+     21
+    ],
+    "eye": [
+     75,
+     29
+    ],
+    "bbox": [
+     42,
+     7,
+     84,
+     102
+    ]
+   },
+   "originDx": 27,
+   "gale": null
+  },
+  {
+   "name": "R7",
+   "id": "R7",
+   "label": "R-pass",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    71,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     77,
+     21
+    ],
+    "eye": [
+     84,
+     28
+    ],
+    "bbox": [
+     58,
+     8,
+     92,
+     102
+    ]
+   },
+   "originDx": 27,
+   "gale": null
+  },
+  {
+   "name": "R8",
+   "id": "R8",
+   "label": "L-push",
+   "type": "N",
+   "ms": 70,
+   "pelvis": [
+    78,
+    63
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "head": [
+     86,
+     19
+    ],
+    "eye": [
+     93,
+     26
+    ],
+    "bbox": [
+     61,
+     6,
+     107,
+     102
+    ]
+   },
+   "originDx": 27,
+   "gale": null
+  }
+ ]
+}

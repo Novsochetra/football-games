@@ -1,0 +1,134 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Approach",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view, facing east (No.10 is right-footed: near/right leg kicks, far/left leg plants). GALE never mirrors, so there is no west strip. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (constant while the foot is planted; the toe outline is 1 px further right); airborne frames (contact null) sit on pelvis. ball = the 12 px ball guide centre at rest (never drawn in the frame); boot = instep point; head = skull point; eye = the side eye; bbox = [x0,y0,x1,y1] measured on the art. Layers in the studio: Art only (no Num/Ball layer; numbers are in Art). AP1 = Run R4 registration with the head turned away (pass T1). AP2 = the bound, airborne on pelvis (60,66); GALE 2 moves it along path = [[t, worldPelvisX, worldPelvisY], ...] in Run-canvas px at x1 (sprite origin = path point - pelvis), 0.30-0.55. AP3 = AP2 with the head away (pass T2).",
+ "frames": [
+  {
+   "name": "AP1",
+   "id": "AP1",
+   "label": "last stride, head away",
+   "type": "V of R4",
+   "ms": 90,
+   "pelvis": [
+    78,
+    63
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     110,
+     96
+    ],
+    "head": [
+     86,
+     19
+    ],
+    "bbox": [
+     58,
+     6,
+     105,
+     102
+    ]
+   },
+   "gale": null
+  },
+  {
+   "name": "AP2",
+   "id": "AP2",
+   "label": "bound",
+   "type": "N",
+   "ms": 90,
+   "pelvis": [
+    60,
+    66
+   ],
+   "contact": null,
+   "anchors": {
+    "ball": [
+     94,
+     96
+    ],
+    "head": [
+     65,
+     20
+    ],
+    "eye": [
+     69,
+     29
+    ],
+    "bbox": [
+     28,
+     7,
+     81,
+     100
+    ]
+   },
+   "path": [
+    [
+     0.3,
+     87,
+     63
+    ],
+    [
+     0.42,
+     99,
+     62.5
+    ],
+    [
+     0.5,
+     107,
+     64.5
+    ],
+    [
+     0.55,
+     112,
+     66
+    ]
+   ],
+   "gale": "s2 0.30-0.55 (moved on PATH)"
+  },
+  {
+   "name": "AP3",
+   "id": "AP3",
+   "label": "bound, head away",
+   "type": "V of AP2",
+   "ms": 80,
+   "pelvis": [
+    60,
+    66
+   ],
+   "contact": null,
+   "anchors": {
+    "ball": [
+     94,
+     96
+    ],
+    "head": [
+     65,
+     20
+    ],
+    "bbox": [
+     28,
+     7,
+     81,
+     100
+    ]
+   },
+   "gale": null
+  }
+ ]
+}

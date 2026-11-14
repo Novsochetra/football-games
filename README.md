@@ -27,6 +27,9 @@ Shot-by-shot brief: `src/cinematic/crescent/SPEC.md`.
 
 Total runtime 15.3 s at 1×.
 
+No.10 is drawn from the studio animations **Bicycle** (side, played mirrored with readable numbers via
+`Bicycle_west.png`), **Land** and **Stand** (front) in shots 3, 4, 5 and 8 (`src/art/anim/`).
+
 New engine pieces for it: the **slash split** post effect (`fx.cut*`, the frame is cut along an arc
 and the halves slide apart), `crescentArc` / `crescentPath` drawing helpers, crimson ball/flame/particle
 palettes, bicycle-kick poses (`bikePlant` … `bikeFollow`, `landHands`, `landCrouch`), a keeper dive,

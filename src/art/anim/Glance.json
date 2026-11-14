@@ -1,0 +1,89 @@
+{
+ "frameW": 48,
+ "frameH": 26,
+ "view": "face",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Sochetra Face",
+  "animation": "Glance",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Face crop 48x26 of src/art/hero_no10.png at (26,8), on its exact pixel grid (studio project \"Sochetra Face\", animation Glance, Front view; palette = the 15 Sochetra colours + #ffffff eye white). Draw at integer x2-x5 on the centre (pelvis = crop centre). eyeL/eyeR = the 2x2 iris centres, eye = their midpoint (the GALE 2 dew mirror centres on eye; the 1.30 sparkle sits on eyeR). G1 = the existing face (fallback), G4 = pupils down-right on the ball, lids and brows 1 px lower (GALE 2 1.12-1.50 at x2 in the dew drop).",
+ "frames": [
+  {
+   "name": "G1",
+   "id": "G1",
+   "label": "face",
+   "ms": 300,
+   "pelvis": [
+    23.5,
+    12.5
+   ],
+   "contact": null,
+   "anchors": {
+    "eye": [
+     22.5,
+     14.5
+    ],
+    "eyeL": [
+     18.5,
+     14.5
+    ],
+    "eyeR": [
+     26.5,
+     14.5
+    ],
+    "bbox": [
+     4,
+     0,
+     38,
+     25
+    ]
+   },
+   "gale": "base / fallback face"
+  },
+  {
+   "name": "G4",
+   "id": "G4",
+   "label": "eyes on the ball",
+   "ms": 380,
+   "pelvis": [
+    23.5,
+    12.5
+   ],
+   "contact": null,
+   "anchors": {
+    "eye": [
+     23.5,
+     15.5
+    ],
+    "eyeL": [
+     19.5,
+     15.5
+    ],
+    "eyeR": [
+     27.5,
+     15.5
+    ],
+    "bbox": [
+     4,
+     0,
+     38,
+     25
+    ]
+   },
+   "gale": "s2 1.12-1.50 (x2 in the dew drop)"
+  }
+ ],
+ "crop": {
+  "src": "src/art/hero_no10.png",
+  "x": 26,
+  "y": 8,
+  "w": 48,
+  "h": 26
+ }
+}

@@ -1,0 +1,324 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Strike",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view, facing east (No.10 is right-footed: near/right leg kicks, far/left leg plants). GALE never mirrors, so there is no west strip. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (constant while the foot is planted; the toe outline is 1 px further right); airborne frames (contact null) sit on pelvis. ball = the 12 px ball guide centre at rest (never drawn in the frame); boot = instep point; head = skull point; eye = the side eye; bbox = [x0,y0,x1,y1] measured on the art. Layers in the studio: Art only (no Num/Ball layer; numbers are in Art). Strike: one fixed patch of turf. Plant (far/left) toe-tip (76,102) on F5a-F7 (identical boot pixels); ball at rest (83,96). F8/F8b are airborne: drawn at their canvas pelvis, placed so that pelvis lands on world = [x,y] in Strike-canvas coords (sprite offset +5,-5 and +8,-2). F9/F10 land on the near toe-tip (97,102) in the same canvas. GALE 2: the Strike canvas origin = Run canvas origin + 56 px. F7: boot/laces are measured on the drawn boot (the drawn instep is 8 px past the rest ball, the ball has already left); ballHit = the ball tangent to those laces; lacesKey/bootKey = the library contact key at the rest ball (77,96)/(76,94). F7 is not on screen in GALE (shot 3 goes M3 -> F8).",
+ "frames": [
+  {
+   "name": "F5a",
+   "id": "F5a",
+   "label": "plant + backswing",
+   "type": "N (key)",
+   "ms": 140,
+   "pelvis": [
+    56,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     34,
+     66
+    ],
+    "head": [
+     60,
+     21
+    ],
+    "eye": [
+     65,
+     29
+    ],
+    "bbox": [
+     23,
+     8,
+     81,
+     102
+    ]
+   },
+   "gale": "s2 0.55, 1.00, 1.50 (the 1.50 hold runs to 1.68)"
+  },
+  {
+   "name": "F5b",
+   "id": "F5b",
+   "label": "inhale",
+   "type": "V of F5a",
+   "ms": 140,
+   "pelvis": [
+    56,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     34,
+     66
+    ],
+    "head": [
+     60,
+     21
+    ],
+    "eye": [
+     65,
+     29
+    ],
+    "bbox": [
+     23,
+     9,
+     83,
+     102
+    ]
+   },
+   "gale": "s2 0.75, 1.25"
+  },
+  {
+   "name": "F6",
+   "id": "F6",
+   "label": "downswing",
+   "type": "N",
+   "ms": 50,
+   "pelvis": [
+    61,
+    65
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     55,
+     88
+    ],
+    "head": [
+     70,
+     20
+    ],
+    "eye": [
+     75,
+     29
+    ],
+    "bbox": [
+     30,
+     7,
+     91,
+     102
+    ]
+   },
+   "gale": "s2 1.68 (to the ice flash 1.80; was 1.58)"
+  },
+  {
+   "name": "F7",
+   "id": "F7",
+   "label": "contact",
+   "type": "N (key)",
+   "ms": 60,
+   "pelvis": [
+    64,
+    65
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     83,
+     92
+    ],
+    "laces": [
+     85,
+     93
+    ],
+    "head": [
+     77,
+     21
+    ],
+    "eye": [
+     81,
+     30
+    ],
+    "ballHit": [
+     91,
+     90
+    ],
+    "lacesKey": [
+     77,
+     96
+    ],
+    "bootKey": [
+     76,
+     94
+    ],
+    "bbox": [
+     35,
+     8,
+     90,
+     102
+    ]
+   },
+   "gale": "library contact key; NOT on screen in GALE 3 (M3 -> F8 at 0.66)"
+  },
+  {
+   "name": "F8",
+   "id": "F8",
+   "label": "follow-through",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    66,
+    64
+   ],
+   "contact": null,
+   "anchors": {
+    "head": [
+     68,
+     18
+    ],
+    "eye": [
+     74,
+     25
+    ],
+    "bbox": [
+     32,
+     5,
+     108,
+     105
+    ]
+   },
+   "world": [
+    71,
+    59
+   ],
+   "gale": "s3 0.66-0.90 (straight from M3; was 0.70-0.92)"
+  },
+  {
+   "name": "F8b",
+   "id": "F8b",
+   "label": "airborne, leg lowering",
+   "type": "N (new)",
+   "ms": 100,
+   "pelvis": [
+    70,
+    64
+   ],
+   "contact": null,
+   "anchors": {
+    "head": [
+     69,
+     18
+    ],
+    "eye": [
+     76,
+     25
+    ],
+    "bbox": [
+     38,
+     5,
+     95,
+     100
+    ]
+   },
+   "world": [
+    78,
+    62
+   ],
+   "gale": "s3 0.90-1.15 (was 0.92; F8 now starts at 0.66)"
+  },
+  {
+   "name": "F9",
+   "id": "F9",
+   "label": "hop landing",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    83,
+    68
+   ],
+   "contact": [
+    97,
+    102
+   ],
+   "anchors": {
+    "head": [
+     88,
+     23
+    ],
+    "eye": [
+     95,
+     30
+    ],
+    "bbox": [
+     58,
+     12,
+     113,
+     102
+    ]
+   },
+   "gale": "s3 1.15-1.45"
+  },
+  {
+   "name": "F10",
+   "id": "F10",
+   "label": "settle",
+   "type": "N",
+   "ms": 160,
+   "pelvis": [
+    80,
+    66
+   ],
+   "contact": [
+    97,
+    102
+   ],
+   "anchors": {
+    "head": [
+     81,
+     20
+    ],
+    "eye": [
+     88,
+     27
+    ],
+    "bbox": [
+     66,
+     8,
+     99,
+     102
+    ]
+   },
+   "gale": "s3 1.45-1.60"
+  }
+ ]
+}

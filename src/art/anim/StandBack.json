@@ -1,0 +1,90 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "back",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Stand",
+  "view": "Back",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Stand, Back view (the Front a/b are StandFront). a = Idle Back exactly; b = the breath (shoulders/collar +1 px). Registration = Idle Back: body centre x 64, soles on row 102, contact = [64,102]; soleL/soleR = sole centres. GALE 6: a 0.25, b 0.45, a 0.65, b 0.85-1.05 (anticipation before the palm raise), then a 1.79, b 2.06, a 2.33 (~0.27 s alternation to the end). Points are pixel indices. Studio layer: Art only.",
+ "frames": [
+  {
+   "name": "a",
+   "id": "a",
+   "label": "stand",
+   "type": "C of Idle Back",
+   "ms": 200,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     18
+    ],
+    "soleL": [
+     51,
+     102
+    ],
+    "soleR": [
+     77,
+     102
+    ],
+    "bbox": [
+     41,
+     5,
+     87,
+     102
+    ]
+   },
+   "gale": "s6 0.25, 0.65, then 1.79 and 2.33 (alternating with b every ~0.27 s to the end of the shot)"
+  },
+  {
+   "name": "b",
+   "id": "b",
+   "label": "breath",
+   "type": "V of a",
+   "ms": 200,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     17
+    ],
+    "soleL": [
+     51,
+     102
+    ],
+    "soleR": [
+     77,
+     102
+    ],
+    "bbox": [
+     41,
+     5,
+     87,
+     102
+    ]
+   },
+   "gale": "s6 0.45, 0.85-1.05 (= the anticipation right before the palm raise: shoulders up), then 2.06 (alternating with a every ~0.27 s after 1.79)"
+  }
+ ]
+}

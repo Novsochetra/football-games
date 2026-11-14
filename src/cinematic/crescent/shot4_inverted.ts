@@ -12,12 +12,13 @@
 
 import type { Shot, Env } from '../timeline';
 import { VW, VH } from '../../engine/camera';
-import { TAU, clamp, ease, lerp } from '../../engine/math';
+import { TAU, clamp, ease, lerp, type RGB } from '../../engine/math';
 import { PK, drawGlow, glowOf, glowSprite } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { PIXEL_FONT, focusLines, lensFlare, ribbon, sparkle, type TrailPt } from '../../art/fx';
-import { HERO_KIT, POSES, drawPuppet, joints, jointWorld, poseAt, renderPuppet, type Pose } from '../../art/puppet';
-import { HERO_FACING, crescentArc, crescentPath, crimsonRibbon, drawBall, pulse, sparks } from './common';
+import { crescentArc, crescentPath, crimsonRibbon, drawBall, pulse, sparks } from './common';
+import { S3, S45, STRIKE_ROT, at, bike, drawPlace, fi, keyAt, pivotOn, place, silOf, strikeBallOffset, type Place, type Pt } from './hero';
+import { LIFTOFF_AIR, liftoffHero } from './shot3_liftoff';
 
 const DUR = 1.9;
 const SNAP = 1.75; // time restarts: everything rushes into the strike (shot 5)
@@ -28,9 +29,10 @@ const GLINT = 1.5; // ...and glints on it (the snap at SNAP releases it)
 const NEG0 = 0.035, NEG1 = 0.075; // the time-stop negative ("eclipse") frames
 const D = Math.PI / 180;
 
-// Hero puppet: 1.2 px/unit drawn at 2x (crisp 2-px pixels).
-const K = 1.2, HD = 2, KD = K * HD;
-const FACE = HERO_FACING;
+// No.10: the drawn Bicycle frames (west strip), shot 3's body 1.2x closer (S45 world px per sprite px),
+// upside down at the top of the kick: rot = -spin = 1.75 about the pelvis, as shot 3 leaves him.
+const HS = S45;
+const ROT = 1.75;
 const HIP_X = 292, HIP_Y = 176;
 const BALL_R = 6;
 
@@ -73,20 +75,18 @@ const ZEN_X = 320, ZEN_Y = -520; // the sky's zenith: the floodlight masts lean 
 const TOWERS = [566, 74]; // world x (screen left, screen right)
 const MAST = 30; // visible mast length below the roof (world px)
 
-// Pose: shot 3 ends on bikeCock; while time is stopped the kicking (near) leg winds even
-// tighter (one long coil), then holds it for the strike in shot 5.
-const COIL: Pose = { ...POSES.bikeCock, thighN: -24 * D, kneeN: 128 * D, footN: 26 * D, thighF: 126 * D, armN: -108 * D, armF: -147 * D };
-const track: [number, Pose][] = [
-  [0, POSES.bikeCock],
-  [SNAP - 0.05, COIL],
-  [DUR, COIL],
-];
-// Path of the far boot through shot 3 (rise -> scissor -> cock): frozen as a crimson ribbon.
-const ribbonTrack: [number, Pose][] = [
-  [0, POSES.bikeRise],
-  [0.55, POSES.bikeScissor],
-  [1, POSES.bikeCock],
-];
+// Frames: shot 3 cuts on BK7 (cock); in the frozen time the hair and hem drift (BK7b), then the
+// kicking leg winds into the coil and trembles there, BK8 <-> BK8b, ending on BK8 for the snap
+// (library 3.4: no drawing held longer than 0.3 s).
+const KEYS: [number, string][] = [[0, 'BK7'], [0.3, 'BK7b'], [0.6, 'BK8'], [0.9, 'BK8b'], [1.2, 'BK8'], [1.5, 'BK8b'], [1.75, 'BK8']];
+function heroAt(t: number): Place {
+  const b = bike();
+  const [hx, hy] = hipPos(t);
+  return place(b, fi(b, keyAt(KEYS, t)), hx, hy, HS, ROT, true);
+}
+// Effect passes (silhouette / tint copies of the drawn frame).
+const AURA = { fill: [235, 26, 66] as RGB, rim: [255, 180, 205] as RGB, rim2: [255, 70, 110] as RGB, lx: 0, ly: -1 };
+const RIM = { fill: [0, 0, 0] as RGB, rim: [200, 206, 255] as RGB, rim2: [150, 16, 50] as RGB, lx: -0.7, ly: -0.8 };
 
 let spin = new BallSpin();
 let snapped = false;
@@ -95,7 +95,7 @@ let emitAcc = 0;
 let chargeAcc = 0;
 let lastT = 0;
 let BX = 0, BY = 0;
-let ribbonL: [number, number][] = [];
+let ribbonL: Pt[] = [];
 let flashes: { x: number; y: number; r: number; at: number; rot: number }[] = [];
 const ribbonPts: TrailPt[] = [];
 
@@ -490,13 +490,10 @@ function crescentFill(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: 
   ctx.fill();
 }
 
-function buildRibbon(j: ReturnType<typeof joints>, hx: number, hy: number) {
+function buildRibbon(hp: Place) {
   ribbonPts.length = 0;
-  for (let i = 0; i < ribbonL.length - 1; i++) {
-    const [x, y] = jointWorld(ribbonL[i], hx, hy, K, HD, FACE);
-    ribbonPts.push({ x, y });
-  }
-  const [x, y] = jointWorld(j.toeF, hx, hy, K, HD, FACE);
+  for (let i = 0; i < ribbonL.length - 1; i++) ribbonPts.push({ x: hp.x + ribbonL[i][0], y: hp.y + ribbonL[i][1] });
+  const [x, y] = at(hp, 'toeF');
   ribbonPts.push({ x, y });
 }
 
@@ -524,15 +521,19 @@ export const shotInverted: Shot = {
     lastT = 0;
     ribbonPts.length = 0;
 
-    // The ball waits exactly where the strike will meet it (shot 5): just past the striking toe.
-    const ts = joints(POSES.bikeStrike).toeN;
-    const tl = Math.hypot(ts[0], ts[1]);
-    [BX, BY] = jointWorld([ts[0] + (ts[0] / tl) * 5, ts[1] + (ts[1] / tl) * 5], HIP_X, HIP_Y, K, HD, FACE);
+    // The ball waits exactly where the strike will meet it (shot 5): on the BK10 instep.
+    const bo = strikeBallOffset(HS, STRIKE_ROT, BALL_R * 2);
+    BX = HIP_X + bo[0];
+    BY = HIP_Y + bo[1];
 
+    // The far boot's path through shot 3 (rise -> swing -> scissor -> cock), relative to his hip at
+    // this shot's scale: frozen as a crimson ribbon.
     ribbonL = [];
     for (let i = 0; i <= 22; i++) {
-      const toe = joints(poseAt(ribbonTrack, i / 22, (x) => x)).toeF;
-      ribbonL.push([toe[0], toe[1]]);
+      const lp = liftoffHero(lerp(LIFTOFF_AIR, 1.4 - 1e-4, i / 22));
+      const [tx, ty] = at(lp, 'toeF');
+      const [px, py] = at(lp, 'pelvis');
+      ribbonL.push([((tx - px) * HS) / S3, ((ty - py) * HS) / S3]);
     }
 
     // Camera flashes in the crowd that will freeze mid-pop.
@@ -581,15 +582,13 @@ export const shotInverted: Shot = {
     spin.rotate(0.3, 1, 0.25, dt * 8);
 
     // Aura keeps shedding embers in (stopped) time.
-    const pose = poseAt(track, t);
-    const [hx, hy] = hipPos(t);
+    const hp = heroAt(t);
     if (!snapped) {
       emitAcc += dt * 160;
-      const j = joints(pose);
-      const pts = [j.neck, j.head, j.kneeN, j.toeN, j.toeF, j.handN, j.handF, j.hip];
+      const pts = ['neck', 'head', 'kneeN', 'toeN', 'toeF', 'handN', 'handF', 'pelvis'] as const;
       while (emitAcc >= 1) {
         emitAcc -= 1;
-        const [x, y] = jointWorld(rng.pick(pts), hx, hy, K, HD, FACE);
+        const [x, y] = at(hp, rng.pick(pts));
         const a = rng.range(0, TAU);
         parts.spawn({
           kind: PK.Glow, x: x + rng.range(-8, 8), y: y + rng.range(-8, 8), vx: Math.cos(a) * 30, vy: Math.sin(a) * 30 - 40,
@@ -604,11 +603,10 @@ export const shotInverted: Shot = {
     lastT = t;
     const ch = chargeAmt(t);
     if (!snapped && ch > 0 && ch < 1) {
-      const j = joints(pose);
-      const chain = [j.hip, j.kneeN, j.ankleN, j.toeN];
+      const chain = (['pelvis', 'kneeN', 'ankleN', 'toeN'] as const).map((n) => at(hp, n));
       const u = clamp(ease.inQuad(ch) * 3, 0, 3);
       const k = Math.min(2, Math.floor(u)), f = u - k;
-      const [px, py] = jointWorld([lerp(chain[k][0], chain[k + 1][0], f), lerp(chain[k][1], chain[k + 1][1], f)], hx, hy, K, HD, FACE);
+      const [px, py] = [lerp(chain[k][0], chain[k + 1][0], f), lerp(chain[k][1], chain[k + 1][1], f)];
       chargeAcc += rdt * 110;
       while (chargeAcc >= 1) {
         chargeAcc -= 1;
@@ -621,8 +619,7 @@ export const shotInverted: Shot = {
     }
     if (!glinted && t >= GLINT) {
       glinted = true;
-      const j = joints(pose);
-      const [tx, ty] = jointWorld(j.toeN, hx, hy, K, HD, FACE);
+      const [tx, ty] = at(hp, 'toeN');
       sparks(env, tx, ty, 16, 260, TAU, 0, 'crimson');
     }
 
@@ -668,10 +665,11 @@ export const shotInverted: Shot = {
     const rng = env.frng();
     const beat = beatEnv(t);
     const fz = freezeAmt(t);
-    const pose = poseAt(track, t);
-    const [hx, hy] = hipPos(t);
-    const j = joints(pose);
-    const [cxw, cyw] = jointWorld([j.neck[0] * 0.45, j.neck[1] * 0.45], hx, hy, K, HD, FACE); // chest
+    const hp = heroAt(t);
+    const b = hp.a, fr = hp.i;
+    const [hx, hy] = at(hp, 'pelvis');
+    const [nkx, nky] = at(hp, 'neck');
+    const [cxw, cyw] = [lerp(hx, nkx, 0.45), lerp(hy, nky, 0.45)]; // chest
     const [cx, cy] = screenOf(env, cxw, cyw);
     const [hu, hv] = env.cam.toUV(cxw, cyw);
     const snapT = t - SNAP;
@@ -679,7 +677,7 @@ export const shotInverted: Shot = {
     const wp = waveP(t);
     const R = waveR(t);
     const bob = Math.sin(t * 2.1) * 1.2;
-    buildRibbon(j, hx, hy);
+    buildRibbon(hp);
 
     // ---- Time-stop "eclipse": one clean silver/indigo negative. Everything bright here turns
     // indigo, the black ground turns flat silver: No.10, his frozen boot path, the ball, the
@@ -693,8 +691,7 @@ export const shotInverted: Shot = {
       crescentPath(ctx, MOON_X, MOON_Y, MOON_R, 0.62, MOON_BITE);
       ctx.fill();
       ribbon(ctx, ribbonPts, 0, 9, '#fff', 1);
-      const sil = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [255, 255, 255], rim: [255, 255, 255], rim2: [255, 255, 255], lx: 0, ly: -1 } });
-      drawPuppet(ctx, sil, hx, hy, HD);
+      drawPlace(ctx, hp, b.tinted(fr, [255, 255, 255]));
       ctx.fillStyle = '#fff';
       ctx.beginPath();
       ctx.arc(BX, BY + bob, BALL_R * 2 + 1, 0, TAU);
@@ -776,41 +773,40 @@ export const shotInverted: Shot = {
       ctx.fillRect(cxw - 170, cyw - 170, 340, 340);
       ctx.globalCompositeOperation = 'lighter';
       const glowA = 0.2 + beat * 0.16;
-      for (const p of [j.neck, j.head, j.kneeN, j.ankleN, j.toeF, j.hip, j.handN]) {
-        const [x, y] = jointWorld(p, hx, hy, K, HD, FACE);
+      for (const p of ['neck', 'head', 'kneeN', 'ankleN', 'toeF', 'pelvis', 'handN']) {
+        const [x, y] = at(hp, p);
         drawGlow(ctx, glowOf([210, 20, 64]), x, y, 46, glowA);
       }
       ctx.globalCompositeOperation = 'source-over';
     }
     const auraA = 0.44 + 0.05 * Math.sin(t * 6) + beat * 0.35;
-    const aura = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [235, 26, 66], rim: [255, 180, 205], rim2: [255, 70, 110], lx: 0, ly: -1 } });
+    const aura = silOf(hp, AURA);
     ctx.globalCompositeOperation = 'lighter';
-    drawPuppet(ctx, aura, hx, hy, HD * (1.14 + beat * 0.04), auraA * 0.6);
-    drawPuppet(ctx, aura, hx, hy, HD * 1.05, auraA);
+    drawPlace(ctx, hp, aura, auraA * 0.6, 1.14 + beat * 0.04);
+    drawPlace(ctx, hp, aura, auraA, 1.05);
     ctx.globalCompositeOperation = 'source-over';
-    const body = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE });
-    drawPuppet(ctx, body, hx, hy, HD);
+    drawPlace(ctx, hp);
     // Frozen grade on the body: hue/saturation from a cold silhouette, his own shading kept,
     // then a light multiply so skin sits a value step below the white rim (kit and face separate).
     if (fz > 0) {
-      const cold = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [112, 116, 176], rim: [112, 116, 176], rim2: [112, 116, 176], lx: 0, ly: -1 } });
+      const cold = b.tinted(fr, [112, 116, 176]);
       ctx.globalCompositeOperation = 'color';
-      drawPuppet(ctx, cold, hx, hy, HD, 0.8 * fz);
+      drawPlace(ctx, hp, cold, 0.8 * fz);
       ctx.globalCompositeOperation = 'multiply';
-      drawPuppet(ctx, cold, hx, hy, HD, 0.35 * fz);
+      drawPlace(ctx, hp, cold, 0.35 * fz);
       ctx.globalCompositeOperation = 'source-over';
     }
-    const rim = renderPuppet(HERO_KIT, pose, { k: K, facing: FACE, silhouette: { fill: [0, 0, 0], rim: [200, 206, 255], rim2: [150, 16, 50], lx: -0.7, ly: -0.8 } });
+    const rim = silOf(hp, RIM);
     ctx.globalCompositeOperation = 'lighter';
-    drawPuppet(ctx, rim, hx, hy, HD, 0.6);
+    drawPlace(ctx, hp, rim, 0.6);
     ctx.globalCompositeOperation = 'source-over';
 
     // The charge: a crimson current runs down the kicking leg (hip -> knee -> ankle -> toe) and
     // pools in the boot. The snap releases it into the strike.
     const ch = chargeAmt(t);
-    const [tox, toy] = jointWorld(j.toeN, hx, hy, K, HD, FACE);
+    const [tox, toy] = at(hp, 'toeN');
     if (ch > 0) {
-      const chain = [j.hip, j.kneeN, j.ankleN, j.toeN].map((p) => jointWorld(p, hx, hy, K, HD, FACE));
+      const chain = (['pelvis', 'kneeN', 'ankleN', 'toeN'] as const).map((n) => at(hp, n));
       const along = (u: number): [number, number] => {
         const k = Math.min(2, Math.floor(clamp(u, 0, 3)));
         const f = clamp(u - k);
@@ -818,16 +814,15 @@ export const shotInverted: Shot = {
       };
       const u = ease.inQuad(ch) * 3;
       const rel = 1 - clamp(snapT / 0.1);
-      // the boot darkens toward a burnt maroon (multiply in soft steps around the toe) so the
-      // crimson glow on top keeps the boot's shape instead of blowing out to white. The puppet
-      // buffer is shared per size, so this is the latest silhouette render: the dark `rim` one.
+      // the boot darkens toward a burnt maroon (multiply in soft steps around the toe, with the dark
+      // `rim` silhouette) so the crimson glow on top keeps the boot's shape instead of blowing out to white.
       ctx.globalCompositeOperation = 'multiply';
       for (const r of [30, 22, 14]) {
         ctx.save();
         ctx.beginPath();
         ctx.arc(tox, toy, r, 0, TAU);
         ctx.clip();
-        drawPuppet(ctx, rim, hx, hy, HD, 0.24 * ch * (0.5 + 0.5 * rel));
+        drawPlace(ctx, hp, rim, 0.24 * ch * (0.5 + 0.5 * rel));
         ctx.restore();
       }
       ctx.globalCompositeOperation = 'lighter';

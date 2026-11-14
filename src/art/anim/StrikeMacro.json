@@ -1,0 +1,175 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 109,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "StrikeMacro",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view at macro x4 (shin and boot fill the canvas), facing east. Anchor on laces (pelvis = laces, contact null, so the default anchor is the laces). turf = row 109; the ball (radius ballR = 23 at macro scale) is centred at ball = 23 px right of the laces on M1/M2/M2b; M3 is past contact (laces 18 px on, 6 px up), no ball. GALE 3: M1 0.00, M2 0.12, M2b 0.37 (hit-stop second drawing), M3 0.62. Points are pixel indices (studioAnim adds 0.5). Studio layer: Art only.",
+ "frames": [
+  {
+   "name": "M1",
+   "id": "M1",
+   "label": "arriving",
+   "type": "N",
+   "ms": 50,
+   "pelvis": [
+    58,
+    86
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     58,
+     86
+    ],
+    "ball": [
+     81,
+     86
+    ],
+    "instep": [
+     56,
+     78
+    ],
+    "toe": [
+     43,
+     104
+    ],
+    "bbox": [
+     17,
+     0,
+     99,
+     104
+    ]
+   },
+   "gale": "s3 0.00-0.12"
+  },
+  {
+   "name": "M2",
+   "id": "M2",
+   "label": "laces on the ball",
+   "type": "N",
+   "ms": 80,
+   "pelvis": [
+    58,
+    86
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     58,
+     86
+    ],
+    "ball": [
+     81,
+     86
+    ],
+    "instep": [
+     54,
+     79
+    ],
+    "toe": [
+     48,
+     107
+    ],
+    "bbox": [
+     9,
+     0,
+     64,
+     108
+    ]
+   },
+   "gale": "s3 0.12-0.37 (hit-stop, first half; M2b 0.37-0.62)"
+  },
+  {
+   "name": "M2b",
+   "id": "M2b",
+   "label": "hit-stop variant",
+   "type": "V of M2",
+   "ms": 80,
+   "pelvis": [
+    58,
+    86
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     58,
+     86
+    ],
+    "ball": [
+     81,
+     86
+    ],
+    "instep": [
+     54,
+     79
+    ],
+    "toe": [
+     48,
+     107
+    ],
+    "bbox": [
+     9,
+     0,
+     64,
+     108
+    ]
+   },
+   "gale": "s3 0.37-0.62 (hit-stop, second half)"
+  },
+  {
+   "name": "M3",
+   "id": "M3",
+   "label": "through",
+   "type": "N",
+   "ms": 60,
+   "pelvis": [
+    76,
+    80
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     76,
+     80
+    ],
+    "instep": [
+     68,
+     78
+    ],
+    "toe": [
+     84,
+     102
+    ],
+    "bbox": [
+     0,
+     0,
+     87,
+     107
+    ]
+   },
+   "gale": "s3 0.62-0.66"
+  }
+ ],
+ "scale": 4
+}

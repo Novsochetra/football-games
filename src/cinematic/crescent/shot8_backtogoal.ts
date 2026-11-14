@@ -14,6 +14,8 @@ import { BallSpin } from '../../engine/pixel';
 import { focusLines, lensFlare, makeCracks, pixelText, sparkle, speedStreaks, TITLE_FONT } from '../../art/fx';
 import { KEEPER_KIT, P, POSES, drawPuppet, mixPose, renderPuppet } from '../../art/puppet';
 import { crescentArc, crescentPath, drawBall, dustBurst, grassChunks, meteorFlames, pulse, warp } from './common';
+import { drawPlace, fi, land, place, stand, type Place } from './hero';
+import type { StudioAnim } from '../../art/studioAnim';
 
 const DUR = 3.2;
 const LAND = 0.26; // boots hit the turf
@@ -43,11 +45,19 @@ const S_KEEP = simTime(KEEP_T);
 const S_B0 = simTime(B_T0);
 const S_NET = simTime(NET);
 
-// Hero (hand-drawn sprite) in the foreground.
+// Hero in the foreground: the drawn Land frames (front view, back to goal, facing the lens) then
+// Stand Front a/b, at the shot's sprite scale (98 px tall, as the old sprite: same framing).
 const SC = 2.4;
 const FEET_X = 304, FEET_Y = 340;
 const FALL_Y0 = 92; // feet at the cut: shins and boots hanging in from the top of frame
-const WAIST = 70; // sprite row where the squash splits legs / upper body
+// L1 drop (falling, toes pointing down) -> L2 impact on LAND (through the land hit-stop) -> L3 absorb
+// (the deepest squash) -> L4 rebound -> Stand Front a/b alternating every 0.3 s (panting). Library 3.6.
+const LAND_KEYS: [number, string][] = [[0, 'L1'], [LAND, 'L2'], [0.33, 'L3'], [0.47, 'L4']];
+const STAND_T = 0.62, PANT = 0.3;
+/** Eye whites (frame px centres) of the Stand frames, for the glint. */
+const EYES: Record<string, [number, number][]> = { a: [[59.5, 27.5], [71, 27.5]], b: [[59.5, 26.5], [71, 26.5]] };
+/** Hair colours of the studio palette (dark, highlight, deepest, indigo): the crimson hair sheen. */
+const HAIR_RGB = new Set(['54,34,74', '40,60,160', '25,28,90', '47,44,110']);
 
 // Ground perspective: horizon at camera height; the hero stands 4.7 m from the lens.
 const HZ = 199;
@@ -94,19 +104,21 @@ let vz = new Float32Array(0);
 let brokenH = new Uint8Array(0);
 let brokenV = new Uint8Array(0);
 let cracks: ReturnType<typeof makeCracks> = [];
-// Derived art (cached once, deterministic).
-let rimR2: HTMLCanvasElement | null = null;
-let rimL1: HTMLCanvasElement | null = null;
-let rimTop2: HTMLCanvasElement | null = null;
-let hairRed: HTMLCanvasElement | null = null;
-// The three rim masks pre-composited per back-light level (one draw instead of three per pass).
+// Derived art per hero frame (cached once, deterministic): pixel rims and the hair mask.
+interface FrameArt {
+  rimR2: HTMLCanvasElement;
+  rimL1: HTMLCanvasElement;
+  rimTop2: HTMLCanvasElement;
+  hairRed: HTMLCanvasElement;
+  /** The three rim masks pre-composited per back-light level (one draw instead of three per pass). */
+  rimOver: HTMLCanvasElement[];
+  rimAdd: HTMLCanvasElement[];
+}
 const RIM_STEPS = 20;
-const rimOver: HTMLCanvasElement[] = [];
-const rimAdd: HTMLCanvasElement[] = [];
-// Per-frame hero deformation (set in render before drawing hero layers).
-let hq = 0;
+const frameArt = new Map<string, FrameArt>();
+// The hero placement for this render (set before drawing hero layers).
+let hp8: Place | null = null;
 let hfy = FEET_Y;
-let hb = 0; // idle breathing: the upper body rises this many px (0 or 1)
 
 const idx = (i: number, j: number) => j * (COLS + 1) + i;
 const restX = (i: number) => lerp(NX0, NX1, i / COLS);
@@ -123,43 +135,91 @@ function canvas(w: number, h: number) {
   return c;
 }
 
-/** Pixel rim: hero edge pixels on the side where (x - dx, y - dy) is empty, tinted. */
-function rimMask(env: Env, c: RGB, dx: number, dy: number) {
-  const h = env.art.hero;
-  const cv = canvas(h.w, h.h);
+/** The hero frame on screen at time t: Land L1-L4, then Stand Front a/b panting. */
+function heroFrame(t: number): { a: StudioAnim; i: number } {
+  if (t < STAND_T) {
+    const a = land();
+    let n = LAND_KEYS[0][1];
+    for (const [k, name] of LAND_KEYS) if (t >= k - 1e-6) n = name;
+    return { a, i: fi(a, n) };
+  }
+  const a = stand();
+  return { a, i: fi(a, Math.floor((t - STAND_T) / PANT + 1e-6) % 2 ? 'b' : 'a') };
+}
+
+/** Pixel rim: frame edge pixels on the side where (x - dx, y - dy) is empty, tinted. */
+function rimMask(a: StudioAnim, i: number, c: RGB, dx: number, dy: number) {
+  const cv = canvas(a.w, a.h);
   const g = cv.getContext('2d')!;
   g.imageSmoothingEnabled = false;
-  g.drawImage(h.tinted(c), 0, 0);
+  g.drawImage(a.tinted(i, c), 0, 0);
   g.globalCompositeOperation = 'destination-out';
-  g.drawImage(h.img, dx, dy);
+  g.drawImage(a.frames[i].img, dx, dy);
   return cv;
+}
+
+/** The frame's hair (navy mop above the brow line) as a crimson mask, for the hair sheen. */
+function hairMask(a: StudioAnim, i: number) {
+  const f = a.frames[i];
+  const lim = (f.anchors.head ? f.anchors.head[1] : 16) + 10;
+  const cv = canvas(a.w, a.h);
+  const g = cv.getContext('2d')!;
+  const im = g.createImageData(a.w, a.h);
+  for (let y = 0; y < Math.min(a.h, lim); y++)
+    for (let x = 0; x < a.w; x++) {
+      const k = (y * a.w + x) * 4;
+      if (!f.px[k + 3] || !HAIR_RGB.has(`${f.px[k]},${f.px[k + 1]},${f.px[k + 2]}`)) continue;
+      im.data[k] = 235;
+      im.data[k + 1] = 40;
+      im.data[k + 2] = 80;
+      im.data[k + 3] = 255;
+    }
+  g.putImageData(im, 0, 0);
+  return cv;
+}
+
+function artOf(a: StudioAnim, i: number): FrameArt {
+  const key = `${a.name}|${i}`;
+  let fa = frameArt.get(key);
+  if (!fa) {
+    fa = {
+      rimR2: rimMask(a, i, [255, 70, 110], -2, 0),
+      rimL1: rimMask(a, i, [255, 60, 100], 2, 0),
+      rimTop2: rimMask(a, i, [236, 238, 255], 0, 2),
+      hairRed: hairMask(a, i),
+      rimOver: [],
+      rimAdd: [],
+    };
+    frameArt.set(key, fa);
+  }
+  return fa;
 }
 
 /**
  * Rim set for back-light level bl: the silver top rim and the crimson side rims composited once
- * into one sprite-sized canvas (source-over set, or the additive set), cached per level.
+ * into one frame-sized canvas (source-over set, or the additive set), cached per frame and level.
  * Equivalent to drawing the three masks one after another with the same alphas.
  */
-function rimSet(env: Env, bl: number, add: boolean): HTMLCanvasElement {
-  const i = Math.round(clamp(bl) * RIM_STEPS);
-  const cache = add ? rimAdd : rimOver;
-  let cv = cache[i];
+function rimSet(a: StudioAnim, i: number, bl: number, add: boolean): HTMLCanvasElement {
+  const fa = artOf(a, i);
+  const k = Math.round(clamp(bl) * RIM_STEPS);
+  const cache = add ? fa.rimAdd : fa.rimOver;
+  let cv = cache[k];
   if (!cv) {
-    const b = i / RIM_STEPS;
-    const h = env.art.hero;
-    cv = canvas(h.w, h.h);
+    const b = k / RIM_STEPS;
+    cv = canvas(a.w, a.h);
     const g = cv.getContext('2d')!;
     g.imageSmoothingEnabled = false;
     const layers: [HTMLCanvasElement, number][] = add
-      ? [[rimR2!, 0.65 * b], [rimL1!, 0.45 * b], [rimTop2!, 0.18 + 0.12 * b]]
-      : [[rimTop2!, 0.55 + 0.35 * b], [rimR2!, 0.2 + 0.8 * b], [rimL1!, 0.15 + 0.75 * b]];
+      ? [[fa.rimR2, 0.65 * b], [fa.rimL1, 0.45 * b], [fa.rimTop2, 0.18 + 0.12 * b]]
+      : [[fa.rimTop2, 0.55 + 0.35 * b], [fa.rimR2, 0.2 + 0.8 * b], [fa.rimL1, 0.15 + 0.75 * b]];
     if (add) g.globalCompositeOperation = 'lighter';
-    for (const [img, a] of layers) {
-      if (a <= 0) continue;
-      g.globalAlpha = clamp(a);
+    for (const [img, al] of layers) {
+      if (al <= 0) continue;
+      g.globalAlpha = clamp(al);
       g.drawImage(img, 0, 0);
     }
-    cache[i] = cv;
+    cache[k] = cv;
   }
   return cv;
 }
@@ -202,12 +262,6 @@ function feetY(s: number) {
     return lerp(FALL_Y0, FEET_Y, 0.3 * k + 0.7 * k * k);
   }
   return FEET_Y;
-}
-
-/** Squash (+) / stretch (-) of the hero. */
-function squash(s: number) {
-  if (s < S_LAND) return lerp(-0.35, -0.6, s / S_LAND);
-  return keys([[0, 1], [0.05, 0.94], [0.19, -0.14], [0.3, 0.05], [0.42, 0]], s - S_LAND);
 }
 
 /** Ball along the comet path (u 0..1) in screen space + its apparent radius. */
@@ -285,40 +339,21 @@ function ringL(env: Env, x: number, y: number, r0: number, r1: number, dur: numb
 
 // ---------------------------------------------------------------- drawing helpers
 
-/** Draw the hand-drawn hero (or a tinted copy / mask) with the current squash, offset (ox, oy). */
+/** Draw the hero frame of this render (or a tinted copy / mask of it), offset (ox, oy) in world px. */
 function drawHeroQ(env: Env, img: HTMLCanvasElement | null, ox: number, oy: number, alpha = 1) {
-  if (alpha <= 0) return;
-  const h = env.art.hero, ctx = env.ctx;
-  const src = img || h.img;
-  const x = FEET_X + ox, y = hfy + oy;
-  ctx.imageSmoothingEnabled = false;
-  ctx.globalAlpha = clamp(alpha);
-  if (Math.abs(hq) < 0.01) {
-    const left = x - h.footX * SC, top = y - h.footY * SC;
-    if (hb) {
-      // Idle breath: the chest rises a pixel (upper body stretched up by hb, legs in place; no
-      // overlap or gap at the waist, so additive passes do not double up).
-      ctx.drawImage(src, 0, 0, h.w, WAIST, left, top - hb, h.w * SC, WAIST * SC + hb);
-      ctx.drawImage(src, 0, WAIST, h.w, h.h - WAIST, left, top + WAIST * SC, h.w * SC, (h.h - WAIST) * SC);
-    } else ctx.drawImage(src, left, top, h.w * SC, h.h * SC);
-    ctx.globalAlpha = 1;
-    return;
-  }
-  const q = hq;
-  const kx = 1 + 0.13 * q;
-  const legK = 1 - (q > 0 ? 0.42 : 0.2) * q;
-  const upK = 1 - (q > 0 ? 0.08 : 0.12) * q;
-  const w = h.w * SC * kx, left = x - h.footX * SC * kx;
-  const legTop = Math.round(y - (h.footY - WAIST) * SC * legK);
-  const upH = WAIST * SC * upK;
-  // Upper body first (one row of overlap hides the seam), then the legs over it.
-  ctx.drawImage(src, 0, 0, h.w, WAIST + 1, left, legTop - upH, w, upH + SC * upK);
-  // Legs as two halves (they are apart below the shorts): a wider stance on the squash.
-  const spread = q > 0 ? 7 * q : 2 * q;
-  const legH = (h.h - WAIST) * SC * legK, half = 49;
-  ctx.drawImage(src, 0, WAIST, half, h.h - WAIST, left - spread, legTop, half * SC * kx, legH);
-  ctx.drawImage(src, half, WAIST, h.w - half, h.h - WAIST, left + half * SC * kx + spread, legTop, (h.w - half) * SC * kx, legH);
-  ctx.globalAlpha = 1;
+  if (alpha <= 0 || !hp8) return;
+  drawPlace(env.ctx, hp8, img, clamp(alpha), 1, ox, oy);
+}
+
+/**
+ * Place a Land / Stand frame: the planted frames stand on their contact (the centre between the boots,
+ * soles on row 102) at the feet; L1 (falling, toes pointing down) hangs from its lowest toe row.
+ */
+function placeHero(a: StudioAnim, i: number, feetY: number): Place {
+  const f = a.frames[i];
+  if (f.contact) return place(a, i, FEET_X, feetY, SC, 0, false, true);
+  const bottom = (f.anchors.toeL ? f.anchors.toeL[1] : 103) + 1; // bottom of the pointed toes
+  return { a, i, x: FEET_X, y: feetY, s: SC, rot: 0, flip: false, piv: [f.pelvis[0] + 0.5, bottom] };
 }
 
 /**
@@ -473,6 +508,10 @@ export const shotBackToGoal: Shot = {
     { at: EYE_T, fn: (e) => e.sfx.shing(1.1) },
     { at: CARD_T, fn: (e) => e.sfx.whoosh(0.3, 400, 2400, 0.3) },
   ],
+  prepare() {
+    // Pixel rims and hair masks of every hero frame (built once, so the cut into the shot never hitches).
+    for (const a of [land(), stand()]) for (let i = 0; i < a.frames.length; i++) artOf(a, i);
+  },
   init(env) {
     spin = new BallSpin();
     spin.rotate(1, 0.3, 0.2, 0.7);
@@ -483,21 +522,9 @@ export const shotBackToGoal: Shot = {
     brokenH = new Uint8Array(n);
     brokenV = new Uint8Array(n);
     cracks = anchorCracks(makeCracks(new Rng(808), 9, 150, 0.22));
-    hq = 0;
+    hp8 = null;
     hfy = FEET_Y;
-    hb = 0;
-    if (!rimR2) rimR2 = rimMask(env, [255, 70, 110], -2, 0);
-    if (!rimL1) rimL1 = rimMask(env, [255, 60, 100], 2, 0);
-    if (!rimTop2) rimTop2 = rimMask(env, [236, 238, 255], 0, 2);
-    if (!hairRed) {
-      const hero = env.art.hero;
-      hairRed = canvas(hero.w, hero.h);
-      const g = hairRed.getContext('2d')!;
-      g.drawImage(hero.hair, 0, 0);
-      g.globalCompositeOperation = 'source-in';
-      g.fillStyle = 'rgb(235,40,80)';
-      g.fillRect(0, 0, hero.w, hero.h);
-    }
+    for (const a of [land(), stand()]) for (let i = 0; i < a.frames.length; i++) artOf(a, i); // (cached by prepare)
     env.cam.set(VW / 2, VH / 2, 1.06, 0.085);
   },
   update(env, t, dt) {
@@ -716,7 +743,6 @@ export const shotBackToGoal: Shot = {
   },
   render(env, t) {
     const { ctx, fx, cam } = env;
-    const hero = env.art.hero;
     const st = env.art.stadium;
     const rng = env.frng();
     const s = simTime(t);
@@ -1068,27 +1094,26 @@ export const shotBackToGoal: Shot = {
     }
 
     // ================= The hero =================
-    hq = squash(s);
+    // The drawn landing: L1 dropping in, L2 on the turf, L3 absorbing, L4 rebounding, then Stand Front
+    // a/b panting (the squash and stretch and the breathing are in the drawings, not in code).
     hfy = feetY(s);
-    // Idle breathing once he has settled (one-pixel steps keep the sprite crisp).
-    hb = t > 0.8 && Math.abs(hq) < 0.01 && Math.sin((t - 0.8) * 5.7) > 0.3 ? 1 : 0;
-    const red = hero.tinted([222, 26, 66]);
-    const deep = hero.tinted([120, 6, 36]);
-    const sil = hero.tinted([226, 230, 255]);
+    const { a: ha, i: hi } = heroFrame(t);
+    hp8 = placeHero(ha, hi, hfy);
+    const red = ha.tinted(hi, [222, 26, 66]);
+    const deep = ha.tinted(hi, [120, 6, 36]);
+    const sil = ha.tinted(hi, [226, 230, 255]);
     if (impF) {
       // Impact frame: a solid black No.10 against the crimson splash (no aura, rims or back-light).
       drawHeroQ(env, null, 0, 0);
-      drawHeroQ(env, hero.tinted([0, 0, 0]), 0, 0);
+      drawHeroQ(env, ha.tinted(hi, [0, 0, 0]), 0, 0);
     } else {
       // Afterimages while he drops in.
       if (s < S_LAND) {
         ctx.globalCompositeOperation = 'lighter';
-        const keepQ = hq;
         for (let k = 1; k <= 3; k++) {
           const fy = feetY(Math.max(0, s - k * 0.028));
           drawHeroQ(env, red, 0, fy - hfy - k * 10, 0.36 - k * 0.09);
         }
-        hq = keepQ;
         ctx.globalCompositeOperation = 'source-over';
       }
       // Aura outline (offset copies behind him): a thin crimson edge, flaring with the back-light.
@@ -1117,13 +1142,13 @@ export const shotBackToGoal: Shot = {
       drawHeroQ(env, null, 0, 0);
       // Back-lit: his front falls into shadow.
       ctx.globalCompositeOperation = 'multiply';
-      drawHeroQ(env, hero.tinted([46, 36, 92]), 0, 0, 0.16 + 0.62 * BL);
+      drawHeroQ(env, ha.tinted(hi, [46, 36, 92]), 0, 0, 0.16 + 0.62 * BL);
       ctx.globalCompositeOperation = 'source-over';
       // Pixel rims: silver along the top (floods), crimson on the burst side.
-      drawHeroQ(env, rimSet(env, BL, false), 0, 0);
+      drawHeroQ(env, rimSet(ha, hi, BL, false), 0, 0);
       ctx.globalCompositeOperation = 'lighter';
-      drawHeroQ(env, rimSet(env, BL, true), 0, 0);
-      drawHeroQ(env, hairRed, 0, 0, 0.08 + 0.1 * BL + 0.04 * Math.sin(t * 9));
+      drawHeroQ(env, rimSet(ha, hi, BL, true), 0, 0);
+      drawHeroQ(env, artOf(ha, hi).hairRed, 0, 0, 0.08 + 0.1 * BL + 0.04 * Math.sin(t * 9));
       ctx.globalCompositeOperation = 'source-over';
     }
 
@@ -1140,11 +1165,14 @@ export const shotBackToGoal: Shot = {
     // Eye glint: the cool look, no turn.
     const ef = pulse(t, EYE_T, 0.45);
     if (ef > 0) {
-      for (const [i, [ex, ey]] of hero.eyes.entries()) {
-        const px = FEET_X + (ex + 0.5 - hero.footX) * SC, py = hfy - hb + (ey + 0.5 - hero.footY) * SC;
+      // On the Stand frames (eye whites per frame; they follow STb's 1 px breath).
+      const eyes = EYES[ha.frames[hi].name] ?? EYES.a;
+      const wp = (ex: number, ey: number) => [FEET_X + (ex - hp8!.piv[0]) * SC, hfy + (ey - hp8!.piv[1]) * SC] as const;
+      for (const [i, [ex, ey]] of eyes.entries()) {
+        const [px, py] = wp(ex, ey);
         sparkle(ctx, px, py, 5 + 9 * ef, ef, i * 0.4 + t * 2);
       }
-      const mx = FEET_X + (49.5 - hero.footX) * SC, my = hfy - hb + (23.5 - hero.footY) * SC;
+      const [mx, my] = wp((eyes[0][0] + eyes[1][0]) / 2, (eyes[0][1] + eyes[1][1]) / 2);
       lensFlare(ctx, mx, my, 30, ef * 0.35, [200, 210, 255]);
     }
 

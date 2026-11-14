@@ -6,31 +6,27 @@
 
 import type { Env, Shot } from '../timeline';
 import { VW, VH } from '../../engine/camera';
-import { TAU, clamp, ease, lerp, type Rng } from '../../engine/math';
+import { TAU, clamp, ease, lerp, type RGB, type Rng } from '../../engine/math';
 import { PK, drawGlow, glowOf, glowSprite } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { focusLines, makeCracks, ribbon, speedStreaks, sparkle } from '../../art/fx';
-import { HERO_KIT, POSES, drawPuppet, joints, jointWorld, mixPose, poseAt, renderPuppet, type Pose } from '../../art/puppet';
-import { HERO_FACING, Trail, crescentPath, crimsonRibbon, drawBall, grassChunks, pulse, ring, sparks, warp } from './common';
+import { Trail, crescentPath, crimsonRibbon, drawBall, grassChunks, pulse, ring, sparks, warp } from './common';
+import { S3, STRIKE_ROT, at, bike, drawPlace, fi, keyAt, pivotOn, place, silOf, strikeBallOffset, type Place, type Pt } from './hero';
 
 const DUR = 1.4;
 const PLANT = 0.35; // the plant foot stamps: crescent crater + launch
 const HS_LEN = 0.06; // hit-stop on the stamp
 const HS_RATE = 0.12;
 const GROUND = 300;
-const K = 1; // puppet px per unit
-const D = 2; // draw scale
-const F = HERO_FACING;
+const D = 2; // draw scale of the ball (and of the hero's pixels: S3)
 const HIP_X0 = 298;
-const RISE = 128; // hip climbs ~120+ px
-const SPIN_END = 1.75; // bikeCock's whole-body spin
+const SPIN_END = 1.75; // his whole-body spin at the cut (BK7 cock, as shot 4 holds it)
 const FOLLOW = 0.7; // how much of his rotation the camera rolls with (0.7 * 1.75 = ~70°)
 // Opening camera (world == every parallax layer at this camera position): low, lots of sky.
 const C0X = 325, C0Y = 148, Z0 = 0.9;
 const Z_END = 1.42;
 // Crescent moon (sky layer) — same phase/orientation as shot 2.
 const MOON_X = 150, MOON_Y = 40, MOON_R = 19;
-const DEG = Math.PI / 180;
 
 /** Animation clock: real time with the stamp's hit-stop folded in (everything freezes together). */
 function anim(t: number) {
@@ -38,79 +34,98 @@ function anim(t: number) {
   if (t < PLANT + HS_LEN) return PLANT + (t - PLANT) * HS_RATE;
   return t - HS_LEN * (1 - HS_RATE);
 }
+/** Shot time for an animation-clock time (inverse of anim). */
+function tOf(a: number) {
+  if (a < PLANT) return a;
+  if (a < PLANT + HS_LEN * HS_RATE) return PLANT + (a - PLANT) / HS_RATE;
+  return a + HS_LEN * (1 - HS_RATE);
+}
 const A_END = anim(DUR);
 
-// Anticipation: he drives the plant knee high before stamping it down.
-const STAND0 = mixPose(POSES.stand, POSES.bikePlant, 0.35);
-const LIFT: Pose = {
-  ...POSES.bikePlant, torso: -4 * DEG, head: -30 * DEG, thighN: 80 * DEG, kneeN: 105 * DEG, footN: 14 * DEG,
-  thighF: -6 * DEG, kneeF: 30 * DEG, armN: -40 * DEG, elbowN: 40 * DEG, armF: 50 * DEG, elbowF: 30 * DEG,
-};
-const LIFT_T = 0.19;
-// Loaded plant: deep crouch on the plant leg, leaning back, far heel kicked up behind him and
-// arms swung back. This is the pose he holds
-// through the stamp and the hit-stop, so the impact frame reads as "driving into the turf".
-const LOAD: Pose = {
-  ...POSES.bikePlant, torso: -24 * DEG, head: -40 * DEG, thighN: 36 * DEG, kneeN: 80 * DEG, footN: -40 * DEG,
-  thighF: -20 * DEG, kneeF: 100 * DEG, footF: 0, armN: -78 * DEG, elbowN: 22 * DEG, armF: -96 * DEG, elbowF: 24 * DEG,
-};
-// Spring: plant leg snaps straight onto the toes, far knee and near arm drive up.
-const PUSH: Pose = {
-  ...POSES.bikePlant, torso: -30 * DEG, head: -40 * DEG, thighN: -6 * DEG, kneeN: 8 * DEG, footN: 40 * DEG,
-  thighF: 66 * DEG, kneeF: 64 * DEG, footF: 0, armN: 96 * DEG, elbowN: 20 * DEG, armF: -46 * DEG, elbowF: 30 * DEG,
-};
-const track: [number, Pose][] = [
-  [PLANT, LOAD],
-  [anim(0.46), PUSH],
-  [anim(0.58), POSES.bikeRise],
-  [anim(1.1), POSES.bikeScissor],
-  [A_END, POSES.bikeCock],
-];
+// ---- No.10: the drawn Bicycle frames (studio "Sochetra"), west strip (he faces -x, back to goal).
+// Frame windows in shot time (library 3.4, round 2): the gather, the stamp ON the plant (held through the
+// hit-stop), the spring onto the toe, then airborne rise -> swing -> scissor -> cock.
+const T_AIR = 0.54; // BK4: off the turf
+const KEYS: [number, string][] = [[0, 'BK1'], [PLANT, 'BK2'], [0.44, 'BK3'], [T_AIR, 'BK4'], [0.72, 'BK5'], [0.92, 'BK6'], [1.18, 'BK7']];
+// Planted contact pixels (world x of the contact pixel's bottom centre, on the turf line). BK1 stands on
+// the far toe with the plant knee driven up in front; the plant boot stamps straight down a step ahead
+// (BK2, flat: the crater is cut under it) and rolls onto its toe tip without the toe moving (BK3: the
+// toe pixel x 76 is the same world point in BK2 and BK3). Ground frames pivot their spin on the contact.
+const C1X = 296, C2X = 285, C3X = C2X - 4 * S3;
+// Top of the jump: the hip where shot 4's roll-match picks him up (unchanged framing).
+const APEX: Pt = [322, 84.4];
+const A_AIR = anim(T_AIR);
+const A_APEX = PLANT + 0.92;
 
-/** Whole-body rotation (clockwise on screen): smooth, still turning at the cut. */
+/** Whole-body rotation (clockwise on screen): smooth, still turning at the cut. rot = -spin. */
 function spinCW(a: number) {
   const u = clamp((a - PLANT + 0.02) / (A_END - PLANT + 0.02));
   return SPIN_END * u * (0.3 + 1.4 * u - 0.7 * u * u);
 }
 
-function poseNow(a: number): Pose {
-  let p: Pose;
-  if (a < LIFT_T) p = mixPose(STAND0, LIFT, ease.outQuad(a / LIFT_T)); // already moving on the cut
-  else if (a < PLANT) p = mixPose(LIFT, LOAD, ease.inCubic((a - LIFT_T) / (PLANT - LIFT_T))); // slams down
-  else p = { ...poseAt(track, a) }; // copy: never mutate the shared POSES
-  p.spin = -spinCW(a);
-  return p;
+let takeoff: Pt | null = null;
+/** BK3's pelvis at the instant he leaves the turf (start of the flight). */
+function takeoffHip(): Pt {
+  if (!takeoff) takeoff = at(heroAt(T_AIR - 1e-4), 'pelvis');
+  return takeoff;
 }
 
-/** Hip height that keeps the lowest boot on the turf. */
-function plantHipY(p: Pose) {
-  const j = joints(p);
-  return GROUND - (Math.max(j.ankleN[1], j.toeN[1], j.toeF[1]) + 2.5) * K * D;
+/** Flight path of the pelvis: from the spring (BK3) up to the apex, drifting back toward goal (+x). */
+function flightHip(a: number): Pt {
+  const p3 = takeoffHip();
+  const oldX = (q: number) => HIP_X0 + 24 * ease.inOutQuad(clamp((q - PLANT) / 1.0));
+  const ux = clamp((a - A_AIR) / (A_END - A_AIR));
+  const uy = clamp((a - A_AIR) / (A_APEX - A_AIR));
+  return [oldX(a) + (p3[0] - oldX(A_AIR)) * (1 - ux) * (1 - ux), lerp(p3[1], APEX[1], ease.outCubic(uy))];
 }
-const HIP_PLANT = plantHipY(poseNow(PLANT));
-// Apex of the jump stays where it was framed (the crouch only deepens the spring).
-const HIP_TOP = plantHipY(POSES.bikePlant) - RISE;
-const SPRING = HIP_PLANT - HIP_TOP;
 
-function hipAt(a: number): [number, number] {
-  const x = HIP_X0 + 24 * ease.inOutQuad(clamp((a - PLANT) / 1.0));
-  if (a < PLANT) return [x, plantHipY(poseNow(a))];
-  // Flight curve, but never lower than the hip of a foot still pushing off the turf.
-  const fly = HIP_PLANT - SPRING * ease.outCubic(clamp((a - PLANT) / 0.92));
-  return [x, Math.min(fly, plantHipY(poseNow(a)))];
+/** No.10 at shot time t: ground frames stand on their contact pixel, airborne ones ride the pelvis. */
+function heroAt(t: number): Place {
+  const b = bike();
+  const name = keyAt(KEYS, t);
+  const i = fi(b, name);
+  const a = anim(t);
+  const rot = spinCW(a);
+  if (t < T_AIR) return place(b, i, name === 'BK1' ? C1X : name === 'BK2' ? C2X : C3X, GROUND, S3, rot, true, true);
+  const [x, y] = flightHip(a);
+  return place(b, i, x, y, S3, rot, true);
 }
+
+/** No.10's placement at shot-3 time t (shot 4 freezes the far boot's path from it). */
+export const liftoffHero = (t: number) => heroAt(t);
+/** Shot-3 time where he leaves the turf (BK4). */
+export const LIFTOFF_AIR = T_AIR;
+
+/** Pelvis (world) at animation time a: the camera frames it and the climb speed is taken from it. */
+function hipAt(a: number): Pt {
+  return at(heroAt(tOf(a)), 'pelvis');
+}
+
+// Effect passes of the drawn frames (silhouette copies, rim on the world-space light side).
+const GHOST = { fill: [150, 10, 50] as RGB, rim: [255, 120, 150] as RGB, rim2: [222, 26, 66] as RGB, lx: 0, ly: 1 };
+const AURA = { fill: [200, 20, 60] as RGB, rim: [245, 245, 255] as RGB, rim2: [255, 130, 160] as RGB, lx: 0.6, ly: -1 };
 
 // The cross: high from the right wing, already in the top-right corner on the smash cut,
-// dropping in and then hanging as time slows. It settles exactly where shot 4 holds it
-// relative to his hip (hip (322, 84.4) + shot 4's ball offset (47.7, -89.6) / 1.2 scale), so
-// ball, hero and stadium turn together across the roll-match cut.
-const BX0 = 640, BX1 = 362, BY0 = -12, BY1 = 10;
+// dropping in and then hanging as time slows. It settles exactly where shot 4 holds it relative
+// to his hip (the apex hip + the BK10 strike ball offset at this shot's scale and ball size: shot 4
+// is the same body 1.2x closer), so ball, hero and stadium turn together across the roll-match cut.
+const BX0 = 640, BY0 = -12;
+const BALL_R = 5;
+let ballEnd: Pt | null = null;
+function ballEndPt(): Pt {
+  if (!ballEnd) {
+    const o = strikeBallOffset(S3, STRIKE_ROT, BALL_R * D);
+    ballEnd = [APEX[0] + o[0], APEX[1] + o[1]];
+  }
+  return ballEnd;
+}
 const BALL_IN = 0.19; // floodlight glint on the cross as it starts to drop
 // Smash-cut open: the camera lands punched-in and kicks back out.
 const KICK = 0.08, KICK_T = 0.14;
 const PAN0 = 26, PAN_T = 0.24; // ...while already panning off the cross onto him
 function ballAt(a: number): [number, number] {
   const u = clamp(a / A_END);
+  const [BX1, BY1] = ballEndPt();
   return [lerp(BX0, BX1, 1 - Math.pow(1 - u, 1.3)), BY1 - (BY1 - BY0) * Math.exp(-a * 5)];
 }
 
@@ -503,11 +518,9 @@ export const shotLiftoff: Shot = {
     ballTrail.clear();
     farTrail.clear();
     launchTrail.clear();
-    // Crater sits under the planted boot.
-    const p = poseNow(PLANT);
-    const j = joints(p);
-    const hx = HIP_X0, hy = HIP_PLANT;
-    craterX = (jointWorld(j.toeN, hx, hy, K, D, F)[0] + jointWorld(j.ankleN, hx, hy, K, D, F)[0]) / 2;
+    // Crater sits under the planted boot (BK2's flat plant boot: between its ankle and toe).
+    const hp = heroAt(PLANT);
+    craterX = (at(hp, 'toeN')[0] + at(hp, 'ankleN')[0]) / 2;
     cracks = makeCracks(rng, 9, 95, 0.2);
     turf = [];
     for (let i = 0; i < 700; i++) {
@@ -521,15 +534,14 @@ export const shotLiftoff: Shot = {
   update(env, t, dt) {
     const { rng, parts, cam } = env;
     const a = anim(t);
-    const pose = poseNow(a);
-    const j = joints(pose);
-    const [hx, hy] = hipAt(a);
+    const hp = heroAt(t);
+    const [hx, hy] = at(hp, 'pelvis');
     const [bx, by] = ballAt(a);
     spin.rotate(0.3, 1, 0.2, dt * 5);
     ballTrail.push(bx, by);
 
     // Charge-up: crimson motes drawn into the plant boot before the stamp.
-    const [nx, ny] = jointWorld(j.toeN, hx, hy, K, D, F);
+    const [nx, ny] = at(hp, 'toeN');
     if (!planted && t > 0.1) {
       const n = Math.round(6 * dt * 60);
       for (let i = 0; i < n; i++) {
@@ -575,8 +587,9 @@ export const shotLiftoff: Shot = {
     }
 
     if (planted) {
-      farTrail.push(...jointWorld(j.toeF, hx, hy, K, D, F));
-      if (a < PLANT + 0.15) launchTrail.push(nx, ny);
+      farTrail.push(...at(hp, 'toeF'));
+      // The plant boot rips the launch column up out of the crater as it leaves the turf.
+      if (t < T_AIR + 0.09) launchTrail.push(nx, ny);
       // Crater keeps breathing embers.
       if (rng.next() < 0.6) {
         parts.spawn({
@@ -588,8 +601,7 @@ export const shotLiftoff: Shot = {
       const rs = clamp(riseSpeed(a) / 300);
       const n = Math.round((3 + rs * 5) * dt * 60);
       for (let i = 0; i < n; i++) {
-        const pick = rng.pick([j.neck, j.hip, j.kneeN, j.toeF, j.head] as const);
-        const [px, py] = jointWorld(pick, hx, hy, K, D, F);
+        const [px, py] = at(hp, rng.pick(['neck', 'pelvis', 'kneeN', 'toeF', 'head'] as const));
         const silver = rng.next() < 0.3;
         parts.spawn({
           kind: PK.Glow, x: px + rng.range(-12, 12), y: py + rng.range(-12, 12), vx: rng.range(-30, 30), vy: rng.range(60, 220) * (0.4 + rs),
@@ -598,7 +610,7 @@ export const shotLiftoff: Shot = {
         });
       }
     } else if (rng.next() < 0.5) {
-      const [px, py] = jointWorld(j.neck, hx, hy, K, D, F);
+      const [px, py] = at(hp, 'neck');
       parts.spawn({
         kind: PK.Glow, x: px + rng.range(-30, 30), y: py + rng.range(-10, 80), vx: rng.range(-10, 10), vy: rng.range(-90, -30),
         max: rng.range(0.3, 0.6), s0: rng.range(3, 6), s1: 1, ramp: 'crimson', r0: 0.25, r1: 1, a0: 0.6, a1: 0, layer: 0,
@@ -621,9 +633,8 @@ export const shotLiftoff: Shot = {
     const { ctx, fx, cam } = env;
     const rng = env.frng();
     const a = anim(t);
-    const pose = poseNow(a);
-    const j = joints(pose);
-    const [hx, hy] = hipAt(a);
+    const hp = heroAt(t);
+    const [hx, hy] = at(hp, 'pelvis');
     const [bx, by] = ballAt(a);
     const rs = clamp(riseSpeed(a) / 300);
     const rollV = rollSpeed(a);
@@ -642,7 +653,8 @@ export const shotLiftoff: Shot = {
     ctx.imageSmoothingEnabled = false;
     drawNearPitch(env);
     // Shadow shrinking as he climbs (under the glow and the crater, never darkening them).
-    const lift = clamp((HIP_PLANT - hy) / SPRING);
+    const hip0 = takeoffHip()[1];
+    const lift = clamp((hip0 - hy) / (hip0 - APEX[1]));
     ctx.fillStyle = `rgba(4,3,14,${0.45 * (1 - lift * 0.7)})`;
     ctx.beginPath();
     ctx.ellipse(hx + 4, GROUND + 3, 42 * (1 - lift * 0.45), 7 * (1 - lift * 0.45), 0, 0, TAU);
@@ -684,18 +696,15 @@ export const shotLiftoff: Shot = {
     // Afterimages along the climb.
     if (a > PLANT + 0.02) {
       for (const [lag, al] of [[0.12, 0.38], [0.06, 0.55]] as const) {
-        const ga = a - lag;
-        const gp = poseNow(ga);
-        const [gx, gy] = hipAt(ga);
-        const gh = renderPuppet(HERO_KIT, gp, { k: K, facing: F, silhouette: { fill: [150, 10, 50], rim: [255, 120, 150], rim2: [222, 26, 66], lx: 0, ly: 1 } });
+        const gp = heroAt(tOf(a - lag));
         ctx.globalCompositeOperation = 'lighter';
-        drawPuppet(ctx, gh, gx, gy, D, al * (0.6 + 0.4 * rs));
+        drawPlace(ctx, gp, silOf(gp, GHOST), al * (0.6 + 0.4 * rs));
         ctx.globalCompositeOperation = 'source-over';
       }
     }
 
     // Dark halo so he never melts into the busy crowd behind him.
-    const [nkx, nky] = jointWorld(j.neck, hx, hy, K, D, F);
+    const [nkx, nky] = at(hp, 'neck');
     const mx = (hx + nkx) / 2, my = (hy + nky) / 2;
     const halo = ctx.createRadialGradient(mx, my, 0, mx, my, 125);
     halo.addColorStop(0, 'rgba(5,3,16,0.5)');
@@ -704,19 +713,18 @@ export const shotLiftoff: Shot = {
     ctx.fillStyle = halo;
     ctx.fillRect(mx - 130, my - 130, 260, 260);
     // Soft silver back-glow behind the head so the dark navy hair separates from the stands.
-    const [hdx, hdy] = jointWorld(j.head, hx, hy, K, D, F);
+    const [hdx, hdy] = at(hp, 'head');
     ctx.globalCompositeOperation = 'lighter';
     drawGlow(ctx, glowSprite('silver', 0.2), hdx, hdy, 52, 0.3);
     ctx.globalCompositeOperation = 'source-over';
     // Aura: a crimson outline with silver rim light hugging his silhouette, plus a soft glow.
-    const aura = renderPuppet(HERO_KIT, pose, { k: K, facing: F, silhouette: { fill: [200, 20, 60], rim: [245, 245, 255], rim2: [255, 130, 160], lx: 0.6, ly: -1 } });
+    const aura = silOf(hp, AURA);
     const fl = 0.75 + 0.25 * Math.sin(t * 47) * Math.sin(t * 19);
-    for (const [ox, oy] of [[-2, -2], [2, -2], [-2, 2], [2, 2]] as const) drawPuppet(ctx, aura, hx + ox, hy + oy, D, 0.85);
+    for (const [ox, oy] of [[-2, -2], [2, -2], [-2, 2], [2, 2]] as const) drawPlace(ctx, hp, aura, 0.85, 1, ox, oy);
     ctx.globalCompositeOperation = 'lighter';
-    drawPuppet(ctx, aura, hx, hy - 1, D * 1.06, (0.28 + 0.25 * stamp) * fl);
+    drawPlace(ctx, pivotOn(hp, 'pelvis'), aura, (0.28 + 0.25 * stamp) * fl, 1.06, 0, -1);
     ctx.globalCompositeOperation = 'source-over';
-    const body = renderPuppet(HERO_KIT, pose, { k: K, facing: F });
-    drawPuppet(ctx, body, hx, hy, D);
+    drawPlace(ctx, hp);
     // Crater underlight on his legs right after the stamp.
     if (stamp > 0) {
       ctx.globalCompositeOperation = 'lighter';
@@ -727,7 +735,7 @@ export const shotLiftoff: Shot = {
     // The ball itself, in front of him (as in shot 4): it meets his raised boot at the cut and
     // picks up shot 4's crimson lock-on glow on the way in.
     const lock = ease.inOutQuad(clamp((t - 1.0) / 0.38));
-    drawBall(env, spin, bx, by, 5, D, 0.1 * lock, 0.45 * lock, 'crimson');
+    drawBall(env, spin, bx, by, BALL_R, D, 0.1 * lock, 0.45 * lock, 'crimson');
     const tw = 0.6 + 0.4 * Math.sin(t * 23);
     sparkle(ctx, bx - 3, by - 4, 9 + 4 * tw, 0.65 * tw, t * 2);
     // One-shot floodlight glint on the cross as it starts to drop.

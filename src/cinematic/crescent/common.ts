@@ -22,7 +22,7 @@ export const PAL: Record<'crimson' | 'rose' | 'silver' | 'indigo' | 'night' | 'g
 
 /**
  * Continuity: the goal is to the RIGHT (+x). No.10 stands in the box with his BACK to goal,
- * so his side-view puppet faces LEFT (facing = -1). The cross arrives from the right wing,
+ * so in side views he faces LEFT (facing = -1: the Bicycle frames play from their west strip). The cross arrives from the right wing,
  * high, dropping above him. The bicycle kick sends the ball to the RIGHT, toward goal.
  */
 export const HERO_FACING = -1 as const;

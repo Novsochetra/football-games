@@ -25,13 +25,17 @@ trail: `crimsonRibbon`, flames: `meteorFlames(..., 'crimson')`, particles: ramps
 ## Continuity (all shots)
 
 - Night stadium. A thin **crescent moon** hangs in the sky in every outdoor shot where the sky shows.
-- Goal is to the **right** (+x). No.10 is in the box with his **back to goal**: in side views his
-  puppet faces **left** (`facing: HERO_FACING` = -1).
+- Goal is to the **right** (+x). No.10 is in the box with his **back to goal**: in side views he
+  faces **left** (`HERO_FACING` = -1: the Bicycle frames are played from their west strip).
 - The cross came from the right wing, high; the ball drops above him.
 - The bicycle kick sends the ball to the **right**, toward goal.
 - Kits: `HERO_KIT` (No.10), `RIVAL_KIT` / `RIVAL_KIT_B` (white defenders), `KEEPER_KIT` (green keeper).
-- Close-ups facing the camera use the hand-drawn sprite (`drawHero`, `env.art.hero`).
-  Side/action poses use puppets (`renderPuppet` + `drawPuppet`, poses in `POSES`).
+- No.10 is always the drawn studio character (Pixel Studio "Sochetra", `src/art/anim/`), never the
+  puppet. Close-ups facing the camera (shots 1-2) use the hand-drawn sprite (`drawHero`, `env.art.hero`).
+  Shots 3-5 play the **Bicycle** frames (BK1-BK12c) through `./hero.ts`: west strip (numbers read
+  "10"), rotated by rot = -spin about the pelvis (airborne) or the planted contact pixel (BK1-BK3);
+  every aura, rim, ghost and impact cut-out is a tinted / silhouette copy of the same frame. Shot 8
+  plays **Land** (L1-L4) then **Stand Front** a/b. Puppets remain only for the keeper and defenders.
 
 ## Shots (durations are fixed: do not change them)
 
@@ -70,8 +74,11 @@ Anticipation, cool and quiet, the opposite of Zenith's roaring power-up.
 - ~1.35 s eyes flash silver (`sparkle`), whoosh, cut on a flash.
 
 ### 3 · Lift-off (1.4 s)
-- Side view at grass level, indigo night grade. No.10 puppet (`k` 1, draw scale ~2), facing -1.
-- Poses: `bikePlant` (0–0.3) → `bikeRise` (~0.55) → `bikeScissor` (~1.1) → `bikeCock` (1.4). His hip rises ~120 px (the jump).
+- Side view at grass level, indigo night grade. No.10's Bicycle frames at scale 2 (2-px pixels), facing -1.
+- Frames: BK1 gather (0–0.35) → BK2 stamp (on the plant, held through the hit-stop) → BK3 spring onto
+  the toe (0.44) → BK4 rise (0.54, off the turf) → BK5 swing (0.72) → BK6 scissor (0.92) → BK7 cock
+  (1.18–1.4). Ground frames stand on their contact pixel; his hip then flies ~130 px up to the apex
+  shot 4 picks up.
 - The ball drops into frame from top-right toward a point above his head (contact happens in shot 5).
 - ~0.35 s launch: the plant foot cracks the turf into a **crescent-shaped crater** (filled `crescentPath`, squashed for perspective, glowing crimson rim), grass chunks, dust, ring.
 - From ~0.4 s the **camera rolls** with his rotation and pushes in; by the end the world is tilted ~70° (leads into shot 4's full inversion).
@@ -82,11 +89,15 @@ Anticipation, cool and quiet, the opposite of Zenith's roaring power-up.
 - Camera rolled ~180°: the **stadium hangs upside down** (stands and floodlights at the top of the screen, beams pointing down; sky and the crescent moon at the bottom). The inversion must be unmistakable.
 - **Time almost frozen** (`rate` ~0.08 for most of the shot): dust motes, embers and crowd camera flashes hang still as points of light; the ball hangs just above his raised foot.
 - Grade: desaturated indigo/silver; only the crimson aura and the ball keep color.
-- `timeStop()` at the start, two slow heartbeats, subtle zoom pulses. His kicking leg slowly cocks (`bikeCock`). Late eye glint (~1.5 s).
+- `timeStop()` at the start, two slow heartbeats, subtle zoom pulses. Frames (scale 2.4, the shot-3 body
+  1.2x closer): BK7 cock → BK7b weightless drift (0.3) → the coil trembling BK8 ↔ BK8b every 0.3 s,
+  ending on BK8 at the snap. Late glint (~1.5 s).
 - 1.75–1.9 s everything snaps (flash) into shot 5.
 
 ### 5 · The crescent (1.7 s): the strike
-- Camera still rolled ~π at the start. Poses `bikeCock` → `bikeStrike` at **HIT ≈ 0.45 s** → `bikeFollow`.
+- Camera still rolled ~π at the start. Frames: the coil winding BK8 ↔ BK8b (0–0.40) → BK9 whip smear
+  (0.40–0.45) → **BK10 STRIKE at HIT = 0.45 s**: the instep (`boot` anchor) meets the ball, which waits
+  tangent to it (`strikeBallOffset`) → BK11 follow (0.66) → BK12 / BK12b / BK12c tumbling over (0.85, 1.15, 1.4).
 - The kicking boot carves a **huge crescent arc of fire** (`crescentArc`, center ≈ hip, radius ≈ leg length × draw scale), growing with the boot from the cocked angle to the strike angle, ~25–40 px thick. It lingers after contact and dissolves into crimson embers spawned along it (~0.8 s).
 - **Contact**: hit-stop (`rate` ~0.03 for ~0.18 s), two-tone impact frame (crimson/black or silver/indigo), and the **slash split**: `fx.cutX/cutY` = hip in screen UV (`cam.toUV`), `fx.cutR` = arc radius in screen-height units, `fx.cutA0/cutA1` = the crescent's start/end angles (so only the slash arc splits, not a full ring), `fx.cut` shift 0 → ~0.015 → 0 over ~0.35 s, `fx.cutGlow` ~1 with a silver `fx.cutColor`.
 - Then the camera **whip-rolls back upright** (~0.3 s, with `fx.radial` blur) and the ball fires off screen-right as a crimson comet (`drawBall` `'crimson'`, `crimsonRibbon`, `meteorFlames` `'crimson'`), with a crescent-shaped shockwave expanding.
@@ -108,9 +119,9 @@ Anticipation, cool and quiet, the opposite of Zenith's roaring power-up.
 - Audio: held tension (`timeStop`), `crack` at the rip, `whoosh`, `roar`.
 
 ### 8 · Back to goal (3.2 s)
-- Front view. No.10 lands in the **foreground** using the hand-drawn sprite, facing the camera with his back to the goal. The goal is behind him in the background (smaller, darker, slightly soft).
-- 0–0.45 s he drops into frame and lands: squash and stretch, dust ring, a crescent-shaped crack under his feet, small camera bump.
-- ~0.6 s behind him the ball rips into the net: net bulge/ripple, a **crescent-shaped burst of crimson light** explodes behind him and back-lights him (strong crimson rim from `art.hero.tinted()` additive copies offset outward, silver bloom). **He does not turn around.**
+- Front view. No.10 lands in the **foreground** (the drawn Land frames, scale 2.4), facing the camera with his back to the goal. The goal is behind him in the background (smaller, darker, slightly soft).
+- 0–0.62 s he drops into frame and lands, the squash and stretch drawn: L1 drop (toes down, arms up) → L2 impact on the turf (0.26) → L3 absorb (0.33) → L4 rebound (0.47) → Stand Front a/b panting every 0.3 s; dust ring, a crescent-shaped crack under his feet, small camera bump.
+- ~0.6 s behind him the ball rips into the net: net bulge/ripple, a **crescent-shaped burst of crimson light** explodes behind him and back-lights him (strong crimson rim from the frame's `tinted()` additive copies offset outward, per-frame pixel rims, silver bloom). **He does not turn around.**
 - ~1.0 s **GOAL!** (`slamTitle`) above him without covering his face; crowd roar + `stinger` + `whistle`; confetti; crowd camera flashes.
 - 2.0–3.2 s name card slides in at the bottom, matching Zenith's card: `CRIMSON CRESCENT` (left), `No.10 · SPECIAL SHOT`, `CAM 1 - 0 RIV` (right). Fade to dark over the last 0.35 s.
 
@@ -120,7 +131,9 @@ Anticipation, cool and quiet, the opposite of Zenith's roaring power-up.
 - `env.cam.set(x, y, zoom, rot)`, `cam.hit(trauma)`, `cam.shakeAmp`, `cam.toUV(wx, wy)` (for post-FX positions).
 - `env.fx` (`FxState` in `engine/post.ts`) is reset every frame; set fields in `render`: `bloom`, `bloomThresh`, `vignette`, `ca`, `radial`/`radialX`/`radialY`, `impact`/`impA`/`impB`/`impThresh`, `flash`/`flashColor`, `sat`, `tint`, `contrast`, `shocks.push({x, y, r, s})`, and the slash split `cut`, `cutX`, `cutY`, `cutR`, `cutDirX`, `cutDirY`, `cutGlow`, `cutWidth`, `cutColor`, `cutA0`/`cutA1` (limit the cut to an arc; angles in canvas convention, equal = full circle).
 - Particles: `env.parts.spawn({...})` (`PK.Glow`, `Pixel`, `Streak`, `Smoke`, `Debris`, `Ring`, `Confetti`), drawn with `env.parts.draw(ctx, layer)` (layer 0 = behind, 1 = front).
-- Puppets: `renderPuppet(kit, pose, {k, facing, silhouette?})` returns a canvas that is **reused on the next call with the same size/hair/silhouette**, so draw it (`drawPuppet`) before rendering another. `joints(pose)` + `jointWorld(...)` give hand/toe positions (use them to put the boot exactly on the ball, gloves near the ball). `poseAt(track, t)` blends a pose track.
+- No.10: `./hero.ts` (`place`, `at` for any anchor or rig joint in world space, `drawPlace`, `silOf`) over
+  `../../art/studioAnim` (`anim`, `drawAnim`, `tinted`, `silhouette`).
+- Puppets (keeper, defenders): `renderPuppet(kit, pose, {k, facing, silhouette?})` returns a canvas that is **reused on the next call with the same size/hair/silhouette**, so draw it (`drawPuppet`) before rendering another. `joints(pose)` + `jointWorld(...)` give hand/toe positions (use them to put the boot exactly on the ball, gloves near the ball). `poseAt(track, t)` blends a pose track.
 - Shot contract (`../timeline.ts`): `init` resets ALL module state; `update(env, t, dt)` simulates with `env.rng` (seeded, deterministic); `render(env, t)` draws (use `env.frng()` for flicker); `rate(t)` for hit-stop/slow-mo; `cues` for one-shot sounds. Use flags (not `t - dt < X`) for one-time events inside `update`, because `dt` is time-warped.
 - Sounds (`engine/audio.ts`): `boom`, `crack`, `kick`, `whoosh`, `rumble`, `crackle`, `shing`, `stinger`, `timeStop`, `roar`, `strain`, `crowd`, `blip`, `whistle`.
 - Helpers: `../kit.ts` (drawHero, Trail, fireRibbon, crimsonRibbon, drawBall, meteorFlames, ring, sparks, dustBurst, grassChunks, warp, pulse), `../../art/fx.ts` (focusLines, speedStreaks, ribbon, arc, lensFlare, sparkle, slamTitle, pixelText, crescentArc, crescentPath, makeCracks/drawCracks), `../../art/stadium.ts` (stadium art: crowd, crowdNear, tower, pitch, stars, flashes, moon, cloud; drawFieldBackdrop, drawGoal, drawShadow).
