@@ -13,8 +13,10 @@
 //         The thread pulls taut: the running stitch closes into one straight line back off-screen to No.10 and
 //         vibrates (nodes at the three eyes: shorter segments faster). The colour washes back ALONG the thread: a band
 //         from the contact runs back toward No.10, widening until the whole frame is in colour (0.35 s, soft edge).
-//   0.47  R3 push-off.  0.55-0.75 the thread is pulled through: its stitches tighten into the turf and the tail
-//         zips to his boot, ending in one pearl glint on the boot (0.75).
+//   0.47  Receive R2b: out of the hit-stop the right foot sets down where it touched the ball (the toe locks on the
+//         pixel R3 then pushes off from; eyes up off the ball).  0.54 R3 push-off: the pelvis steps +30 / +28 / +27
+//         world px (R2 -> R2b -> R3 -> R4), not one +58 lurch.  0.55-0.75 the thread is pulled through: its stitches
+//         tighten into the turf and the tail zips to his boot, ending in one pearl glint on the boot (0.75).
 //   0.62  R4 plant (left foot beside the ball, right leg back): the camera swings right and pulls out (1.4 -> 1.1),
 //         revealing the keeper coming off his line and the goal.
 //   0.80  STRIKE (R5): low side-foot finish across the keeper to the far corner; plain ball, short white streak;
@@ -38,8 +40,8 @@ import { KEEPER_KIT, P, POSES, mixPose, renderPuppet, type Pose } from '../../ar
 import { anim, drawAnim, findFrame, hasAnim } from '../../art/studioAnim';
 import {
   FADE_RGB, HEX, LAYOUT, PAL, PATH, THREAD_NOTES as N, TITLE_STYLE, crossStitch, drawBall, drawGrassFore, drawNo10, drawNo7, inkGrade,
-  mangaPanels, meridianGrade, nameCard, needleEye, no10Point, no7Anchor, no7Point, panelPoly, pluckLine, prepareGrassFore,
-  prepareInk, pulse, screentone, threadLine, warp, type No10Key, type No7Key,
+  mangaPanels, meridianGrade, nameCard, needleEye, no10Point, no7, no7Anchor, no7Point, panelPoly, pluckLine, prepareGrassFore,
+  prepareInk, pulse, screentone, spriteCover, threadLine, warp, type No10Key, type No7Key,
 } from './common';
 
 const DUR = 2.4;
@@ -49,7 +51,11 @@ const DEG = Math.PI / 180;
 const TOUCH = 0.35;
 const STOP_LEN = 0.12, STOP_RATE = 0.08;
 const STOPS: [number, number, number][] = [[TOUCH, STOP_LEN, STOP_RATE]];
-const RELEASE = TOUCH + STOP_LEN; // 0.47 R3 push-off
+const RELEASE = TOUCH + STOP_LEN; // 0.47 the hit-stop ends: R2b, the right foot sets down
+/** R3 push-off (off the same toe pixel R2b set down: the foot locks). */
+const PUSH = 0.54;
+/** No7Receive.json rail (art px): R2b's toe (originDx 48 + contact 73) minus R2's planted toe (originDx 27 + contact 76). */
+const R2B_STEP = 48 + 73 - (27 + 76);
 const PLANT = 0.62;
 const STRIKE = 0.8;
 const FOLLOW = 0.88;
@@ -67,7 +73,7 @@ const sim = (t: number) => t - clamp(t - TOUCH, 0, STOP_LEN) * (1 - STOP_RATE);
 // ---------------------------------------------------------------- No.7's frames
 const SEQ: readonly (readonly [number, No7Key])[] = [
   [0, 'Run.R1'], [1 / 14, 'Run.R2'], [2 / 14, 'Run.R3'], [3 / 14, 'Run.R4'], [0.25, 'Receive.R1'], [TOUCH, 'Receive.R2'],
-  [RELEASE, 'Receive.R3'], [PLANT, 'Receive.R4'], [STRIKE, 'Receive.R5'], [FOLLOW, 'Receive.R6'],
+  [RELEASE, 'Receive.R2b'], [PUSH, 'Receive.R3'], [PLANT, 'Receive.R4'], [STRIKE, 'Receive.R5'], [FOLLOW, 'Receive.R6'],
   // He runs on after the ball (the right foot stays planted: Run R2-R4 continue R6's stance).
   [FOLLOW + 1 / 14, 'Run.R2'], [FOLLOW + 2 / 14, 'Run.R3'], [FOLLOW + 3 / 14, 'Run.R4'],
 ];
@@ -110,6 +116,8 @@ let C1 = -36, C2 = -30, C3 = 47;
 let X_END = 61;
 let PEL0 = -110;
 let PEL5 = 23;
+/** R2's touching boot (world x): R2b's planted boot is set down right under it. */
+let BOOT2 = -14;
 let CONTACT: number[] = [];
 
 /** Offset (world px at x2) of anchor `name` from the frame's contact. */
@@ -121,14 +129,16 @@ function rel(k: No7Key, name: string): [number, number] {
 /**
  * Place every support phase on the turf so each planted foot stays pinned while the art moves the body over it:
  * C0 the run's right foot, C1 the left foot at the reach and the touch (R2's ball anchor lands on the X), C2 the
- * right foot's short step after the touch, C3 the long plant beside the ball (R4 and R5 share the toe), C4 the
- * landing after the strike.
+ * right foot set down after the touch (R2b) and pushed off from (R3) on the same toe pixel, on the strip's own rail
+ * (R2b's toe lands on the touch point, so the foot that touched the ball comes straight down and locks), C3 the long
+ * plant beside the ball (R4 and R5 share the toe), C4 the landing after the strike.
  */
 function resolveAnchors() {
   C1 = -rel('Receive.R2', 'ball')[0];
   const pRec1 = C1 + rel('Receive.R1', 'pelvis')[0];
   const C0 = pRec1 - 10 - rel('Run.R4', 'pelvis')[0];
-  C2 = C1 + 6;
+  C2 = C1 + R2B_STEP * D2;
+  BOOT2 = C1 + rel('Receive.R2', 'boot')[0];
   const pR3 = C2 + rel('Receive.R3', 'pelvis')[0];
   const pR4 = pR3 + 27;
   C3 = pR4 - rel('Receive.R4', 'pelvis')[0];
@@ -749,8 +759,14 @@ function pick<Kk>(seq: readonly (readonly [number, Kk])[], t: number): Kk {
   return k;
 }
 const FIG_Y = 302; // feet (below the panel): a chest-up crop
-const TIP_Y = FIG_Y - 2 * (102 - 41);
-const X10 = 248, X7 = VW - 248;
+// The point2 arms reach out to the gutter (tip (106,37), outline x107 = X10 + 87): at 214 / VW - 214 each hand keeps
+// ~11.5 px of paper before its panel's inner border (rule: X10 + 87 >= 10 px left of that border at y 171).
+const X10 = 214, X7 = VW - 214;
+/** Height of the two fingertips (P3a / Q2 'tip', measured on the art), where the focus lines converge. */
+let TIP_Y = FIG_Y - 2 * (102 - 37);
+function resolveTips(env: Env) {
+  TIP_Y = (no10Point(env, 'P3a', 'tip', X10, FIG_Y, D2)[1] + no7Point(env, 'Point.Q2', 'tip', X7, FIG_Y, D2, { flip: true })[1]) / 2;
+}
 
 /**
  * A diptych panel's backdrop: warm paper, a dotted manga vignette, and ink focus lines converging on the gutter where
@@ -820,11 +836,13 @@ export const shotTouch: Shot = {
     prepareInk(env.ctx);
     prepareGrassFore();
     resolveAnchors();
+    resolveTips(env);
     buildStatic();
   },
   init(env) {
     env.sfx.clearBus();
     resolveAnchors(); // cheap; follows the studio art if it was (re)loaded after prepare()
+    resolveTips(env);
     if (!TUFTS.length) buildStatic();
     spin = new BallSpin();
     prevTravel = travelled(0);
@@ -945,6 +963,8 @@ export const shotTouch: Shot = {
     let head: [number, number];
     if (t < TOUCH) head = [bx - BALL_R * D2 * 0.8, by + 2];
     else if (t < RELEASE) head = no7Point(env, 'Receive.R2', 'boot', C1, GY, D2);
+    // R2b: the boot comes straight down under the touch point; R3 pushes off its toe.
+    else if (t < PUSH) head = [BOOT2, GY - 4];
     else if (t < PLANT) head = [C2 + 2, GY - 4];
     else head = no7Point(env, 'Receive.R4', 'boot', C3, GY, D2);
     const taut = threadTaut(c, head);
@@ -1046,6 +1066,21 @@ export const shotTouch: Shot = {
     // No.7.
     drawNo7(env, n7.key, n7.x, GY, D2);
     if (t >= TOUCH && t < STRIKE) drawBallPre();
+    // Until the touch the ball keeps its depth (behind his standing foot), but its pearl light comes back over him in
+    // proportion to how much of it he hides, so it is never lost (the first frames after the 5 -> 6 cut, the reach).
+    if (t < TOUCH) {
+      const f = no7(n7.key);
+      if (f) {
+        const [px, py] = no7Anchor(n7.key);
+        const cover = spriteCover(f.a, f.i, px + (bx - n7.x) / D2, py + (by - GY) / D2, BALL_R);
+        if (cover > 0) {
+          ctx.globalCompositeOperation = 'lighter';
+          drawGlow(ctx, glowOf([251, 246, 234]), bx, by, BALL_R * D2 * 2.2, 0.5 * ballGlow * cover);
+          drawGlow(ctx, glowOf([251, 246, 234]), bx, by, BALL_R * D2 * 1.1, 0.35 * ballGlow * cover);
+          ctx.globalCompositeOperation = 'source-over';
+        }
+      }
+    }
     // The almond needle-eye glint in the mesh where the ball lands (1.12): the thread's last echo.
     {
       const ng = t >= NET ? clamp(1 - (t - NET) / 0.45) : 0;

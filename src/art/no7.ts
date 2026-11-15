@@ -1,5 +1,5 @@
 // No.7's studio frames (Pixel Studio project "No.7", MOTION_LIBRARY §4), by animation and library ID:
-// 'Run.R1'..'Run.R8', 'Receive.R1'..'Receive.R6', 'Point.Q1'/'Point.Q2', 'Celebrate.C1'/'Celebrate.C2'.
+// 'Run.R1'..'Run.R8', 'Receive.R1'..'Receive.R6' (+ the 'Receive.R2b' bridge), 'Point.Q1'/'Point.Q2', 'Celebrate.C1'/'Celebrate.C2'.
 //
 // Export stems: No.7's strips share animation names with No.10's ('Run', 'Point', 'Celebrate'), so they are exported
 // with a No.7 prefix. Any of these is found: `No7Run`, `No7_Run`, `no7_run`, `no7run`, `Run7`, `run7`, `winger_run`
@@ -35,9 +35,11 @@ export const NO7 = {
   'Run.R6': { anim: 'Run', frames: ['R6'], pose: POSES.run4 },
   'Run.R7': { anim: 'Run', frames: ['R7'], pose: POSES.run4 },
   'Run.R8': { anim: 'Run', frames: ['R8'], pose: POSES.run1 },
-  // Receive in stride: reach, touch (inside of the right foot), push-off, plant, side-foot strike, follow-through.
+  // Receive in stride: reach, touch (inside of the right foot), the right foot sets down (R2b, the bridge out of the
+  // hit-stop: its toe lands on the pixel R3 pushes off from), push-off, plant, side-foot strike, follow-through.
   'Receive.R1': { anim: 'Receive', frames: ['R1'], pose: P({ ...POSES.run1, head: 20 * D, footN: 30 * D }) },
   'Receive.R2': { anim: 'Receive', frames: ['R2'], pose: RECEIVE_TOUCH },
+  'Receive.R2b': { anim: 'Receive', frames: ['R2b'], pose: P({ ...POSES.run2, head: 6 * D }) },
   'Receive.R3': { anim: 'Receive', frames: ['R3'], pose: POSES.run3 },
   'Receive.R4': { anim: 'Receive', frames: ['R4'], pose: RECEIVE_PLANT },
   'Receive.R5': { anim: 'Receive', frames: ['R5'], pose: POSES.crossKick },

@@ -13,7 +13,7 @@
    "Art"
   ]
  },
- "notes": "Side view, facing east, unmirrored (No.10 is right-footed: the near/right leg touches). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (Settle F1: the braking right heel); airborne frames (contact null) sit on pelvis. ball = centre of the 12 px ball (radius 6 at x1; r 12 at x2, r 18 at x3), NEVER drawn in the frame; touch = the boot is on the ball; boot = the contact pixel of bootPart on the drawn boot; head = skull point; eye = the pupil pixel (measured); lowBoot = lowest pixel of an airborne frame; bbox = [x0,y0,x1,y1] measured on the art. solo = SPOTLIGHT SOLO shot-local use times. Studio layer: Art only (no Num/Ball layer; the ball guide is these anchors). SoleLift (drawn for x3): F1-F6 on the left toe-tip (70,102); F7 F8 F8b F9 airborne, drawn at canvas pelvis (64,63) and placed so the pelvis lands on world = [x,y] (SoleLift-canvas px at x1, the hop path); ballWorld = the ball in the same world px (the flick physics); F10/F11 land on the left toe-tip (76,102) of a canvas shifted originDx 50. Shot 4: SoleLift canvas at the Dribble cycle origin +26, the closing Dribble F2-F4 at +70. F8/F8b are body-identical below row 75 (lowBoot row 93 = world row 81: the money-frame clearance). ballRest (F5 scoop, F6 flick, F11 cushion) = the nearest ball centre where the disc only touches the drawn boot: the approved `ball` (the shot physics) tucks the toe 4 px under/behind the ball on those frames, so draw the ball OVER the sprite there (or use ballRest if the shot prefers the ball resting on the boot). Suggested hold (no drawing over 0.3 s): F8 0.90, F8b 1.10, F8 1.20, F8b 1.30 (money frame to 1.42), F8 1.50, F9 1.58.",
+ "notes": "Side view, facing east, unmirrored (No.10 is right-footed: the near/right leg touches). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (Settle F1: the braking right heel); airborne frames (contact null) sit on pelvis. ball = centre of the 12 px ball (radius 6 at x1; r 12 at x2, r 18 at x3), NEVER drawn in the frame; touch = the boot is on the ball; boot = the contact pixel of bootPart on the drawn boot; head = skull point; eye = the pupil pixel (measured); lowBoot = lowest pixel of an airborne frame; bbox = [x0,y0,x1,y1] measured on the art. solo = SPOTLIGHT SOLO shot-local use times. Studio layer: Art only (no Num/Ball layer; the ball guide is these anchors). SoleLift (drawn for x3): F1-F6 on the left toe-tip (70,102); F7 F8 F8b F9 airborne, drawn at canvas pelvis (64,63) and placed so the pelvis lands on world = [x,y] (SoleLift-canvas px at x1, the hop path); ballWorld = the ball in the same world px (the flick physics); F10/F11 land on the left toe-tip (76,102) of a canvas shifted originDx 50. Shot 4: SoleLift canvas at the Dribble cycle origin +26, the closing Dribble F2-F4 at +70. F8/F8b are body-identical below row 75 (lowBoot row 93 = world row 81: the money-frame clearance). ballRest (F5 scoop, F6 flick, F11 cushion) = the nearest ball centre where the disc only touches the drawn boot: the approved `ball` (the shot physics) tucks the toe 4 px under/behind the ball on those frames, so draw the ball OVER the sprite there (or use ballRest if the shot prefers the ball resting on the boot). Suggested hold (no drawing over 0.3 s): F8 0.90, F8b 1.10, F8 1.20, F8b 1.30 (money frame to 1.42), F8 1.50, F9 1.58. Polish 2026-11-15: F7 the take-off toe peels off the F6 plant (toe 3 px off the turf, lowBoot (58,98)); F11 is the deepest landing frame (pelvis 70; F10 69 touchdown, Dribble F2 69 rebound), boots, contact, instep and ball unchanged; clean near-shoulder trim and straight shorts stripes on all 12 frames.",
  "frames": [
   {
    "name": "F1",
@@ -290,14 +290,14 @@
      23
     ],
     "lowBoot": [
-     47,
-     99
+     58,
+     98
     ],
     "bbox": [
-     39,
+     43,
      5,
      92,
-     99
+     98
     ]
    },
    "touch": false,
@@ -500,7 +500,7 @@
    "ms": 90,
    "pelvis": [
     71,
-    68
+    70
    ],
    "contact": [
     76,
@@ -517,11 +517,11 @@
     ],
     "head": [
      75,
-     22
+     24
     ],
     "eye": [
      85,
-     28
+     30
     ],
     "ballRest": [
      92.8,
@@ -529,7 +529,7 @@
     ],
     "bbox": [
      58,
-     10,
+     12,
      95,
      102
     ]

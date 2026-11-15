@@ -583,6 +583,13 @@ The whole pass in one frame: a meridian line drawn across the pitch.
   *As built (whole-film review):* the cut lands one stride short of the X with the ball at No.7's heels and
   no contact glint or reach, because shot 6 opens on that same picture and owns the one touch (0.35).
   Cutting on the contact made the ball jump about 2.4 m back across the cut and the touch happen twice.
+  *As built (polish):* the ball rolls on No.7's far side (field z about 10-24 px farther), so from this high angle
+  it sits at his knee height on screen. It is drawn **before** him while it is behind him, and only its additive
+  pearl glow comes back over him, weighted by how much of it his sprite hides (`spriteCover`), so it stays the
+  brightest point and is never lost. His track starts 18 field px downfield (was 27), so the ball visibly trails
+  him (8-14 px behind) until the hold and then closes onto his heels (0.7 px at the cut). Before, it was drawn
+  over his thigh for 0.2-0.8 s and read as if he were already dribbling it. The draw order now also matches
+  shot 6's first frame (ball behind his heel) across the cut.
 
 **Audio**
 
@@ -625,7 +632,15 @@ The thread is handed over, the world wakes up, and No.7 finishes.
   - **0.55–0.75** the thread is pulled through: its stitches tighten into the turf and vanish, ending
     in one pearl glint at his boot.
 - **0.47** R3 push-off. **0.62** R4 plant: the left foot lands beside the ball, the right leg is drawn
-  back, arms out. The camera swings right and pulls out (zoom 1.4 → 1.1) to reveal the keeper coming
+  back, arms out.
+  *As built (polish):* **0.47** Receive R2b (the bridge) sets the right foot down where it touched the
+  ball, eyes up off it; **0.54** R3 pushes off that same toe pixel (R2b and R3 share contact C2, placed on
+  the No7Receive.json rail: C2 = C1 + 2·18). The pelvis steps out of the hit-stop are +30 / +28 / +27
+  world px (R2 → R2b → R3 → R4) instead of one swap with the planted foot sliding back 30 px. The ball
+  has rolled 17 px ahead by the first R2b frame (0.483), so it clears the landing toe. Everything after
+  the plant is laid out from the new C2, so it sits 30 world px further downfield (X_END 61 → 91).
+  Until the touch the ball keeps its depth (behind his standing foot), and its pearl halo is drawn back
+  over him weighted by how much of it he hides, so it is never lost right after the 5 → 6 cut. The camera swings right and pulls out (zoom 1.4 → 1.1) to reveal the keeper coming
   and the goal.
 - **0.80 STRIKE** (R5): a low side-foot finish across the keeper toward the far corner.
   - It is a plain ball (normal palette) with a short white motion streak: this is No.10's special, not
@@ -645,7 +660,11 @@ The thread is handed over, the world wakes up, and No.7 finishes.
   - **Right panel**: No.7 Front view, chest-up at integer ×2. Point Q1 → Q2: he points back across at
     him, grinning.
   - The jade thread runs across the gutter between their fingertips (`tip` anchors), and a pearl glint
-    travels along it. Two friends, one thread.
+    travels along it. Two friends, one thread. The focus lines converge at the fingertips' height, read
+    from the art's `tip` anchors (polish: P3a/Q2 tip moved from (87,41) to (84,39)).
+    *As built (point2):* each points with the friend-side arm, out to the gutter (P2/Q1 wind it up elbow-first,
+    P3a/Q2 tip (106,37), Q2 west art (21,37)), and the figures stand at X10 214 / X7 VW - 214 (was 248), so each
+    hand keeps ~11.5 px of paper before its panel's inner border and the thread spans the gutter at y 171.
 - **1.80–2.40** the name card slides in at the bottom, matching the other specials: `MERIDIAN THREAD`
   (left), `No.10 > No.7 · SPECIAL PASS`, and `CAM 1 - 0 RIV` (right). Fade to `[8,4,14]` over the last
   0.35 s.

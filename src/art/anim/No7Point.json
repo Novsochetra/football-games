@@ -13,12 +13,12 @@
   ],
   "westIsStudioArt": true
  },
- "notes": "No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark hair #463428/#281c16, yellow \"7\"; MOTION_LIBRARY \u00a74), same scale (98 px standing, ground row 102). Front view; the shot 6 diptych's right panel. The brief MIRRORS No.10's Point for No.7 (Q1 = P2, Q2 = P3a, Q2b = P3b mirrored + re-skinned), so this strip follows library \u00a71.4: No7Point.png faces EAST (like No.10's Point, \"7\" readable) and No7Point_west.png is the mirrored use. Draw the diptych with flip: true: the west strip IS the studio art pixel for pixel (No.7 pointing back across at No.10, screen-left, \"7\" upright). The east strip is derived by the export (studio art mirrored, the \"7\" re-pasted un-mirrored, light from the other side). Anchors are in EAST frame coordinates (studioAnim mirrors them with the west strip): contact (64,102) body centre; tip = the index fingertip (87,41) on Q2/Q2b (west art (40,41)), the closed fist on Q1. Shot 6: Q1 1.40, Q2 1.55-1.85, Q2b 1.85-1.97 (blink, off-beat from No.10's 1.95), Q2 1.97-2.40. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "notes": "No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark hair #463428/#281c16, yellow \"7\"; MOTION_LIBRARY \u00a74), same scale (98 px standing, ground row 102). Front view; the shot 6 diptych's right panel. The brief MIRRORS No.10's Point for No.7 (Q1 = P2, Q2 = P3a, Q2b = P3b mirrored + re-skinned), so this strip follows library \u00a71.4: No7Point.png faces EAST (like No.10's Point, \"7\" readable) and No7Point_west.png is the mirrored use. Draw the diptych with flip: true: the west strip IS the studio art pixel for pixel (No.7 pointing back across at No.10, screen-left, \"7\" upright). The east strip is derived by the export (studio art mirrored, the \"7\" re-pasted un-mirrored, light from the other side). Anchors are in EAST frame coordinates (studioAnim mirrors them with the west strip): contact (64,102) body centre; tip = the index fingertip (106,37) on Q2/Q2b (west art (21,37); point2: his right arm points out to the gutter; was (84,39) polish, (87,41) shipped), the closed fist on Q1. Shot 6: Q1 1.40, Q2 1.55-1.85, Q2b 1.85-1.97 (blink, off-beat from No.10's 1.95), Q2 1.97-2.40. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
  "frames": [
   {
    "name": "Q1",
    "id": "Q1",
-   "label": "turning in, arm rising (P2 mirrored)",
+   "label": "turning in, left elbow lifting out (P2 mirrored)",
    "type": "R of No.10 Point P2, mirrored",
    "ms": 150,
    "pelvis": [
@@ -35,17 +35,17 @@
      13
     ],
     "fist": [
-     60,
-     54
+     91,
+     61
     ],
     "tip": [
-     60,
-     54
+     91,
+     61
     ],
     "bbox": [
-     41,
+     40,
      5,
-     90,
+     96,
      102
     ]
    },
@@ -54,7 +54,7 @@
   {
    "name": "Q2",
    "id": "Q2",
-   "label": "points back across at No.10 (P3a mirrored)",
+   "label": "points back at No.10 (P3a mirrored)",
    "type": "R of No.10 Point P3a, mirrored",
    "ms": 240,
    "pelvis": [
@@ -71,13 +71,13 @@
      13
     ],
     "tip": [
-     87,
-     41
+     106,
+     37
     ],
     "bbox": [
-     41,
+     40,
      5,
-     90,
+     107,
      102
     ]
    },
@@ -103,13 +103,13 @@
      13
     ],
     "tip": [
-     87,
-     41
+     106,
+     37
     ],
     "bbox": [
-     41,
+     40,
      5,
-     90,
+     107,
      102
     ]
    },

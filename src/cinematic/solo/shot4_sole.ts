@@ -23,8 +23,10 @@
 //                  the top of his hop, B's studs 9 px under his trailing boot, the strobe chain from laces to apex,
 //                  the F6 / F7 exposures on the hop path; 2 impact frames at 1.30, then a clean still; dim 0.88.
 //   1.20  beat 10  the fermata (low tom).   1.30: SOLE LIFT tag.
-//   1.72           LAND (F10).   1.80: CUSHION (F11), the ball glued to the instep again; B sprawls (S3) behind him.
-//   1.85-1.95      Dribble F2-F4.   1.90: OLÉ! 2, pad 2.   1.95-2.00: whip pan right into shot 5.
+//   1.72           LAND (F10).   1.75: B tips back off his hip onto his seat (S2c) behind him, head clear of No.10.
+//   1.80           CUSHION (F11), the ball dead on the instep again (held while F11 is up); B sprawls (S3) behind him.
+//   1.85-1.95      Dribble F2-F4: F2 carries the ball down onto the planted right toe, it rolls off onto the turf and on
+//                  (Dribble.json ballByUse).   1.90: OLÉ! 2, pad 2.   1.95-2.00: whip pan right into shot 5.
 //
 // Staging: B's slide line is a stride behind No.10's (depth): he is always drawn behind No.10 and the ball, so the
 // long body of a slide that passes under a hop never reads as a landing on him, and he is fast (about 5 m/s) so it
@@ -39,6 +41,8 @@ import { Rng, clamp, ease, lerp, type RGB } from '../../engine/math';
 import { PK, drawGlow, glowOf } from '../../engine/particles';
 import { BallSpin } from '../../engine/pixel';
 import { anim, drawAnim, hasAnim, type StudioAnim } from '../../art/studioAnim';
+import DRIBBLE_META from '../../art/anim/Dribble.json';
+import RIVAL_SLIDE_META from '../../art/anim/RivalSlide.json';
 import {
   Afterimages, DEF_SIL, FollowSpot, HEX, HUM, PAL, RATE, SEQ, TOMS, drawBall, drawSolo, echoAt, fourCount, marqueeTag,
   onFrames, onGrid, padsFor, soloAnchor, soloGrade, soloImpact, soloPic, stage, warmSolo,
@@ -99,8 +103,28 @@ const rollX = (t: number) => {
   const u = clamp(t / T_SOLE);
   return 73 + 27 * (1.5 * u - 0.5 * u * u);
 };
-/** After the cushion: it drops off the instep and is pushed on (the Dribble F2-F4 `ball` anchors at C +70). */
-const AFTER: readonly (readonly [number, number])[] = [[1.8, 140.3], [1.85, 151.9], [1.9, 157.9], [1.95, 162.9], [2.0, 167.4]];
+/** The closing Dribble frames' canvas origin (C): F2-F4 at +70 (right toe C 143). */
+const CLOSE_OX = 70;
+/** A closing frame's shot-4 ball (pixel index, its canvas): Dribble.json `ballByUse` (the cycle `ball` popped the cushioned
+ *  ball 11.6 C forward and 5 rows down in one frame at 1.85; the cycle anchors stay for shots 2 / 7 and the field). */
+function closingBall(frame: string, use: string, fb: [number, number]): [number, number] {
+  const f = DRIBBLE_META.frames.find((x) => x.name === frame) as { ballByUse?: Record<string, number[]> } | undefined;
+  const v = f?.ballByUse?.[use];
+  return v ? [v[0], v[1]] : fb;
+}
+/**
+ * After the cushion (C, pixel-index space): glued to the F11 instep while F11 is up (1.80-1.85: the cushion is a dead
+ * stop), carried down onto the planted right toe by the F2 drawing (1.85), then rolling off it onto the turf and on
+ * ahead of him through F3 (1.90) and F4 (1.95), continuous between those keys; 2.00 carries F3 -> F4 on (the whip).
+ */
+const AFTER: readonly (readonly [number, number, number])[] = (() => {
+  const k = ([t, f, u, fb]: [number, string, string, [number, number]]): [number, number, number] => {
+    const [x, y] = closingBall(f, u, fb);
+    return [t, x + CLOSE_OX, y];
+  };
+  const a = k([1.85, 'F2', 's4 1.85', [75.5, 92]]), b = k([1.9, 'F3', 's4 1.90', [82.5, 95.5]]), c = k([1.95, 'F4', 's4 1.95', [90.5, 96]]);
+  return [a, b, c, [2.0, c[1] + (c[1] - b[1]) * 0.94, c[2]]];
+})();
 
 // ---------------------------------------------------------------- No.10's schedule and placement
 
@@ -162,14 +186,18 @@ function ballAt(env: Env, t: number): [number, number] {
     return [bx - 0.5, by - 0.5];
   }
   if (t < T_CATCH - 1e-6) return ballFlight(flickS(t));
-  // After the catch: it rolls off the instep onto the turf and on ahead of him (drops 5.3 rows by 1.85).
+  // The cushion: dead on the F11 instep (its `ball` at the landing canvas, C +50: where the flight ends at 1.80).
+  if (t < AFTER[0][0] - 1e-6) {
+    const [bx, by] = soloAnchor(env, 'SL11', 'ball');
+    return [bx - 0.5 + 50, by - 0.5];
+  }
+  // Then on the F2 toe, rolling off it (falling onto the turf: in on the drop, out on the landing) and on ahead of him.
   let j = 0;
-  while (j < AFTER.length - 2 && t >= AFTER[j + 1][0]) j++;
-  const [ta, xa] = AFTER[j], [tb, xb] = AFTER[j + 1];
+  while (j < AFTER.length - 2 && t >= AFTER[j + 1][0] - 1e-6) j++;
+  const [ta, xa, ya] = AFTER[j], [tb, xb, yb] = AFTER[j + 1];
   const u = clamp((t - ta) / (tb - ta));
-  const x = j === 0 ? lerp(xa, xb, ease.outQuad(u)) : lerp(xa, xb, u);
-  const y = lerp(90.7, 96, clamp((t - T_CATCH) / 0.05) ** 2);
-  return [x, y];
+  const y = ya < yb - 1 ? lerp(ya, yb, u * u) : lerp(ya, yb, ease.outQuad(u));
+  return [lerp(xa, xb, u), y];
 }
 const ballWorld = (c: [number, number]): [number, number] => [worldX(c[0] + 0.5), GY - SC * (102 - c[1])];
 /** Ball radius (world px): r 6 at x1. */
@@ -184,13 +212,21 @@ const B_V = 300;
 const B_SIG_M = sigma(1.36);
 const B_COM_M = 131.0;
 /** Frame schedule (shot time): launch S1 (off the right edge), the slide alternating S2 / S2b on 8ths, S2b through
- *  the hold, and the sprawl S3 once his whole body is clear behind No.10 (spun slowly about his centre). */
-const B_SEQ: readonly (readonly [number, string])[] = [[0.3, 'S1'], [0.5, 'S2'], [0.7, 'S2b'], [0.9, 'S2'], [1.1, 'S2b'], [1.8, 'S3']];
+ *  the hold, the S2c tip (he rolls back off the hip onto his seat: the breakdown into the sprawl, so S2b -> S3 is no
+ *  longer a 75 deg pose pop), and the sprawl S3 once his whole body is clear behind No.10 (spun slowly about his centre).
+ *  The tip waits for 1.75 (the strip's note suggests 1.70): S2c lays his head on the turf, and at 1.70-1.73 that is
+ *  right behind No.10's descending left boot (a boot-on-the-face read); from 1.75 his head is 8+ px clear of No.10
+ *  (the B_HEAD guard checks it). The S2c row is skipped if the strip has no such frame. */
+const T_TIP = 1.75;
 const T_SPRAWL = 1.8;
-/** Defender B's kit (RIVAL_KIT_B): skin and hair swapped from the strip's RIVAL_KIT (RivalSlide.json kitB). */
-const KIT_B: Record<string, string> = {
-  e8ac84: 'd69668', aa6e56: 'b06e4a', c89646: '463c3c', '96622c': '282022', '5a361e': '120c0e',
-};
+const B_SEQ: readonly (readonly [number, string])[] = [[0.3, 'S1'], [0.5, 'S2'], [0.7, 'S2b'], [0.9, 'S2'], [1.1, 'S2b'], [T_TIP, 'S2c'], [T_SPRAWL, 'S3']];
+/** Defender B's kit (RIVAL_KIT_B): skin and hair swapped tone for tone from the strip's RIVAL_KIT (RivalSlide.json kitB:
+ *  skin mid / shade -> B's mid / shade, hair light / mid / shade). */
+const KIT_B: Record<string, string> = Object.fromEntries(
+  Object.entries((RIVAL_SLIDE_META as { kitB?: Record<string, string> }).kitB ?? {
+    '#e8ac84': '#b06e4a', '#aa6e56': '#74422c', '#c89646': '#463c3c', '#96622c': '#282022', '#5a361e': '#120c0e',
+  }).map(([a, b]) => [a.replace('#', '').toLowerCase(), b.replace('#', '').toLowerCase()]),
+);
 /** Light on B in the dark: the spot rig, top-right. */
 const B_LIGHT = { lx: 1, ly: -1 };
 /** B's light: he slides out of the dark into the pool for his moment (the outside-pool mask), then, once his studs
@@ -219,7 +255,7 @@ const bExtent: [number, number][] = [];
 function bAt(t: number): BState | null {
   if (!RS || t < B_SEQ[0][0] - 1e-6) return null;
   let name = B_SEQ[0][1];
-  for (const [at, n] of B_SEQ) if (t >= at - 1e-6) name = n;
+  for (const [at, n] of B_SEQ) if (t >= at - 1e-6 && RS.frames.some((f) => f.name === n)) name = n;
   const i = RS.frames.findIndex((f) => f.name === name);
   if (i < 0) return null;
   const f = RS.frames[i];
@@ -269,7 +305,67 @@ function buildB() {
     bExtent[i] = [x0, x1];
     bSil[i] = RS!.silhouette(i, { fill: DEF_SIL.fill, rim: DEF_SIL.rim, rim2: DEF_SIL.rim2, lx: B_LIGHT.lx, ly: B_LIGHT.ly }, 0, true);
     bShade[i] = RS!.silhouette(i, { fill: DEF_SIL.fill, rim: DEF_SIL.fill, rim2: DEF_SIL.fill, lx: B_LIGHT.lx, ly: B_LIGHT.ly }, 0, true);
+    // His head for the tone guard: every opaque pixel within B_HEAD_R of the head anchor (hair, face, a hand at it).
+    const hd = f.anchors.head;
+    const pts: number[] = [];
+    if (hd)
+      for (let y = 0; y < RS!.h; y++)
+        for (let x = 0; x < RS!.w; x++)
+          if (f.px[(y * RS!.w + x) * 4 + 3] > 40 && Math.hypot(x - hd[0], y - hd[1]) <= B_HEAD_R) pts.push(x + 0.5, y + 0.5);
+    bHead[i] = Float32Array.from(pts);
   });
+}
+
+// ---------------------------------------------------------------- dev guard (tone: nothing lands on a head)
+
+/** B's head (frame px round the head anchor) and its clearance from No.10 (screen px) once he tips back (S2c / S3 lay
+ *  his head on the turf a stride behind No.10's landing): never under or against a boot (shot 5's HEAD_CLEAR). */
+const B_HEAD_R = 15;
+const B_HEAD_CLEAR = 8;
+const bHead: Float32Array[] = [];
+const heroOpaque = new Map<string, Float32Array>();
+const warned4 = new Set<string>();
+/** Smallest screen gap (Chebyshev, whole empty px) between B's head pixels and No.10's opaque pixels at t. */
+function bHeadGap(env: Env, t: number, b: BState): number {
+  const head = bHead[b.i];
+  if (!head || !head.length) return Infinity;
+  const pl = heroAt(env, t);
+  const pic = soloPic(env, pl.key);
+  let hp = heroOpaque.get(pic.id);
+  if (!hp) {
+    const a: number[] = [];
+    for (let y = 0; y < pic.h; y++) for (let x = 0; x < pic.w; x++) if (pic.px[(y * pic.w + x) * 4 + 3] > 40) a.push(x + 0.5, y + 0.5);
+    heroOpaque.set(pic.id, (hp = Float32Array.from(a)));
+  }
+  // World px: No.10 drawn with pivot [0, SOLE] on (worldX(ox), worldY(SOLE + oy)); B flipped about his body centre.
+  const hx = worldX(pl.ox), hy = worldY(SOLE + pl.oy);
+  const bx = worldX(b.com), by = worldY(b.cy), c = Math.cos(b.rot), s = Math.sin(b.rot);
+  const H: number[] = [];
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (let k = 0; k < head.length; k += 2) {
+    const dx = -(head[k] - b.cx) * SC, dy = (head[k + 1] - b.cy) * SC;
+    const X = bx + dx * c - dy * s, Y = by + dx * s + dy * c;
+    H.push(X, Y);
+    x0 = Math.min(x0, X), x1 = Math.max(x1, X), y0 = Math.min(y0, Y), y1 = Math.max(y1, Y);
+  }
+  const m = (B_HEAD_CLEAR + 1) / view.z + 2 * SC;
+  let gap = Infinity;
+  for (let k = 0; k < hp.length; k += 2) {
+    const X = hx + hp[k] * SC, Y = hy + (hp[k + 1] - SOLE) * SC;
+    if (X < x0 - m || X > x1 + m || Y < y0 - m || Y > y1 + m) continue;
+    for (let j = 0; j < H.length; j += 2) gap = Math.min(gap, (Math.max(Math.abs(X - H[j]), Math.abs(Y - H[j + 1])) - SC) * view.z);
+  }
+  return gap;
+}
+/** Run from update() (camAt(t) already applied): warns once per frame if B's tipped-back head comes within B_HEAD_CLEAR. */
+function toneGuard(env: Env, t: number, b: BState | null) {
+  if (!b || t < T_TIP - 1e-6) return;
+  const g = bHeadGap(env, t, b);
+  const k = `head@${Math.round(t * 60)}`;
+  if (g < B_HEAD_CLEAR && !warned4.has(k)) {
+    warned4.add(k);
+    console.warn(`SPOTLIGHT SOLO shot 4: B's head ${g.toFixed(1)} px from No.10 at ${t.toFixed(3)} s (needs ${B_HEAD_CLEAR})`);
+  }
 }
 
 /** Turf thrown up by the slide (normal blend, drawn under the stage dim: lit in the pool, dark outside it). */
@@ -746,6 +842,7 @@ export const shotSoleLift: Shot = {
         }
       }
     }
+    toneGuard(env, t, bb);
   },
   render(env, t) {
     const ctx = env.ctx;

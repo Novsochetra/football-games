@@ -190,7 +190,7 @@ export class Field {
       this.hero = { ...this.hero, x: 1000, z: 272, facing: 1, pose: POSES.stand, h: 0 };
       this.winger = { ...this.winger, x: 1130, z: 318, facing: -1, pose: POSES.celebrate, h: 0 };
       this.defA = look(this.defA, 962, 250, -1);
-      this.defB = look(this.defB, 1026, 238, 1);
+      this.defB = look(this.defB, 1026, 228, 1); // clear of No.10's point (tip reaches x≈1021, y≈239)
       this.defC = look(this.defC, 1046, 264, -1);
       this.defD = look(this.defD, 1066, 302, -1, P({ ...POSES.sitWrongWay, armN: 140 * deg, elbowN: 4 * deg, head: -24 * deg }), -9);
       this.keeper = { ...this.keeper, x: 1160, z: 250, facing: -1, pose: P({ ...POSES.gkDive, spin: 1.6 }), h: -4 };

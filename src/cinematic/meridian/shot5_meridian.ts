@@ -41,7 +41,7 @@ import type { StudioAnim } from '../../art/studioAnim';
 import {
   FIELD, HEX, LAYOUT, PAL, PATH, THREAD_NOTES as N, cachePuppet, crossStitch, drawBall, drawFieldBackdrop, drawGoal,
   drawGrassFore, drawNo10Boxed, drawNo7Boxed, inkGrade, inkSfx, meridianGrade, needleEye, no10, no7, paperFlash,
-  pluckLine, prepareGrassFore, prepareInk, pulse, type No7Key,
+  pluckLine, prepareGrassFore, prepareInk, pulse, spriteCover, type No7Key,
 } from './common';
 
 const DUR = 1.3;
@@ -90,16 +90,20 @@ function uBall(t: number) {
 }
 
 /** No.7's pelvis ground track (field x, z): a sprint bending inside onto the X (quadratic, by arc length). He is ahead
- * of the ball the whole shot (LAYOUT: he is about (1090, 305) as it passes E3), so the pass rolls into his stride from
- * behind him (as shot 6 opens), never the other way round. */
+ * of the ball the whole shot (about (1084, 309) as it passes E3), so the pass rolls into his stride from behind him (as
+ * shot 6 opens), never the other way round. The ball rolls on his far side (field z ~10-24 px farther), so from this
+ * high angle it sits at his knee height on screen: his track starts TRACK_DX field px downfield, so the ball visibly
+ * trails him (8-14 px behind) until the hold and then closes onto his heels (0.7 px at the cut) instead of riding on his
+ * thigh the whole way as if he were already dribbling it. */
 let R1_DX = 2; // Receive R1: ball anchor minus pelvis (world px), resolved from the frame in prepare()
 /** One stride short of the X at the cut (he reaches it in shot 6). */
 const runEnd = () => ({ x: LAYOUT.target.x - R1_DX - 8, z: LAYOUT.target.z });
+const TRACK_DX = 18;
 let trackPts: { x: number; z: number; s: number }[] = [];
 /** Sample the run (a quadratic from the near side, bending inside onto the X) by arc length; rebuilt in prepare(). */
 function buildTrack() {
   const e = runEnd();
-  const a = { x: e.x - 27, z: e.z + 11 }, c = { x: e.x - 13, z: e.z + 6 };
+  const a = { x: e.x - TRACK_DX, z: e.z + 11 }, c = { x: e.x - TRACK_DX / 2, z: e.z + 6 };
   const n = 24;
   trackPts = [];
   for (let i = 0; i <= n; i++) {
@@ -842,6 +846,14 @@ export const shotMeridian: Shot = {
       ctx.restore();
     }
 
+    // The ball: the brightest point (pearl halo, emerald glow, ink outline), at each scale its own crisp raster. It
+    // rolls on the far side of No.7 (field z ~285-295 against his ~300-309), so it is drawn before him while it is
+    // behind him: it trails into his stride, it is not on his thigh as if he were already dribbling it.
+    const [bsx, bsy, bsc] = proj(v, bq.x, bq.z, BALL_R);
+    const br = Math.max(2, Math.round(BALL_R * bsc));
+    const ballBehind = bq.z < tr.z - 2;
+    if (ballBehind) drawBall(env, spin, bsx, bsy, br, 1, 0, 0.85, 'pearl');
+
     // No.7 sprinting onto the X: the run cycle steps on his travel, then the reach (Receive R1).
     {
       const reaching = s >= S_END - REACH_LEAD;
@@ -872,14 +884,20 @@ export const shotMeridian: Shot = {
         drawNo7Boxed(env, reaching ? 'Receive.R1' : RUN_KEYS[Math.floor(tr.d / STRIDE_FRAME) % 8], tr.x, tr.z, K_WORLD);
         env.screen();
       }
+      // Behind him, only its additive pearl light comes back over him, in proportion to how much of it his legs hide:
+      // it stays the brightest point and is never lost.
+      if (ballBehind) {
+        const cover = f ? spriteCover(f.a, f.i, f.piv[0] + (bsx - sx) / e, f.piv[1] + (bsy - sy) / e, br / e) : 0.5;
+        if (cover > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          drawGlow(ctx, glowOf([251, 246, 234]), bsx, bsy, br * 2.2, 0.5 * 0.85 * cover);
+          drawGlow(ctx, glowOf([251, 246, 234]), bsx, bsy, br * 1.1, 0.35 * 0.85 * cover);
+          ctx.restore();
+        }
+      }
     }
-
-    // The ball: the brightest point (pearl halo, emerald glow, ink outline), at each scale its own crisp raster.
-    {
-      const [sx, sy, sc] = proj(v, bq.x, bq.z, BALL_R);
-      const r = Math.max(2, Math.round(BALL_R * sc));
-      drawBall(env, spin, sx, sy, r, 1, 0, 0.85, 'pearl');
-    }
+    if (!ballBehind) drawBall(env, spin, bsx, bsy, br, 1, 0, 0.85, 'pearl');
     env.world();
     env.parts.draw(ctx, 1);
 

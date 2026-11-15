@@ -12,6 +12,7 @@
 //   stitchTitle         the running-stitch title reveal (shot 1)
 //   PAGE / MangaPage    shot 4's three-panel manga page with page-pans and frozen snapshots
 //   placeholderShot     the labelled stand-in each shot file uses until it is produced
+//   spriteCover         how much of the ball a studio frame hides (the ball keeps its depth, its halo comes back)
 
 import type { Env, Shot } from '../timeline';
 import type { FxState } from '../../engine/post';
@@ -20,6 +21,7 @@ import { clamp, ease, lerp, type RGB } from '../../engine/math';
 import { drawGlow, glowOf } from '../../engine/particles';
 import { PIXEL_FONT, TITLE_FONT, pixelText, prepareInk, slamTitle, type TrailPt } from '../../art/fx';
 import { renderPuppet, type Kit, type Pose } from '../../art/puppet';
+import type { StudioAnim } from '../../art/studioAnim';
 
 export * from '../kit';
 export { drawNo10, drawNo10Boxed, no10, no10Anchor, no10Final, no10Point, warmNo10Boxed, NO10, type No10Key } from '../../art/no10';
@@ -816,3 +818,20 @@ export function placeholderShot(idx: 1 | 2 | 3 | 4 | 5 | 6, name: string, dur: n
   };
 }
 
+/**
+ * How much of a disc (centre (fx, fy), radius r, all in frame px of studio frame i of `a`) the frame's opaque pixels
+ * cover, 0..1. A ball that rolls behind a player keeps its depth order; this weights the pearl halo drawn back over
+ * the player, so the ball's light shows exactly while (and as much as) the ball itself is hidden: it is never lost.
+ */
+export function spriteCover(a: StudioAnim, i: number, fx: number, fy: number, r: number): number {
+  const px = a.frames[i].px;
+  let n = 0, hit = 0;
+  for (let y = Math.floor(fy - r); y <= Math.ceil(fy + r); y++)
+    for (let x = Math.floor(fx - r); x <= Math.ceil(fx + r); x++) {
+      const dx = x + 0.5 - fx, dy = y + 0.5 - fy;
+      if (dx * dx + dy * dy > r * r) continue;
+      n++;
+      if (x >= 0 && y >= 0 && x < a.w && y < a.h && px[(y * a.w + x) * 4 + 3]) hit++;
+    }
+  return n ? hit / n : 0;
+}

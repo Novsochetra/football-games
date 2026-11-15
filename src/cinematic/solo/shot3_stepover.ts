@@ -29,8 +29,10 @@
 //         zoom 1.12. A, frozen in his lunge, turns full colour as he enters the light (only the half of him inside the
 //         pool is lit: his colour render goes under the stage dim). 0.45 the STEP-OVER tag.
 //   0.60  F5 load · 0.70 F6 push: A's lunge carries him on across behind No.10 over the whole bar to the cut (12 frames,
-//         an in-out that leaves at the fall's speed: no teleport, no stop on the cut); by the cut his lead hand is well
-//         clear of the F4 exposure's right edge, out to screen-right.
+//         an in-out that leaves at the fall's speed: no teleport, no stop on the cut), flattening out into a full-length
+//         dive so his head passes behind No.10's hips, 16+ px below the F5 fist and forearm raised at screen-left (the
+//         HEAD_CLEAR guard checks 8); by the cut his lead hand is well clear of the F4 exposure's right edge, out to
+//         screen-right.
 //   0.80  THE CUT (F7): the ball snapped screen-left (decelerating, it never stops dead; three ball exposures that
 //         roll in front of his boots), fx.echo -0.012 for 3 frames, beat flare, a beat-snap push-in (zoom 1.18) that
 //         throws the split apart. The camera never trucks: he and the ball do the travelling, and the operator-lagged
@@ -39,7 +41,8 @@
 //         frame; the ball is picked up at his x3 anchor, screen-continuous) · 1.15 BR3 · 1.30 BR2 · 1.40 BR3 · 1.50 BR2
 //         (quiet stud scuffs on these drawn footfalls); he ends up filling the left of the frame.
 //   0.90 / 1.00 / 1.10  the whole step-over chronophotograph (and the ball's) steps down on the grid and is gone as A,
-//         back in the dark, lands on one knee (kneelStumble, 1.10) beside where No.10 was and skids 20 px.
+//         back in the dark, scrambles up off the dive (three breakdowns) onto one knee (kneelStumble, 1.10) beside
+//         where No.10 was and skids 20 px.
 //   1.20  OLÉ! 1: four-count pad 1 lights, the phone lights in the stands lift, a beat-snap push in (zoom 1.08).
 //   1.30  the stage darkens outside the pool · 1.45 CHUNK: the house goes black and the spot irises down onto him
 //         (rx -> 0 by 1.567); two frames of black; cut.
@@ -255,9 +258,11 @@ const JOCKEY_CLOSE: Pose = P({ ...POSES.jockey, thighN: 14 * D2R, kneeN: 34 * D2
  * reaching for the space the sell pointed at, all his weight thrown onto it (rear knee low, rear boot off the turf).
  */
 const LUNGE: Pose = P({ ...POSES.lungeCommit, torso: 34 * D2R, head: -22 * D2R, thighN: 56 * D2R, kneeN: 4 * D2R, footN: -18 * D2R, thighF: -44 * D2R, kneeF: 58 * D2R, footF: 30 * D2R, armN: 40 * D2R, elbowN: 20 * D2R, armF: -70 * D2R, elbowF: 24 * D2R });
-/** The dive across: A overcommits after the bite, torso thrown forward and low, lead leg reaching toward the space the
- *  sell pointed at, trailing leg stretched behind. */
-const DIVE: Pose = P({ torso: 52 * D2R, head: -20 * D2R, thighN: 78 * D2R, kneeN: 22 * D2R, footN: -8 * D2R, thighF: -50 * D2R, kneeF: 30 * D2R, footF: 20 * D2R, armN: 84 * D2R, elbowN: 14 * D2R, armF: -40 * D2R, elbowF: 30 * D2R });
+/** The dive across: A overcommits after the bite, flat out (torso pitched 72 deg, chin up toward the space the sell
+ *  pointed at), lead leg reaching, trailing leg stretched high behind. Flat and low on purpose: his head passes
+ *  behind No.10 BELOW the F5 fist and forearm raised at screen-left (8+ px clear: the HEAD_CLEAR guard), never just
+ *  under it (at 52 deg, upright, it slid 0-3 px under the fist: a fist-on-the-head read in a still). */
+const DIVE: Pose = P({ torso: 72 * D2R, head: -24 * D2R, thighN: 80 * D2R, kneeN: 20 * D2R, footN: -8 * D2R, thighF: -72 * D2R, kneeF: 18 * D2R, footF: 30 * D2R, armN: 84 * D2R, elbowN: 14 * D2R, armF: -40 * D2R, elbowF: 30 * D2R });
 
 /** A's pose names (all pre-rendered in prepare()). */
 const A_POSES: Record<string, Pose> = {
@@ -267,23 +272,29 @@ const A_POSES: Record<string, Pose> = {
   bite2: mixPose(POSES.jockey, LUNGE, 0.75),
   lunge: LUNGE,
   dive0: mixPose(LUNGE, DIVE, 0.5),
+  dive1: mixPose(LUNGE, DIVE, 0.78),
   dive: DIVE,
-  fall1: mixPose(DIVE, POSES.kneelStumble, 0.4),
+  fall0: mixPose(DIVE, POSES.kneelStumble, 0.2),
+  fall1: mixPose(DIVE, POSES.kneelStumble, 0.45),
   fall2: mixPose(DIVE, POSES.kneelStumble, 0.75),
   kneel: POSES.kneelStumble,
 };
 /** Pose schedule on sim time: jockey shuffle -> the bite (from 0.34, reading the circle) -> lungeCommit on THE SELL
- *  (held through the hit-stop) -> the dive across -> falling -> kneelStumble at 1.10. */
+ *  (held through the hit-stop) -> the dive across (flattening out in two breakdowns, so the head is already low as it
+ *  reaches the F5 fist at 0.65) -> pushing up off the dive to the knee in three -> kneelStumble at 1.10. */
 const A_TRACK: readonly [number, string][] = [
   // the jockey shuffle: one step per 16th, in time with the hip steps below (a shuffle, not a flutter)
   [0, 'jk0'], [0.1, 'jk1'], [0.2, 'jk0'], [0.3, 'jk1'],
   [0.34, 'bite1'], [0.37, 'bite2'], [T_SELL, 'lunge'],
   // the hit-stop releases him into the dive: across behind No.10 over the whole bar to the cut
-  [S_HOLD, 'dive0'], [S_HOLD + 0.06, 'dive'],
-  [S_CUT + 0.08, 'fall1'], [S_CUT + 0.2, 'fall2'], [S_KNEE, 'kneel'],
+  [S_HOLD, 'dive0'], [S_HOLD + 0.03, 'dive1'], [S_HOLD + 0.06, 'dive'],
+  [S_CUT + 0.06, 'fall0'], [S_CUT + 0.13, 'fall1'], [S_CUT + 0.21, 'fall2'], [S_KNEE, 'kneel'],
 ];
 /** From bite1 on, the hip height glides between key poses. */
 const A_TRACK_INTERP = A_TRACK.findIndex(([, n]) => n === 'bite1');
+/** From the lunge on, a pose never sinks below its own turf line while the hip glides down toward the next (lower)
+ *  pose: the frozen lunge holds still through the hit-stop, and each flatter dive breakdown lands on the turf. */
+const A_TRACK_NOSINK = A_TRACK.findIndex(([, n]) => n === 'lunge');
 /**
  * The dive's ease: an in-out (smoothstep, peak speed 1.4x the mean, so he never teleports) that leaves at the cut with
  * the speed the fall carries on at (outQuad 420 -> 470 over 0.3 s), so he never stops dead on the cut and restarts.
@@ -337,10 +348,118 @@ function defAt(t: number): DefA {
   const nxt = A_TRACK[Math.min(A_TRACK.length - 1, ni + 1)];
   const k = nxt[0] > A_TRACK[ni][0] ? clamp((s - A_TRACK[ni][0]) / (nxt[0] - A_TRACK[ni][0])) : 0;
   let hip = lerp(A_HIP[name], A_HIP[nxt[1]], ni >= A_TRACK_INTERP ? k : 0);
+  if (ni >= A_TRACK_NOSINK) hip = Math.max(hip, A_HIP[name]);
   if (name === 'jk1') hip += 1.5; // the closing step lifts him a touch
   const y = A_GY - hip * AU;
   const j = joints(A_POSES[name]);
   return { name, x, y, cx: x + j.neck[0] * 0.5 * AU, cy: y + j.neck[1] * 0.5 * AU };
+}
+
+// ---------------------------------------------------------------- dev guard (tone: nothing reads as a fist on a head)
+
+const warned3 = new Set<string>();
+function warnOnce(k: string, msg: string) {
+  if (warned3.has(k)) return;
+  warned3.add(k);
+  console.warn(`SPOTLIGHT SOLO shot 3: ${msg}`);
+}
+/** A's head disc (12 units, its outline and the hair: shot 5's C_HEAD_R) in base px at his plane. */
+const A_HEAD_R = 13.5 * AU;
+/** The quality bar's clearance (screen px, shot 5's HEAD_CLEAR): A's head from No.10's fists, forearms and face. */
+const HEAD_CLEAR = 8;
+/** No.10's skin tones (Sochetra palette: light, shade). */
+const SKIN = [0xf49348, 0xb8502b];
+/**
+ * The pixels of a studio frame that could come down on a head: his RAISED fists and forearms, i.e. the skin islands
+ * above the pelvis row, other than his face (the island reaching within 15 px of the head anchor) and specks under
+ * 6 px, that reach above his chin line (the face island's lowest row), plus the outline pixels touching them, as
+ * centres in frame px (built once per frame). A hand hanging at his hip and his shirt and shorts are left out: A dives
+ * across a stride and a half BEHIND him, so his head passing behind No.10's torso or a lowered arm is depth.
+ */
+const strikeCache = new Map<string, Float32Array>();
+function strikePixels(env: Env, key: SoloKey): Float32Array {
+  const pic = soloPic(env, key);
+  let out = strikeCache.get(pic.id);
+  if (out) return out;
+  const { w, h, px } = pic;
+  const top = Math.min(h, Math.floor(pic.anchor('pelvis')[1]));
+  const [hx, hy] = pic.anchor('head');
+  const skin = (x: number, y: number) => {
+    if (x < 0 || y < 0 || x >= w || y >= top) return false;
+    const k = (y * w + x) * 4;
+    return px[k + 3] > 40 && SKIN.includes((px[k] << 16) | (px[k + 1] << 8) | px[k + 2]);
+  };
+  const keep = new Uint8Array(w * h), seen = new Uint8Array(w * h);
+  const islands: { comp: number[]; face: boolean; y0: number; y1: number }[] = [];
+  for (let k0 = 0; k0 < w * top; k0++) {
+    if (seen[k0] || !skin(k0 % w, (k0 / w) | 0)) continue;
+    const comp: number[] = [], stack = [k0];
+    seen[k0] = 1;
+    let face = false, y0 = h, y1 = 0;
+    while (stack.length) {
+      const k = stack.pop()!;
+      comp.push(k);
+      const x = k % w, y = (k / w) | 0;
+      y0 = Math.min(y0, y);
+      y1 = Math.max(y1, y);
+      if (Math.hypot(x + 0.5 - hx, y + 0.5 - hy) < 15) face = true;
+      for (let dy = -1; dy <= 1; dy++)
+        for (let dx = -1; dx <= 1; dx++) {
+          const kk = (y + dy) * w + x + dx;
+          if (skin(x + dx, y + dy) && !seen[kk]) (seen[kk] = 1), stack.push(kk);
+        }
+    }
+    if (comp.length >= 6) islands.push({ comp, face, y0, y1 });
+  }
+  const chin = Math.max(-1, ...islands.filter((i) => i.face).map((i) => i.y1));
+  for (const i of islands) if (!i.face && (chin < 0 || i.y0 < chin)) for (const k of i.comp) keep[k] = 1;
+  const pts: number[] = [];
+  for (let y = 0; y < top; y++)
+    for (let x = 0; x < w; x++) {
+      if (px[(y * w + x) * 4 + 3] <= 40) continue;
+      let hit = false;
+      for (let dy = -1; dy <= 1 && !hit; dy++)
+        for (let dx = -1; dx <= 1 && !hit; dx++) {
+          const xx = x + dx, yy = y + dy;
+          hit = xx >= 0 && yy >= 0 && xx < w && yy < h && keep[yy * w + xx] === 1;
+        }
+      if (hit) pts.push(x + 0.5, y + 0.5);
+    }
+  strikeCache.set(pic.id, (out = Float32Array.from(pts)));
+  return out;
+}
+/** A's head at t: screen centre and radius (his pose's head joint; the pose is the cached render he is drawn with). */
+function aHead(cam: Cam, t: number): [number, number, number] {
+  const a = defAt(t);
+  const j = joints(A_POSES[a.name]);
+  const [sx, sy] = scr(cam, PA, a.x + j.head[0] * AU, a.y + j.head[1] * AU);
+  return [sx, sy, A_HEAD_R * cam.zoom];
+}
+/** Smallest screen gap between A's head disc (screen centre, radius) and No.10's raised fists / forearms. */
+function strikeGap(env: Env, cam: Cam, h: Hero, sx: number, sy: number, R: number): [number, number, number] {
+  const pts = strikePixels(env, h.key);
+  const half = 0.5 * h.sc * cam.zoom;
+  let gap = Infinity, fx = 0, fy = 0;
+  for (let i = 0; i < pts.length; i += 2) {
+    const [X, Y] = scr(cam, h.p, h.x + (pts[i] - PIVOT[0]) * h.sc, h.y + (pts[i + 1] - PIVOT[1]) * h.sc);
+    const d = Math.hypot(X - sx, Y - sy) - R - half;
+    if (d < gap) (gap = d), (fx = pts[i]), (fy = pts[i + 1]);
+  }
+  return [gap, fx, fy];
+}
+/**
+ * The tone guard, run from update() (shot 5's toneGuards for C): from the bite to his knee, A's head stays at least
+ * HEAD_CLEAR px from No.10's raised fists and forearms. The dive crosses under the F5 fist and forearm raised at
+ * screen-left (0.60-0.70). Warns once per frame.
+ */
+function toneGuard(env: Env, t: number) {
+  if (t < 0.34 - 1e-6 || t >= T_KNEE - 1e-6) return;
+  const cam = camAt(t);
+  const [sx, sy, R] = aHead(cam, t);
+  const h = heroAt(t);
+  const [g, fx, fy] = strikeGap(env, cam, h, sx, sy, R);
+  if (g < HEAD_CLEAR)
+    warnOnce(`head@${Math.round(t * 60)}`, `A's head ${g.toFixed(1)} px from No.10's fist / forearm at ${t.toFixed(3)} s (needs ${HEAD_CLEAR}; head at screen ${sx.toFixed(0)},${sy.toFixed(0)} r ${R.toFixed(0)}, ${h.key} px ${fx - 0.5},${fy - 0.5})`);
 }
 
 // ---------------------------------------------------------------- the stadium (front view, lights down)
@@ -788,6 +907,7 @@ export const shotStepOver: Shot = {
       fired.skid++;
       dustBurst(env, kneeX(defAt(t)), A_GY - 1, 2, 0.3, 0.5);
     }
+    toneGuard(env, t);
   },
   render(env, t) {
     const ctx = env.ctx;

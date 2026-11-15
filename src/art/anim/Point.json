@@ -12,7 +12,7 @@
    "Art"
   ]
  },
- "notes": "Front view (toward the camera), drawn full-body, cropped chest-up by shot 6 (diptych at integer x2). Not mirrored. Registration = Stand Front: body centre contact (64,102) between the planted soles (the hips pop +2 px screen-right with the feet planted). tip = where the jade thread starts: the index fingertip on P3a/P3b (87,41), the closed fist on P1/P2 (= fist). Shot 6: P1 1.40, P2 1.50, P3a 1.60-1.95, P3b 1.95-2.07 (blink), P3a 2.07-2.40. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "notes": "Front view (toward the camera), drawn full-body, cropped chest-up by shot 6 (diptych at integer x2). Not mirrored. Registration = Stand Front: body centre contact (64,102) between the planted soles (the hips pop +2 px screen-right with the feet planted). tip = where the jade thread starts: the index fingertip on P3a/P3b (106,37) (point2: his LEFT arm points out to the gutter; was (84,39) polish, (87,41) shipped), the closed fist on P1/P2 (= fist: his left fist, the pointing hand). Shot 6: P1 1.40, P2 1.50, P3a 1.60-1.95, P3b 1.95-2.07 (blink), P3a 2.07-2.40. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
  "frames": [
   {
    "name": "P1",
@@ -34,12 +34,12 @@
      18
     ],
     "tip": [
-     44,
-     62
+     86,
+     63
     ],
     "fist": [
-     44,
-     62
+     86,
+     63
     ],
     "bbox": [
      40,
@@ -53,7 +53,7 @@
   {
    "name": "P2",
    "id": "P2",
-   "label": "arm rising, elbow leads",
+   "label": "left elbow lifts out toward No.7, forearm hangs",
    "type": "N",
    "ms": 100,
    "pelvis": [
@@ -70,17 +70,17 @@
      18
     ],
     "tip": [
-     60,
-     54
+     91,
+     61
     ],
     "fist": [
-     60,
-     54
+     91,
+     61
     ],
     "bbox": [
-     41,
+     40,
      5,
-     90,
+     96,
      102
     ]
    },
@@ -89,7 +89,7 @@
   {
    "name": "P3a",
    "id": "P3a",
-   "label": "two-finger point across, grin",
+   "label": "two-finger point out to No.7, grin",
    "type": "N",
    "ms": 240,
    "pelvis": [
@@ -106,13 +106,13 @@
      18
     ],
     "tip": [
-     87,
-     41
+     106,
+     37
     ],
     "bbox": [
-     41,
+     40,
      5,
-     90,
+     107,
      102
     ]
    },
@@ -138,13 +138,13 @@
      18
     ],
     "tip": [
-     87,
-     41
+     106,
+     37
     ],
     "bbox": [
-     41,
+     40,
      5,
-     90,
+     107,
      102
     ]
    },

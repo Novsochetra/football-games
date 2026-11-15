@@ -14,7 +14,7 @@
    "Art"
   ]
  },
- "notes": "Rival Slide (defender B), studio project \"Rivals\", animation Slide, Side view; drawn on the shared Sochetra body with the rival head, re-skinned in RIVAL_KIT (src/art/puppet.ts: white shirt/socks p/q/r, teal trim, grey shorts, teal boots, light skin, blond hair). Defender B wears RIVAL_KIT_B: swap the colours in kitB (skin and hair only). Drawn facing EAST; B slides WEST at No.10, so shot 4 draws it with flip: true -> RivalSlide_west.png (a plain mirror: the shirt has no number). Points are pixel indices. The lowest pixel is on row 102 in every frame; contact = the turf contact used for placement (S0 the right toe-tip, S1 the take-off boot, S2/S2b the sliding hip, S3 the shoulders); studTop = top pixel of the leading boot (S2/S2b row 85 = 17 px above the turf: with No.10 SoleLift F8b lowBoot at world row 81 that leaves 3 clear rows = 9 px at x3 in the money frame); ballMoney = where the ball hangs at the money frame relative to B (above his chest, clear of the head); bodyCom = the body centre of mass (S3 spins slowly about it; the loader also computes the pixel com). S0 approach (optional, re-skin of Run R4), S1 launch 0.30, S2 slide 0.50 (alternate S2/S2b on 8ths through the slow window), S2b hold 1.25-1.45, S3 sprawl 1.45-2.00.",
+ "notes": "Rival Slide (defender B), studio project \"Rivals\", animation Slide, Side view; drawn on the shared Sochetra body with the rival head, re-skinned in RIVAL_KIT (src/art/puppet.ts: white shirt/socks p/q/r, teal trim, grey shorts, teal boots, light skin, blond hair). Defender B wears RIVAL_KIT_B: swap the colours in kitB (skin and hair only, tone for tone: skin mid #e8ac84 -> B mid #b06e4a, skin shade #aa6e56 -> B shade #74422c, hair light/mid/shade -> #463c3c/#282022/#120c0e; polish 2026-11-15, was one step too light). Drawn facing EAST; B slides WEST at No.10, so shot 4 draws it with flip: true -> RivalSlide_west.png (a plain mirror: the shirt has no number). Points are pixel indices. The lowest pixel is on row 102 in every frame; contact = the turf contact used for placement (S0 the right toe-tip, S1 the take-off boot, S2/S2b the sliding hip, S3 the shoulders); studTop = top pixel of the leading boot (S2/S2b row 85 = 17 px above the turf: with No.10 SoleLift F8b lowBoot at world row 81 that leaves 3 clear rows = 9 px at x3 in the money frame); ballMoney = where the ball hangs at the money frame relative to B (above his chest, clear of the head); bodyCom = the body centre of mass (S3 spins slowly about it; the loader also computes the pixel com). S0 approach (optional, re-skin of Run R4), S1 launch 0.30, S2 slide 0.50 (alternate S2/S2b on 8ths through the slow window), S2b hold 1.25-1.45, S2c tip 1.45-1.55 (new breakdown, polish 2026-11-15: he rolls back off the hip onto his seat, ~32 deg of the S2b->S3 turn; contact = the seat (61,102); engine: B_SEQ [1.7, 'S2c'] before [1.8, 'S3']), S3 sprawl 1.55-2.00 (S2c leads into it, so S3 needs no pre-rotation; optional: start the slow spin at about +10 deg and ease to 0 over 0.15 s).",
  "palette": {
   "a": "#180411",
   "n": "#000000",
@@ -35,8 +35,8 @@
   "C": "#146e6e"
  },
  "kitB": {
-  "#e8ac84": "#d69668",
-  "#aa6e56": "#b06e4a",
+  "#e8ac84": "#b06e4a",
+  "#aa6e56": "#74422c",
   "#c89646": "#463c3c",
   "#96622c": "#282022",
   "#5a361e": "#120c0e"
@@ -195,6 +195,43 @@
    "solo": "s4 1.25-1.45 (money frame 1.30-1.42)"
   },
   {
+   "name": "S2c",
+   "id": "RivalSlide_S2c",
+   "label": "tip back",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    74,
+    92.6
+   ],
+   "contact": [
+    61,
+    102
+   ],
+   "anchors": {
+    "head": [
+     29.4,
+     81.6
+    ],
+    "studTop": [
+     105,
+     73
+    ],
+    "bodyCom": [
+     59.5,
+     86.4
+    ],
+    "bbox": [
+     15,
+     62,
+     112,
+     102
+    ]
+   },
+   "contactFoot": "seat (the shirt over the lower back: he has rolled off the hip)",
+   "solo": "s4 1.45-1.55 (the tip, between S2b and S3; engine: shot4_sole.ts B_SEQ [1.7, 'S2c'] before [1.8, 'S3'])"
+  },
+  {
    "name": "S3",
    "id": "RivalSlide_S3",
    "label": "sprawl",
@@ -229,7 +266,7 @@
     ]
    },
    "contactFoot": "shoulders + back of the head on the turf",
-   "solo": "s4 1.45-2.00 (spun slowly about com)"
+   "solo": "s4 1.55-2.00 (after the S2c tip; spun slowly about com) [code: T_SPRAWL 1.8, S2c 1.7-1.8]"
   }
  ]
 }
