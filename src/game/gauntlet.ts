@@ -214,12 +214,13 @@ export function gauntletUpdate(f: GauntletField, env: Env, dt: number) {
     if (rng.next() < 0.3 * f.timeScale) {
       parts.spawn({ kind: PK.Smoke, x: h.x - 6, y: h.z, vx: -30, vy: -8, max: 0.5, s0: 2, s1: 7, ramp: 'dust', a0: 0.4, a1: 0, add: false, r0: 0, r1: 1 });
     }
-    // A few ultraviolet motes drift up out of the floor pool (the one shared mapping: solo -> 'uv').
+    // A few ultraviolet motes drift up out of the floor pool (the one shared mapping: solo -> 'uv'). Normal blend from
+    // lilac down, each on a uvDeep halo: added over the green turf, ivory and lilac read as mint (MERIDIAN THREAD's
+    // jade), never violet.
     if (f.mode === 'command' && rng.next() < 0.25) {
-      parts.spawn({
-        kind: PK.Glow, x: h.x + rng.range(-12, 12), y: h.z - rng.range(0, 10), vx: 0, vy: rng.range(-30, -12),
-        max: 0.6, s0: rng.range(1.5, 3), s1: 0.5, ramp: 'uv', r0: 0.2, r1: 0.9, a0: 0.7, a1: 0, layer: 0,
-      });
+      const x = h.x + rng.range(-12, 12), y = h.z - rng.range(0, 10), vy = rng.range(-30, -12), s0 = rng.range(1.5, 3);
+      parts.spawn({ kind: PK.Glow, x, y, vx: 0, vy, max: 0.6, s0: s0 * 2, s1: 1, ramp: 'uv', r0: 1, r1: 1, a0: 0.45, a1: 0, layer: 0, add: false });
+      parts.spawn({ kind: PK.Glow, x, y, vx: 0, vy, max: 0.6, s0, s1: 0.5, ramp: 'uv', r0: 0.4, r1: 0.9, a0: 0.7, a1: 0, layer: 0, add: false });
     }
     f.camX = lerp(f.camX, h.x + 80, 1 - Math.exp(-dt * 3));
   } else {

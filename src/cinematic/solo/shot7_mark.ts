@@ -133,6 +133,18 @@ function drawHero(env: Env, k: SoloKey, alpha = 1, img?: HTMLCanvasElement) {
   const a = heroArgs(env, k);
   drawSolo(env, k, a.x, GY, SC, { ...a.o, alpha }, img);
 }
+/** The performance trail's layer: one full-frame canvas (device px), reused every frame; composited at TRAIL_A. */
+const TRAIL_A = 0.68;
+let trailCv: HTMLCanvasElement | null = null;
+function trailLayer(ctx: CanvasRenderingContext2D): HTMLCanvasElement {
+  const { width: w, height: h } = ctx.canvas;
+  if (!trailCv) trailCv = document.createElement('canvas');
+  if (trailCv.width !== w || trailCv.height !== h) {
+    trailCv.width = w;
+    trailCv.height = h;
+  }
+  return trailCv;
+}
 /** An ultraviolet exposure of frame k with its canvas at world x (placed exactly like the frame itself). */
 function drawGhost(env: Env, k: SoloKey, x: number, alpha: number) {
   const a = heroArgs(env, k, x);
@@ -146,15 +158,20 @@ function pelvisX(env: Env, t: number): number {
 
 /**
  * The ball (frame px from the cycle origin, x1): the right-lace push at 0.00 decelerates through the Dribble ball
- * anchors (99 -> 121 at the left touch, constant friction), the left instep re-pushes it toward the spot, and it
- * slows into the brake (138 as the upturned sole meets it) and is trapped on the spot (148) at 0.80 while still
- * rolling at 30 px/s: the sole stops it dead.
+ * anchors (99 -> 121 at the left touch, constant friction), the left instep re-pushes it toward the spot at about
+ * 2 m/s on grass friction (through the D6 / D7 ball anchors), it meets the upturned sole of the brake exactly at
+ * Settle F1's own ball anchor (144) on the snare, the sole cushions it from 30 to 10 px/s, and it is trapped on the
+ * spot (148) at 0.80 while still rolling: the sole stops it dead.
  */
 function ball1(t: number): number {
   if (t < TOUCH[1]) return 99 + 74 * t - 47.5 * t * t;
-  if (t < STOP) {
+  if (t < BRAKE) {
     const u = t - TOUCH[1];
-    return 121 + 105 * u - 93.75 * u * u;
+    return 121 + 120 * u - 25 * u * u;
+  }
+  if (t < STOP) {
+    const u = t - BRAKE;
+    return 144 + 30 * u - 50 * u * u;
   }
   return 148;
 }
@@ -230,8 +247,14 @@ const PD = 2;
 const DEG = Math.PI / 180;
 /** Rim light for the dark-stage silhouettes: the spill of the rigs on the main-stand roof (top-right). */
 const RIM = { lx: 0.6, ly: -0.8 };
-/** The crouch crawls deeper in the slow window; one frame of fingers spread at 1.10. */
-const GK_LOW = P({ ...POSES.gkSpread, torso: 21 * DEG, thighN: 50 * DEG, kneeN: 74 * DEG, thighF: -24 * DEG, kneeF: 66 * DEG, armN: 70 * DEG, elbowN: 18 * DEG, armF: 56 * DEG, elbowF: 20 * DEG });
+/**
+ * Planted keeper poses: the shared gkReady / gkSpread fold the far shin back to knee height (a heel kicked up, he reads
+ * as lunging), so this shot sets both boots on the turf: crouched wide and set. The crouch crawls deeper in the slow
+ * window (GK_LOW); one frame of fingers spread at 1.10.
+ */
+const GK_SET = P({ ...POSES.gkSpread, thighF: -22 * DEG, kneeF: 12 * DEG, footF: 6 * DEG });
+const GK_READY = P({ ...POSES.gkReady, thighF: -14 * DEG, kneeF: 16 * DEG, footF: 6 * DEG });
+const GK_LOW = P({ ...GK_SET, torso: 21 * DEG, thighN: 50 * DEG, kneeN: 74 * DEG, thighF: -28 * DEG, kneeF: 16 * DEG, armN: 70 * DEG, elbowN: 18 * DEG, armF: 56 * DEG, elbowF: 20 * DEG });
 /** The twitch: the same crouch, both gloves flick up and open for one frame. */
 const twitch = (p: Pose): Pose => ({ ...p, armN: p.armN + 10 * DEG, elbowN: p.elbowN - 10 * DEG, armF: p.armF + 10 * DEG, elbowF: p.elbowF - 10 * DEG });
 const STEPS = 8;
@@ -240,9 +263,9 @@ const q = (x: number) => Math.round(clamp(x) * STEPS);
 /** The keeper's pose at sim time `sim` (shot time t for the one-frame twitch): set 0..8, crawl 0..8, twitch. */
 function keeperPose(sim: number, t: number): { name: string; pose: Pose } {
   const set = q(ease.inOutQuad(clamp((sim - 0.42) / 0.38)));
-  if (set < STEPS) return { name: `gkSet${set}`, pose: mixPose(POSES.gkReady, POSES.gkSpread, set / STEPS) };
+  if (set < STEPS) return { name: `gkSet${set}`, pose: mixPose(GK_READY, GK_SET, set / STEPS) };
   const crawl = q((sim - STOP) / 0.08);
-  const pose = mixPose(POSES.gkSpread, GK_LOW, crawl / STEPS);
+  const pose = mixPose(GK_SET, GK_LOW, crawl / STEPS);
   if (onFrames(t, TWITCH, 1)) return { name: `gkTwitch${crawl}`, pose: twitch(pose) };
   return { name: `gkLow${crawl}`, pose };
 }
@@ -266,13 +289,14 @@ interface Down {
   s: number;
   x: number;
 }
-/** The beaten four, far behind him on the left (puppet scale 2 s = 0.94-1.22): A knelt, B face-down at the end of
- *  his slide, C on his hip after the comic split, D sat back. */
+/** The beaten four, far behind him on the left (puppet scale 2 s = 0.72-1.24), spread in depth and x so each comic
+ *  fall reads on its own inside the reveal framing: A knelt, B face-down at the end of his slide, C on his hip after
+ *  the comic split (furthest back), D sat back. */
 const DOWN: Down[] = [
-  { name: 'kneelStumble', kit: RIVAL_KIT, s: 0.48, x: 38 },
-  { name: 'sideTopple', kit: RIVAL_KIT_C, s: 0.47, x: 100 },
-  { name: 'sitBack', kit: RIVAL_KIT_D, s: 0.53, x: 144 },
-  { name: 'faceDown', kit: RIVAL_KIT_B, s: 0.61, x: 74 },
+  { name: 'kneelStumble', kit: RIVAL_KIT, s: 0.44, x: 40 },
+  { name: 'faceDown', kit: RIVAL_KIT_B, s: 0.62, x: 64 },
+  { name: 'sideTopple', kit: RIVAL_KIT_C, s: 0.36, x: 104 },
+  { name: 'sitBack', kit: RIVAL_KIT_D, s: 0.5, x: 146 },
 ];
 
 /** Far to near (draw order). */
@@ -671,6 +695,16 @@ function eyePanel(env: Env, t: number) {
   g.fillStyle = mg;
   g.fillRect(-R, -R, R * 2, R * 2);
   g.restore();
+  // The squashed oval's soft zone is only ~2 px tall: a vertical falloff of its own (14 px) so the hair and the collar
+  // fade out instead of being cut by a horizontal edge.
+  const vg = g.createLinearGradient(0, PANEL.y - ry - 8, 0, PANEL.y + ry + 8);
+  const e = Math.min(0.5, 14 / (2 * ry + 16));
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(e, 'rgba(0,0,0,1)');
+  vg.addColorStop(1 - e, 'rgba(0,0,0,1)');
+  vg.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = vg;
+  g.fillRect(PANEL.x - R, PANEL.y - R, R * 2, R * 2);
   g.globalCompositeOperation = 'source-over';
   const ctx = env.ctx;
   // A uvDeep halo under the panel, so its violet never sits straight on the dark.
@@ -743,12 +777,13 @@ export const shotOnTheMark: Shot = {
     build(env);
     KEYS = camKeys(env);
     panelLayer(env);
+    trailLayer(env.ctx);
     for (const c of [PAL.ivory, PAL.lilac, PAL.uv, PAL.uvDeep, [255, 255, 255]] as RGB[]) glowOf(c);
     // Every puppet picture this shot can show (no live renders): the keeper's set / crawl / twitch poses in colour and
     // as the dark-stage silhouette, and the beaten four.
     for (let i = 0; i <= STEPS; i++) {
-      const low = mixPose(POSES.gkSpread, GK_LOW, i / STEPS);
-      for (const [name, pose] of [[`gkSet${i}`, mixPose(POSES.gkReady, POSES.gkSpread, i / STEPS)], [`gkLow${i}`, low], [`gkTwitch${i}`, twitch(low)]] as const) {
+      const low = mixPose(GK_SET, GK_LOW, i / STEPS);
+      for (const [name, pose] of [[`gkSet${i}`, mixPose(GK_READY, GK_SET, i / STEPS)], [`gkLow${i}`, low], [`gkTwitch${i}`, twitch(low)]] as const) {
         pc.get(name, KEEPER_KIT, pose, K_S, -1);
         pc.get(name, KEEPER_KIT, pose, K_S, -1, RIM);
       }
@@ -797,7 +832,7 @@ export const shotOnTheMark: Shot = {
         const a = env.rng.range(0.35, 1.1), s = env.rng.range(90, 200);
         env.parts.spawn({
           kind: PK.Debris, x: heel + env.rng.range(-3, 5), y: GY - 2, vx: Math.cos(a) * s, vy: -Math.sin(a) * s, ay: 900, drag: 0.6,
-          vrot: env.rng.range(-12, 12), max: env.rng.range(0.35, 0.6), s0: env.rng.range(1.5, 2.4), s1: 1.4, ramp: 'grass', r0: env.rng.range(0, 0.35), r1: env.rng.range(0.2, 0.5), a0: 1, a1: 1, add: false, layer: 1,
+          vrot: env.rng.range(-12, 12), max: env.rng.range(0.14, 0.2), s0: env.rng.range(1.5, 2.4), s1: 1.4, ramp: 'grass', r0: env.rng.range(0, 0.35), r1: env.rng.range(0.2, 0.5), a0: 1, a1: 1, add: false, layer: 1,
         });
       }
       for (let n = 0; n < 4; n++)
@@ -928,33 +963,57 @@ export const shotOnTheMark: Shot = {
       env.world();
     }
 
-    // ---- the performance trail: exposures where he WAS, coming home on the 16ths
+    // ---- the performance trail: exposures where he WAS, coming home on the 16ths. They are drawn into one layer at
+    // full strength and composited once, so overlapping exposures never stack into a slab: one even violet print,
+    // each exposure delineated by its own lilac leading rim (a chronophotograph).
     let merge = false;
-    for (const [t0, k, home] of TRAIL) {
-      if (onFrames(t, home, 1)) merge = true;
-      if (t < t0 - 1e-6 || t >= home - 1e-6) continue;
-      const x0 = heroX(k);
-      const u = (t - (home - RUSH)) / RUSH;
-      if (u < -1e-6) {
-        drawGhost(env, k, x0, 0.6);
-        continue;
+    const active = TRAIL.filter(([t0, , home]) => t >= t0 - 1e-6 && t < home - 1e-6);
+    for (const [, , home] of TRAIL) if (onFrames(t, home, 1)) merge = true;
+    if (active.length) {
+      const ctx0 = env.ctx, tl = trailLayer(ctx0), tg = tl.getContext('2d')!;
+      tg.setTransform(1, 0, 0, 1, 0, 0);
+      tg.globalAlpha = 1;
+      tg.globalCompositeOperation = 'source-over';
+      tg.clearRect(0, 0, tl.width, tl.height);
+      tg.setTransform(ctx0.getTransform());
+      tg.imageSmoothingEnabled = false;
+      env.ctx = tg;
+      for (const [, k, home] of active) {
+        const x0 = heroX(k);
+        const u = (t - (home - RUSH)) / RUSH;
+        if (u < -1e-6) {
+          drawGhost(env, k, x0, 1);
+          continue;
+        }
+        // The rush: accelerating into him over a 16th, two fainter copies behind it (the speed reads as a smear of
+        // light). Frame n of 6 sits at ease-in (n + 1) / 6.5 of the way; the 16th it lands on, it is gone into him.
+        const xh = heroX(key);
+        const n = Math.min(5, Math.max(0, Math.round(u * 6)));
+        const f = (v: number) => lerp(x0, xh, ease.inQuad(clamp(v / 6.5)));
+        drawGhost(env, k, f(n - 1.2), 0.16 / 0.6);
+        drawGhost(env, k, f(n - 0.5), 0.3 / 0.6);
+        drawGhost(env, k, f(n + 1), 1);
       }
-      // The rush: accelerating into him over a 16th, two fainter copies behind it (the speed reads as a smear of
-      // light). Frame n of 6 sits at ease-in (n + 1) / 6.5 of the way; the 16th it lands on, it is gone into him.
-      const xh = heroX(key);
-      const n = Math.min(5, Math.max(0, Math.round(u * 6)));
-      const f = (v: number) => lerp(x0, xh, ease.inQuad(clamp(v / 6.5)));
-      drawGhost(env, k, f(n - 1.2), 0.16);
-      drawGhost(env, k, f(n - 0.5), 0.3);
-      drawGhost(env, k, f(n + 1), 0.6 + 0.04 * n);
+      env.ctx = ctx0;
+      ctx0.save();
+      ctx0.setTransform(1, 0, 0, 1, 0, 0);
+      ctx0.globalAlpha = TRAIL_A;
+      ctx0.globalCompositeOperation = 'source-over';
+      ctx0.drawImage(tl, 0, 0);
+      ctx0.restore();
     }
 
     // ---- No.10 in full colour, his fluorescent boots, the merge flash; the ball
+    // From the stop the ball goes under him, lifted 1 px (the contact shadow hides it), so the sole's bottom row always
+    // overlaps it: at the 1.08 snap zoom the tangent rows would otherwise open a 1 px line of grass.
+    const glintBall = onFrames(t, TRAIL[0][2], 1);
+    const ballGlow = (0.8 + 0.3 * hit) * sk + 0.15 + (glintBall ? 0.5 : 0);
+    const under = t >= STOP - 1e-6;
+    if (under) drawBall(env, spin, bX, BALL_Y - 1, BALL_R, 1, 0, ballGlow, 'blacklight');
     drawHero(env, key);
     drawBoots(env, key, 0.85 * sk);
     if (merge) drawHero(env, key, 1, derive(env, key).rim);
-    const glintBall = onFrames(t, TRAIL[0][2], 1);
-    drawBall(env, spin, bX, BALL_Y, BALL_R, 1, 0, (0.8 + 0.3 * hit) * sk + 0.15 + (glintBall ? 0.5 : 0), 'blacklight');
+    if (!under) drawBall(env, spin, bX, BALL_Y, BALL_R, 1, 0, ballGlow, 'blacklight');
     if (glintBall) glint(ctx, bX + 5, BALL_Y - 6, 14, 1, 0.4);
     env.parts.draw(ctx, 1);
 
@@ -983,12 +1042,14 @@ export const shotOnTheMark: Shot = {
     // 0.80 (beat 20, the ONE): SOLE STOP, the final hit.
     { at: STOP, fn: (env) => (env.sfx.kickDrum(1.0), env.sfx.crash(1.0), env.sfx.boom(0.5), env.cam.hit(0.15)) },
     // 0.86: the drummer grabs the cymbal; the crowd hushes. Only the lamp hum is left (a musical stop, no filter).
-    { at: 0.86, fn: (env) => (env.sfx.choke(), env.sfx.duck(0.95, 0.8)) },
+    // The duck releases exactly on the ONE at 1.60, so the exhale's roar starts with the floodlights.
+    { at: 0.86, fn: (env) => (env.sfx.choke(), env.sfx.duck(0.95, LIGHTS[0] - 0.86)) },
     // 1.00: the keeper's spot clunks on.
     { at: KEEPER_ON, fn: (env) => env.sfx.spotOn(0.8) },
     { at: GLINT, fn: (env) => env.sfx.shing(1.1) },
-    // 1.60 (beat 22): the stadium exhales; the lamp hum stops (HUM[7]).
-    { at: LIGHTS[0], fn: (env) => (env.sfx.lightsOn(1.0), env.sfx.kickDrum(0.8), env.sfx.crash(1.0), env.sfx.crowd(3, 0.5)) },
+    // 1.60 (beat 22): the stadium exhales; the lamp hum stops (HUM[7]). duck(0) snaps the bus open on the ONE (40 ms,
+    // instead of the scheduled 150 ms release), so the roar rises with the floodlights at crowd()'s own attack.
+    { at: LIGHTS[0], fn: (env) => (env.sfx.duck(0), env.sfx.lightsOn(1.0), env.sfx.kickDrum(0.8), env.sfx.crash(1.0), env.sfx.crowd(3, 0.5)) },
     { at: LIGHTS[1], fn: (env) => env.sfx.lightsOn(0.8) },
     { at: LIGHTS[2], fn: (env) => (env.sfx.lightsOn(0.7), env.sfx.boom(0.4), env.sfx.shing(1.0)) },
   ],

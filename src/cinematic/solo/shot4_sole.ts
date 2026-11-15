@@ -15,13 +15,13 @@
 //   0.00  beat 7   Dribble touch (right laces); the pool irises open out of shot 3's black (3 frames).
 //   0.20/0.30      SoleLift F1 (right foot rising), F2 (sole over the ball). 0.30: B's slide scrapes in the dark.
 //   0.40  beat 8   SOLE ON (the ONE): the ball stops dead under the sole. Rimshot, beat flare, snap to the feet.
-//   0.50 / 0.60    DRAG back half a ball / SCOOP onto the laces. Exposure of F5 (0.60).
+//   0.50 / 0.60    DRAG back half a ball / SCOOP onto the laces (no exposure: F5 would stand exactly under F6's).
 //   0.70           FLICK: the ball leaves the laces (exposure of F6); its strobe chain starts (every 0.04 s of sim).
 //   0.80  beat 9   HOP (exposure of F7): the hurdler's push-off, beat flare, 3-frame beat echo trailing left, snap up.
 //                  B bursts out of the dark from the right, studs first along the turf.
 //   0.95-1.55      the slow window (rate 0.25); 1.30-1.42 the money frame (rate 0.06): the ball at its apex, No.10 at
 //                  the top of his hop, B's studs 9 px under his trailing boot, the strobe chain from laces to apex,
-//                  the F5-F7 exposures on the hop path; 2 impact frames at 1.30, then a clean still; dim 0.88.
+//                  the F6 / F7 exposures on the hop path; 2 impact frames at 1.30, then a clean still; dim 0.88.
 //   1.20  beat 10  the fermata (low tom).   1.30: SOLE LIFT tag.
 //   1.72           LAND (F10).   1.80: CUSHION (F11), the ball glued to the instep again; B sprawls (S3) behind him.
 //   1.85-1.95      Dribble F2-F4.   1.90: OLÉ! 2, pad 2.   1.95-2.00: whip pan right into shot 5.
@@ -120,6 +120,9 @@ interface Place {
   air: boolean;
 }
 
+/** v up to `a`, then easing (slope 1 at `a`) toward the cap `b` without ever reaching it. */
+const softCap = (v: number, a: number, b: number) => (v <= a ? v : a + (b - a) * (1 - Math.exp(-(v - a) / (b - a))));
+
 /** Where his frame at t sits (pure f(t)). */
 function heroAt(env: Env, t: number): Place {
   const i = idxAt(t);
@@ -128,8 +131,9 @@ function heroAt(env: Env, t: number): Place {
     const s = flickS(t);
     const [ax, ay] = soloAnchor(env, key, 'pelvis');
     let py = pelvisY(s);
-    // F9 reaches for the turf: never below it (its lowest pixel, row 104 of the frame, stays above the sole line).
-    if (key === 'SL9') py = Math.min(py, 60.5);
+    // F9 reaches for the turf: the pelvis eases into a cap, so the reaching toe (row 104) settles about 6 px above the
+    // sole line and never skates over the scrolling turf; F10 plants it (the last drop is the landing frame's knee).
+    if (key === 'SL9') py = softCap(py, 55.5, 58.5);
     return { key, ox: pelvisX(s) - (ax - 0.5), oy: py - (ay - 0.5), air: true };
   }
   let ox = 0;
@@ -206,6 +210,9 @@ interface BState {
 let RS: StudioAnim | null = null;
 const bColour: HTMLCanvasElement[] = [];
 const bSil: HTMLCanvasElement[] = [];
+/** B's rimless shade (flat dark-stage fill, no lilac / uv rim): laid at <= 0.45 over his colours as he slides into
+ *  No.10's shadow inside the pool, so he reads as a person in the shade, never as a black cut-out. */
+const bShade: HTMLCanvasElement[] = [];
 /** Opaque x-range of each Rival Slide frame (east frame px). */
 const bExtent: [number, number][] = [];
 
@@ -261,6 +268,7 @@ function buildB() {
     bColour[i] = cv;
     bExtent[i] = [x0, x1];
     bSil[i] = RS!.silhouette(i, { fill: DEF_SIL.fill, rim: DEF_SIL.rim, rim2: DEF_SIL.rim2, lx: B_LIGHT.lx, ly: B_LIGHT.ly }, 0, true);
+    bShade[i] = RS!.silhouette(i, { fill: DEF_SIL.fill, rim: DEF_SIL.fill, rim2: DEF_SIL.fill, lx: B_LIGHT.lx, ly: B_LIGHT.ly }, 0, true);
   });
 }
 
@@ -573,8 +581,10 @@ const spot = new FollowSpot(0.06);
 const AIM_X = 34, AIM_Y = 150;
 /** The pool irises open out of shot 3's black over 3 frames. */
 const irisOpen = (t: number) => lerp(0.5, 1, ease.outBack(clamp(t / (3 / 60))));
-/** Stage dim outside the pool: 0.8, 0.88 from the money frame to the end of the slow window. */
-const dimLevel = (t: number) => (t >= T_MONEY - 1e-6 && t < 1.55 ? 0.88 : 0.8);
+/** Stage dim outside the pool: 0.8; 0.88 from the money frame (under its impact frames), easing back to 0.8 over 4
+ *  frames from beat 11 (1.60), so the house never pops lighter off the grid. */
+const T_DIM_BACK = onGrid(1.6, 'dim back');
+const dimLevel = (t: number) => (t < T_MONEY - 1e-6 ? 0.8 : lerp(0.88, 0.8, ease.outQuad(clamp((t - T_DIM_BACK) / (4 / 60)))));
 
 let maskCv: HTMLCanvasElement | null = null;
 /** Draw `fn` into a reused full-frame layer, punch the pool out of it, and lay it on the frame (B's dark-stage
@@ -621,9 +631,11 @@ function outsidePool(env: Env, pool: StagePool, fn: (g: CanvasRenderingContext2D
 const ghosts = new Afterimages(6, 9);
 let spin = new BallSpin();
 let prevBall: [number, number] = [0, 0];
-/** Hero exposures [time, life 0.7 s]: F5 / F6 / F7 on the hop path; they decay on the grid as the hold arrives (F5 is
- *  gone at 1.30, F6 and F7 are faint prints at the money frame), so the strobe chain owns the still. */
-const HERO_GHOSTS: readonly (readonly [number, number])[] = [[T_SCOOP, 0.7], [T_FLICK, 0.7], [T_HOP, 0.7]];
+/** Hero exposures [time, life 0.7 s, starting alpha]: F6 (flick) and F7 (hop) on the hop path. The F5 scoop exposure
+ *  is left out: it is dropped on the same spot as F6 in nearly the same stance, so the two only summed into one violet
+ *  cloud; the fainter flick and the full hop read as two separate prints. They decay on the grid as the hold arrives
+ *  (F6 is nearly gone, F7 a faint print at the money frame), so the strobe chain owns the still. */
+const HERO_GHOSTS: readonly (readonly [number, number, number])[] = [[T_FLICK, 0.7, 0.42], [T_HOP, 0.7, 0.6]];
 let heroGhostNext = 0;
 /** The strobe chain: a ball exposure every 0.06 s of sim time from the laces (sim 0) to the apex (sim 0.30): at r 18
  *  that keeps six separate balls that bunch toward the apex like a real strobe photograph. It holds through the
@@ -684,11 +696,11 @@ export const shotSoleLift: Shot = {
   update(env, t, dt) {
     env.sfx.hum(HUM[4](t));
     camAt(t); // the camera is a pure f(t): update reads it too (the spray window), so seek == play
-    // ---- exposures of F5 / F6 / F7 where he stood and rose (dropped on their beats), placed like the frame itself.
+    // ---- exposures of F6 / F7 where he stood and rose (dropped on their beats), placed like the frame itself.
     while (heroGhostNext < HERO_GHOSTS.length && t >= HERO_GHOSTS[heroGhostNext][0] - 1e-6) {
-      const [at, life] = HERO_GHOSTS[heroGhostNext++];
+      const [at, life, a0] = HERO_GHOSTS[heroGhostNext++];
       const pl = heroAt(env, at);
-      ghosts.dropHero(pl.key, worldX(pl.ox), worldY(SOLE + pl.oy), SC, t, life, { pivot: [0, SOLE] });
+      ghosts.dropHero(pl.key, worldX(pl.ox), worldY(SOLE + pl.oy), SC, t, life, { pivot: [0, SOLE] }, a0);
     }
     // ---- the strobe chain of the ball: every CHAIN_DT of sim time from the flick, up to the apex.
     while (chainNext < CHAIN_N && t >= T_FLICK - 1e-6 && flickS(t) >= chainNext * CHAIN_DT - 1e-6) {
@@ -811,16 +823,17 @@ export const shotSoleLift: Shot = {
     env.world();
     stage.floorPool(ctx, spot.x, GY - 1, 150 * open, 18 * open, 0.34 * fl.gain);
 
-    // ---- exposures (light printed on the stage), then B over them (behind No.10: a stride further from the camera;
-    // his real colours inside the pool, the dark-stage silhouette outside it and once he slides into No.10's
-    // shadow), then No.10 in full colour, his blacklit boots, the ball
-    ghosts.draw(env, t);
+    // ---- B (behind No.10: a stride further from the camera; his real colours inside the pool, the dark-stage
+    // silhouette outside it, a rimless shade once he slides on into No.10's shadow), then the exposures printed on
+    // No.10's own line (the strobe chain over B's boot, the brief's order: defenders -> afterimages -> No.10), then
+    // No.10 in full colour, his blacklit boots, the ball
     if (b) {
       drawB(ctx, b, bColour[b.i]);
       outsidePool(env, pool, (g) => drawB(g, b, bSil[b.i]));
-      const dark = 1 - bLit(t);
-      if (dark > 0) drawB(ctx, b, bSil[b.i], dark);
+      const dark = 0.45 * (1 - bLit(t));
+      if (dark > 0) drawB(ctx, b, bShade[b.i], dark);
     }
+    ghosts.draw(env, t);
     drawSolo(env, pl.key, hx, hy, SC, heroO);
     drawBoots(env, pl.key, hx, hy, 0.9);
     let hit = 0;
@@ -848,7 +861,7 @@ export const shotSoleLift: Shot = {
     // ---- HUD
     env.screen();
     fourCount(ctx, padsFor(4), t);
-    marqueeTag(ctx, 'SOLE LIFT', 24, 60, t - T_MONEY);
+    marqueeTag(ctx, 'SOLE LIFT', 18, 12, t - T_MONEY);
 
     // ---- grade, impact, beat echo
     soloGrade(env.fx);
@@ -861,16 +874,16 @@ export const shotSoleLift: Shot = {
     { at: 0.2, fn: (env) => env.sfx.scuff(0.1) },
     // B launches his slide in the dark, off the right edge: we hear it before we see it.
     { at: 0.3, fn: (env) => env.sfx.scrape(0.9) },
-    { at: T_SOLE, fn: (env) => (env.sfx.rim(), env.sfx.kick(0.15)) },
+    { at: T_SOLE, fn: (env) => (env.sfx.rim(), env.sfx.kick(0.15), env.sfx.spotOn(0.12)) },
     { at: T_DRAG, fn: (env) => env.sfx.snare(0.3) },
     { at: T_SCOOP, fn: (env) => env.sfx.hat() },
     { at: T_FLICK, fn: (env) => (env.sfx.tom(TOMS.C3), env.sfx.kick(0.2)) },
-    { at: T_HOP, fn: (env) => (env.sfx.kickDrum(0.8), env.sfx.whoosh(0.25, 300, 1800)) },
+    { at: T_HOP, fn: (env) => (env.sfx.kickDrum(0.8), env.sfx.whoosh(0.25, 300, 1800), env.sfx.spotOn(0.12)) },
     { at: 1.0, fn: (env) => env.sfx.crashSwell(0.8) },
     { at: T_FERMATA, fn: (env) => env.sfx.tom(TOMS.D2, 0.6) },
     { at: T_MONEY, fn: (env) => env.sfx.shing(1.4) },
     { at: T_LAND, fn: (env) => env.sfx.scuff() },
-    { at: T_CATCH, fn: (env) => env.sfx.tom(TOMS.A2) },
+    { at: T_CATCH, fn: (env) => (env.sfx.tom(TOMS.A2), env.sfx.spotOn(0.12)) },
     { at: 1.85, fn: (env) => env.sfx.scuff(0.1) },
     { at: T_OLE, fn: (env) => env.sfx.ole(2) },
     { at: T_WHIP, fn: (env) => env.sfx.whoosh(0.2) },

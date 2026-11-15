@@ -12,7 +12,7 @@
    "Art"
   ]
  },
- "notes": "No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark hair #463428/#281c16, yellow \"7\"; MOTION_LIBRARY \u00a74), same scale (98 px standing, ground row 102). Side view, facing east, not mirrored. Shot 6 rail (world = Run canvas at x1; sprite origin = originDx): R1/R2 originDx 27 (left toe (76,102) = Run R5's plant), R3 originDx 48 (right toe (73,102)), R4-R6 originDx 86 (= the Strike canvas: plant toe (76,102), ball (83,96)). The pelvis moves forward on every frame from Run R4 (world 78) through R1 91, R2 97, R3 126, R4 142, R5 150, R6 164 (received in stride). R4 -> R5 share the plant-toe pixels. ball = ball centre: R1 (68,96) rolling in from behind on the near side (draw it over the sprite), R2 (94,96) pushed ahead off the inside of the right foot (boot = inside contact (87,96), touch), R4/R5 (83,96) (R5 boot = inside contact (76,95)). Shot 6: R1 0.25, R2 0.35 (hit-stop to 0.47), R3 0.47, R4 0.62, R5 0.80, R6 0.88. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
+ "notes": "No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark hair #463428/#281c16, yellow \"7\"; MOTION_LIBRARY \u00a74), same scale (98 px standing, ground row 102). Side view, facing east, not mirrored. Shot 6 rail (world = Run canvas at x1; sprite origin = originDx): R1/R2 originDx 27 (left toe (76,102) = Run R5's plant), R2b and R3 originDx 48 (right toe (73,102) -> world 121: R2b sets the right foot down on the pixel R3 pushes off from, so the foot locks), R4-R6 originDx 86 (= the Strike canvas: plant toe (76,102), ball (83,96)). The pelvis moves forward on every frame from Run R4 (world 78) through R1 91, R2 97, R2b 112, R3 126, R4 142, R5 150, R6 164 (received in stride; the R2b bridge makes the steps out of the hit-stop +15/+14/+16 instead of one +29 pop). R4 -> R5 share the plant-toe pixels. ball = ball centre: R1 (68,96) rolling in from behind on the near side (draw it over the sprite), R2 (94,96) pushed ahead off the inside of the right foot (boot = inside contact (87,96), touch), R2b/R3 no ball (it rolls ahead off the R2 touch: keep its world centre >= 128 at 0.47 so it clears the landing toe at 121), R4/R5 (83,96) (R5 boot = inside contact (76,95), the end-on boot raised 1 px off the plant boot). Shot 6: R1 0.25, R2 0.35 (hit-stop to 0.47), R2b 0.47, R3 0.54, R4 0.62, R5 0.80, R6 0.88. Polish: R1 R2 R4 R5 carry ONE eyes-down head rebuilt from the level head (same 4 crown tufts, hairline and brow as Idle/Run), so their head/eye anchors moved back with it; R2b = the No.7 Run R2 drawing with the eyes up to level. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Studio layer: Art only (numbers in Art; no Num/Ball layer, MERIDIAN plan \u00a77.7). The ball is never drawn in a frame: the game draws it at ball/boot. ",
  "frames": [
   {
    "name": "R1",
@@ -34,17 +34,17 @@
      96
     ],
     "head": [
-     73,
-     19
+     66,
+     18
     ],
     "eye": [
-     80,
-     29
+     76,
+     28
     ],
     "bbox": [
      45,
      9,
-     87,
+     86,
      102
     ]
    },
@@ -77,12 +77,12 @@
      96
     ],
     "head": [
-     79,
-     19
+     72,
+     18
     ],
     "eye": [
-     86,
-     29
+     82,
+     28
     ],
     "bbox": [
      44,
@@ -97,6 +97,39 @@
    },
    "originDx": 27,
    "pass": "shot 6 0.35-0.47 (hit-stop)"
+  },
+  {
+   "name": "R2b",
+   "id": "R2b",
+   "label": "bridge: the right foot sets down (R-down), eyes up off the ball",
+   "type": "R of No.7 Run R2 (bridge, added in polish)",
+   "ms": 70,
+   "pelvis": [
+    64,
+    67
+   ],
+   "contact": [
+    73,
+    102
+   ],
+   "anchors": {
+    "head": [
+     68,
+     19
+    ],
+    "eye": [
+     79,
+     28
+    ],
+    "bbox": [
+     45,
+     11,
+     87,
+     102
+    ]
+   },
+   "originDx": 48,
+   "pass": "shot 6 0.47"
   },
   {
    "name": "R3",
@@ -129,7 +162,7 @@
     ]
    },
    "originDx": 48,
-   "pass": "shot 6 0.47"
+   "pass": "shot 6 0.54"
   },
   {
    "name": "R4",
@@ -155,12 +188,12 @@
      75
     ],
     "head": [
-     61,
-     19
+     54,
+     18
     ],
     "eye": [
-     68,
-     29
+     64,
+     28
     ],
     "bbox": [
      23,
@@ -198,17 +231,17 @@
      95
     ],
     "head": [
-     76,
-     19
+     69,
+     18
     ],
     "eye": [
-     83,
-     29
+     79,
+     28
     ],
     "bbox": [
      35,
      9,
-     91,
+     86,
      102
     ]
    },

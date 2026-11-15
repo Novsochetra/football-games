@@ -6,8 +6,10 @@ Special-shot scenes for No.10. The review page has a picker for each special:
 - **CRIMSON CRESCENT** (bicycle kick, set up by a high cross from No.7)
 - **GALE HAMMER** (long-range power shot from 30 m; a tier below Zenith Meteor)
 - **MERIDIAN THREAD** (no-look outside-of-the-boot through pass to No.7)
-- In production: **SPOTLIGHT SOLO** (special dribble), shown only in the preview build
-  (`npm run build:preview`, or open the page with `?all`)
+- **SPOTLIGHT SOLO** (special dribble past four defenders, on the beat)
+
+Specials still in production can be marked `wip: true` in `src/cinematic/specials.ts`; they show only in
+the preview build (`npm run build:preview`) or with `?all` in the page URL.
 
 Other abilities (dribble, pass, block, keeper saves) come after these pass quality check.
 
@@ -101,6 +103,33 @@ the studio animations **Trivela**, **Carry**, **Scan** and **Point**. New engine
 `zip`), the pearl ball, front-view pixel defenders (`src/art/figures.ts`), `src/art/no7.ts`, and the
 `'through'` field scenario.
 
+## SPOTLIGHT SOLO
+
+No.10's special dribble. Four white shirts wall off the box; the floodlights crash off bank by bank, one
+follow-spot finds No.10, and the pitch becomes a stage. His feet play a drum solo: every touch is a drum
+hit and every skill lands on the beat, and on every beat the light keeps an ultraviolet exposure of him,
+like a strobe photograph, so the shape of each trick hangs in the dark after he has gone. Four defenders,
+four real skills (step-over, sole lift over a slide tackle, elastico, nutmeg), four OLÉ!s from the crowd.
+On the last beat his sole stops the ball dead on the penalty spot, a second spot clunks on over the
+keeper, and the floodlights slam back on: one on one. No goal, no fire: 7 shots, 11.0 s.
+Brief: `docs/skills/SPOTLIGHT_SOLO.md` (copy in `src/cinematic/solo/SPEC.md`).
+
+| # | Shot | What happens |
+|---|------|--------------|
+| 1 | Count-in | The follow-spot finds his face; the title lights up lamp by lamp to a four-count on the sticks |
+| 2 | House lights | The floodlights crash off bank by bank; the wall of four turns to silhouettes; one spot on No.10 |
+| 3 | Step-over | Defender A buys the body sell and dives the wrong way; the first violet exposure, the first OLÉ! |
+| 4 | Sole lift | The ball's scene: B's slide tackle, the sole lift over his studs, the ball's afterimages on the beat |
+| 5 | Elastico | C stabs at the shown ball and freezes in a comic split; No.10 is already gone |
+| 6 | Nutmeg | Through D's legs, seen from behind the ball; D's upside-down face; the strobe chain |
+| 7 | On the mark | Sole on the ball on the penalty spot, the keeper's spot clunks on, lights up: 1 ON 1, name card |
+
+The result view is **BREAKTHROUGH · 1 ON 1** (no goal). No.10 is drawn from the studio animations
+**Dribble**, **SoleLift**, **Settle**, **StepOver**, **Elastico**, **Nutmeg** and **Break**; B's slide is
+**RivalSlide**. New engine pieces: the beat echo post effect (`fx.echo*`), the stage lighting module
+(`src/art/stage.ts`: dimming, beams, floor pools, follow-spot), drum and crowd sounds (`tom`, `snare`, `ole`,
+`lampHum`, …), the blacklight ball, and the `'gauntlet'` field scenario (`src/game/gauntlet.ts`).
+
 ## No.10 jump animation (Pixel Studio)
 
 A hand-crafted 10-frame side-view jump, drawn at the studio model's exact scale (128×128 canvas, 98 px
@@ -153,7 +182,7 @@ src/
   cinematic/crescent/      the 8 shots of CRIMSON CRESCENT (+ SPEC.md)
   cinematic/gale/          the 6 shots of GALE HAMMER (+ SPEC.md)
   cinematic/meridian/      the 6 shots of MERIDIAN THREAD (+ SPEC.md)
-  cinematic/solo/          SPOTLIGHT SOLO (in production)
+  cinematic/solo/          the 7 shots of SPOTLIGHT SOLO (+ SPEC.md)
   game/     field play (dribble → command window) and the top-level flow
 ```
 

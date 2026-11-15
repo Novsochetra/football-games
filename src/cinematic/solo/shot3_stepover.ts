@@ -9,29 +9,35 @@
 //
 // No.10 (studio FrontTouch / StepOver Front at x2, Break at x3 from the 1.00 beat-snap) runs at the lens. Every front
 // frame shares one registration (body centre x 64, soles on row 102), so they are pinned on that point: the planted
-// foot never slides; after the cut he moves in eased 3-frame strides on his frame changes (stepped like the camera).
-// A (RIVAL_KIT puppet, x2 at k 1.05) jockeys in from screen-left facing +1 in the dark, bites on THE SELL with a
+// foot never slides; after the cut each stride is placed on its drawing change and held (stepped like the camera).
+// A (RIVAL_KIT puppet, x2 at k 0.86: his size at his depth) jockeys in from screen-left facing +1 in the dark, bites on THE SELL with a
 // full-stretch lunge toward screen-right and is thrown on past him into the space the sell pointed at, just as the
 // outside of the right boot cuts the ball back the other way; he falls past the exposures and lands on one knee.
-// A stands a stride off No.10's plane, a little FURTHER from the lens (the brief has him a little nearer): a nearer A
-// has to cross in front of No.10 between the sell and the cut, covering the hero and the dead ball, or leaves the cut
-// rolling between his legs (a nutmeg read, shot 6's skill). Behind him, A's lunge and fall never cover No.10 or the ball.
+// A stands a stride and a half FURTHER from the lens than No.10 (the brief has him a little nearer): visibly behind him
+// (smaller, soles 14 px higher), so his dive across reads as depth, never as a dive through the hero or the exposure. A
+// nearer A has to cross in front of No.10 between the sell and the cut, covering the hero and the dead ball, or leaves
+// the cut rolling between his legs (a nutmeg read, shot 6's skill). Behind him, A's lunge and fall never cover No.10 or
+// the ball.
 //
 // Beats (shot-local; touches, keys, lamps and the OLÉ on the 16th grid):
 //   0.00  FrontTouch FT1, an approach touch with the right foot (tom A2); the ball rolls ahead and stops dead (0.14).
-//   0.14  StepOver F2 plant · 0.27 F3 the left leg circles over the ball (hats). Their exposures are kept: at the hold
-//         they show the leg circle and the shoulder dip trailing behind him.
+//   0.14  StepOver F2 plant · 0.27 F3 the left leg circles over the ball (hats). No exposure yet: F2 and F3 are
+//         exposed together with F4 on THE SELL, so at the hold they show the leg circle and the shoulder dip behind him.
 //   0.34  A reads the circle: his weight starts across (the bite).
 //   0.40  THE SELL (F4, held to 0.60, hit-stop rate 0.1): beat flare, F4 exposure where he stands (the chronophotograph
 //         of the step-over: F2, F3, F4), fx.echo +0.012 for 4 frames, 2 ultraviolet/ivory impact frames, beat-snap
 //         zoom 1.12. A, frozen in his lunge, turns full colour as he enters the light (only the half of him inside the
 //         pool is lit: his colour render goes under the stage dim). 0.45 the STEP-OVER tag.
-//   0.60  F5 load · 0.70 F6 push: A's lunge throws him on behind No.10, out to screen-right.
-//   0.80  THE CUT (F7): the ball snapped screen-left (~670 px/s on average, decelerating; three ball exposures that
-//         roll in front of his boots), fx.echo -0.012 for 3 frames, beat flare, the camera trucks left 90 px in 2
-//         frames; the operator-lagged pool lets him escape its centre.
-//   0.85  Break BR1 · 1.00 BR2 with the scale step 2 -> 3 on the beat-snap (the ball is picked up at his x3 anchor,
-//         screen-continuous) · 1.15 BR3 · 1.30 BR2 · 1.40 BR3 · 1.50 BR2; he ends up filling the left of the frame.
+//   0.60  F5 load · 0.70 F6 push: A's lunge carries him on across behind No.10 over the whole bar to the cut (12 frames,
+//         an in-out that leaves at the fall's speed: no teleport, no stop on the cut); by the cut his lead hand is well
+//         clear of the F4 exposure's right edge, out to screen-right.
+//   0.80  THE CUT (F7): the ball snapped screen-left (decelerating, it never stops dead; three ball exposures that
+//         roll in front of his boots), fx.echo -0.012 for 3 frames, beat flare, a beat-snap push-in (zoom 1.18) that
+//         throws the split apart. The camera never trucks: he and the ball do the travelling, and the operator-lagged
+//         pool lets him escape its centre.
+//   0.85  Break BR1 · 1.00 BR2 with the scale step 2 -> 3 on the beat-snap (the camera move starts on that same
+//         frame; the ball is picked up at his x3 anchor, screen-continuous) · 1.15 BR3 · 1.30 BR2 · 1.40 BR3 · 1.50 BR2
+//         (quiet stud scuffs on these drawn footfalls); he ends up filling the left of the frame.
 //   0.90 / 1.00 / 1.10  the whole step-over chronophotograph (and the ball's) steps down on the grid and is gone as A,
 //         back in the dark, lands on one knee (kneelStumble, 1.10) beside where No.10 was and skids 20 px.
 //   1.20  OLÉ! 1: four-count pad 1 lights, the phone lights in the stands lift, a beat-snap push in (zoom 1.08).
@@ -60,7 +66,6 @@ const DUR = 1.6;
 // ---------------------------------------------------------------- beats (shot-local seconds)
 const T_TOUCH = onGrid(0, 'FT1 touch');
 const T_F2 = 0.14;
-const T_F3 = 0.27;
 const T_SELL = onGrid(0.4, 'THE SELL');
 const T_HOLD = 0.6; // F4 held to here (hit-stop)
 const T_CUT = onGrid(0.8, 'THE CUT');
@@ -97,13 +102,17 @@ function proj(X: number, Y: number, Z: number, camX = 0): [number, number] {
 // ---------------------------------------------------------------- camera (beat-snap)
 /** Zoom pivot: his body centre at x2. */
 const PIV = { x: 320, y: 222 };
-/** [t, truck (px at his plane; -90 = the camera trucks left), y offset, zoom]. */
+/**
+ * [t, truck, y offset, zoom]. The camera never trucks (x stays 0): a truck at the cut slid every near layer the way
+ * the sell went while he cut the other way, so his escape read backwards. He and the ball do the travelling; the cut
+ * is a push-in that throws the split apart (the ball and No.10 to screen-left, A to screen-right of the pivot).
+ */
 const CAM: readonly CamKey[] = [
   [0, 0, 0, 1],
   [T_SELL, 0, -6, 1.12],
-  [T_CUT, -90, -6, 1.12],
-  [T_SNAP, -90, 0, 1],
-  [T_OLE, -90, -12, 1.08], // a push in on the OLÉ
+  [T_CUT, 0, -6, 1.18],
+  [T_SNAP, 0, 0, 1],
+  [T_OLE, 0, -12, 1.08], // a push in on the OLÉ
 ];
 
 type Cam = { x: number; y: number; zoom: number };
@@ -112,6 +121,12 @@ function layer(env: Env, cam: Cam, p: number) {
   const S = env.S, z = cam.zoom;
   env.ctx.setTransform(S * z, 0, 0, S * z, S * (PIV.x * (1 - z) - cam.x * p * z), S * (PIV.y * (1 - z) + cam.y));
 }
+/**
+ * The camera at shot time t. beatCam holds the previous framing on a key's first frame; from the scale snap on it is
+ * read one frame ahead, so the zoom-out starts on the very frame the sprite steps 2 -> 3 (never an x3 sprite at the
+ * x2 framing's zoom) and the OLÉ push lands with the shout.
+ */
+const camAt = (t: number): Cam => beatCam(CAM, t >= T_SNAP - 1e-6 ? t + 1 / 60 : t);
 /** Screen point (logical px) of base point (x, y) in a layer at depth factor p. */
 function scr(cam: Cam, p: number, x: number, y: number): [number, number] {
   return [PIV.x + (x - cam.x * p - PIV.x) * cam.zoom, PIV.y + (y - PIV.y) * cam.zoom + cam.y];
@@ -121,10 +136,15 @@ function scr(cam: Cam, p: number, x: number, y: number): [number, number] {
 
 /** Every front frame shares one registration (body centre x 64, soles on row 102): pin that point. */
 const PIVOT: [number, number] = [64, 103];
-/** Stride placements [time, X px in that plane] at x2 (p 1) and x3 (p 1.5); pinned between, eased over 3 frames. */
+/**
+ * Stride placements [time, X px in that plane] at x2 (p 1) and x3 (p 1.5). Each is placed on its drawing change and
+ * held until the next (the stepped language of the beat-snap camera), so a planted foot never moves during a hold.
+ * After the snap his body travels an even 26 px a stride (faster as the strides shorten to 8ths); the drawn contacts
+ * of BR2 / BR3 sit 8 art px either side of his line (his track), so each new plant lands level with or ahead of the
+ * last one, never behind it.
+ */
 const STEP2: readonly [number, number][] = [[0, 0], [0.85, -40]];
-const STEP3: readonly [number, number][] = [[T_SNAP, -150], [1.15, -188], [1.3, -222], [1.4, -254], [1.5, -284]];
-const STRIDE_EASE = 3 / 60;
+const STEP3: readonly [number, number][] = [[T_SNAP, -80], [1.15, -106], [1.3, -132], [1.4, -158], [1.5, -184]];
 
 interface Hero {
   key: SoloKey;
@@ -135,23 +155,8 @@ interface Hero {
   y: number;
 }
 
-function strideX(steps: readonly (readonly [number, number])[], t: number): number {
-  let i = 0;
-  for (let k = 0; k < steps.length; k++) if (t >= steps[k][0] - 1e-6) i = k;
-  if (i === 0) return steps[0][1];
-  const u = clamp((t - steps[i][0]) / STRIDE_EASE);
-  return lerp(steps[i - 1][1], steps[i][1], ease.outCubic(u));
-}
-
+/** His frame and placement at shot time t (the placement in effect: stepped, never eased). */
 function heroAt(t: number): Hero {
-  const sc: 2 | 3 = t >= T_SNAP - 1e-6 ? 3 : 2;
-  const p = sc / 2;
-  const X = strideX(sc === 2 ? STEP2 : STEP3, t);
-  return { key: soloAt(SEQ[3], t), sc, p, x: VW / 2 + X, y: groundY(p) };
-}
-
-/** The frame and placement in effect at an exact key time (for the ball path after the snap). */
-function heroKey(t: number): Hero {
   const sc: 2 | 3 = t >= T_SNAP - 1e-6 ? 3 : 2;
   const steps = sc === 2 ? STEP2 : STEP3;
   let X = steps[0][1];
@@ -174,9 +179,9 @@ interface Ball {
 
 /**
  * The ball: rolled ahead by the FT1 touch and stopped dead in front of him by F2 (its stillness sells the fake), cut
- * screen-left at 0.80 (snapped, then rolling out: ~670 px/s on average, decelerating), picked up on the beat-snap at 1.00 at his x3 ball anchor
- * (the cut distance is solved so the ball's screen x is continuous across the snap), then rolled from stride to stride
- * at his leading foot.
+ * screen-left at 0.80 (snapped, then rolling out, decelerating but never stopping dead), picked up on the beat-snap at
+ * 1.00 at his x3 ball anchor (the cut distance is solved for the zooms either side of the snap, so the ball's screen x
+ * runs on continuously), then rolled from stride to stride at his leading foot.
  */
 function ballAt(env: Env, t: number): Ball {
   if (t < T_CUT - 1e-6) {
@@ -189,24 +194,28 @@ function ballAt(env: Env, t: number): Ball {
   }
   if (t < T_SNAP - 1e-6) {
     const [x0, y0] = soloPoint(env, 'SO7', 'ball', VW / 2, groundY(1), 2, { pivot: PIVOT });
-    const [x1] = ballOf(env, heroKey(T_SNAP));
-    // Screen-continuous across the snap (camera trucked -90 by then): (x0 - D) + 90 = (x1 + tuck) + 90 * 1.5.
-    const D = x0 + 90 - (x1 + BALL_TUCK) - 135;
+    const [x1] = ballOf(env, heroAt(T_SNAP));
+    // Screen-continuous across the snap: the cut ends (at the push-in's zoom) on the screen x where the snap frame
+    // (its own zoom, the scale step) picks the ball up at his x3 anchor.
+    const zCut = camAt(T_SNAP - 1 / 60).zoom, zSnap = camAt(T_SNAP).zoom;
+    const D = x0 - (PIV.x + (x1 + BALL_TUCK - PIV.x) * (zSnap / zCut));
     const u = clamp((t - T_CUT) / (T_SNAP - T_CUT));
-    return { x: x0 - D * (1 - (1 - u) * (1 - u)), y: y0, r: 12, p: 1, gy: groundY(1) };
+    // Snapped out fast, decelerating into his stride (a quarter of it linear, so it is still rolling at the snap).
+    const e = 0.75 * (1 - (1 - u) * (1 - u)) + 0.25 * u;
+    return { x: x0 - D * e, y: y0, r: 12, p: 1, gy: groundY(1) };
   }
   // After the snap: from the anchor of one stride to the next, rolling continuously.
   const keys = STEP3.map(([at]) => at);
   let i = 0;
   for (let k = 0; k < keys.length; k++) if (t >= keys[k] - 1e-6) i = k;
-  const a = ballOf(env, heroKey(keys[i]));
+  const a = ballOf(env, heroAt(keys[i]));
   let b: [number, number];
   let span: number;
   if (i + 1 < keys.length) {
-    b = ballOf(env, heroKey(keys[i + 1]));
+    b = ballOf(env, heroAt(keys[i + 1]));
     span = keys[i + 1] - keys[i];
   } else {
-    const pa = ballOf(env, heroKey(keys[i - 1]));
+    const pa = ballOf(env, heroAt(keys[i - 1]));
     b = [a[0] + (a[0] - pa[0]), a[1]];
     span = keys[i] - keys[i - 1];
   }
@@ -218,12 +227,13 @@ function ballAt(env: Env, t: number): Ball {
 // ---------------------------------------------------------------- defender A (puppet, sim time)
 
 /**
- * A's depth factor, puppet pixels per unit and screen px per puppet pixel. A stands a stride off No.10's plane (0.26 m
- * further from the lens, so his soles sit 3 px higher and he is his size): his lunge and fall pass BEHIND No.10, so the
- * hero, the dead ball and the cut path are never covered (a nearer A has to cross in front of him at the cut).
+ * A's depth factor, puppet pixels per unit and screen px per puppet pixel. A stands a stride and a half behind No.10's
+ * plane (1.4 m further from the lens: his soles sit 14 px higher and he is drawn at his depth's size, 0.78 of No.10's
+ * scale), so his lunge and dive visibly pass BEHIND No.10 and the hero, the dead ball and the cut path are never covered
+ * (a nearer A has to cross in front of him at the cut).
  */
-const PA = 0.95;
-const AK = 1.05;
+const PA = 0.78;
+const AK = 1.105 * PA;
 const AD = 2;
 const AU = AK * AD;
 const A_GY = groundY(PA);
@@ -265,20 +275,30 @@ const A_POSES: Record<string, Pose> = {
 /** Pose schedule on sim time: jockey shuffle -> the bite (from 0.34, reading the circle) -> lungeCommit on THE SELL
  *  (held through the hit-stop) -> the dive across -> falling -> kneelStumble at 1.10. */
 const A_TRACK: readonly [number, string][] = [
-  [0, 'jk0'], [0.05, 'jk1'], [0.1, 'jk0'], [0.15, 'jk1'], [0.2, 'jk0'], [0.25, 'jk1'], [0.3, 'jk0'],
-  [0.34, 'bite1'], [0.37, 'bite2'], [T_SELL, 'lunge'], [S_HOLD + 0.03, 'dive0'], [S_HOLD + 0.07, 'dive'],
+  // the jockey shuffle: one step per 16th, in time with the hip steps below (a shuffle, not a flutter)
+  [0, 'jk0'], [0.1, 'jk1'], [0.2, 'jk0'], [0.3, 'jk1'],
+  [0.34, 'bite1'], [0.37, 'bite2'], [T_SELL, 'lunge'],
+  // the hit-stop releases him into the dive: across behind No.10 over the whole bar to the cut
+  [S_HOLD, 'dive0'], [S_HOLD + 0.06, 'dive'],
   [S_CUT + 0.08, 'fall1'], [S_CUT + 0.2, 'fall2'], [S_KNEE, 'kneel'],
 ];
-const A_TRACK_INTERP = 7; // from bite1 on, the hip height glides between key poses
+/** From bite1 on, the hip height glides between key poses. */
+const A_TRACK_INTERP = A_TRACK.findIndex(([, n]) => n === 'bite1');
+/**
+ * The dive's ease: an in-out (smoothstep, peak speed 1.4x the mean, so he never teleports) that leaves at the cut with
+ * the speed the fall carries on at (outQuad 420 -> 470 over 0.3 s), so he never stops dead on the cut and restarts.
+ */
+const DIVE_END_SLOPE = (2 * (470 - 420) / (S_KNEE - S_CUT)) * ((S_CUT - S_HOLD) / (420 - 174));
+const DIVE_EASE = (u: number) => u * u * (3 - 2 * u) + DIVE_END_SLOPE * (u * u * u - u * u);
 /** Hip x (base, A's plane, camera untrucked) on sim time: [s, x, ease into this key]. */
 const A_X: readonly [number, number, (u: number) => number][] = [
-  [0, 96, ease.linear],
+  [0, 140, ease.linear], // the match cut from shot 2: he starts close in, just outside the edge of the light
   [0.34, 166, ease.linear], // the shuffle in from screen-left (a step on each 16th, below)
   [T_SELL, 172, ease.outQuad], // the bite: his reach stops a hand short of No.10
   [S_HOLD, 174, ease.linear], // frozen in the hit-stop
-  [S_CUT, 410, ease.outQuad], // the dive across, behind him, into the space the sell pointed at
-  [S_KNEE, 440, ease.outQuad], // carried on past where he was, falling
-  [S_KNEE + 0.2, 460, ease.outCubic], // the knee skid (20 px)
+  [S_CUT, 420, DIVE_EASE], // the dive across behind him, spread over the whole bar from the hold to the cut
+  [S_KNEE, 470, ease.outQuad], // carried on past where he was, falling
+  [S_KNEE + 0.2, 490, ease.outCubic], // the knee skid (20 px)
 ];
 
 /** Hip height above the turf (puppet units) so the lowest joint touches it (cf. game/gauntlet.ts hipAbove). */
@@ -582,16 +602,23 @@ function bootsOf(env: Env, key: SoloKey): [number, number][] {
   return out;
 }
 
-/** The white boots glow under the ultraviolet spot: a uvDeep halo, a violet glow, a small ivory core. */
-function bootGlow(env: Env, h: Hero, a: number) {
+/**
+ * The white boots glow under the ultraviolet spot, in two passes so the boots stay the brightest white on screen:
+ * 'under' (before the sprite) lays the uvDeep halo and the violet glow on the turf round them; 'over' (after it) adds
+ * only the small additive ivory core on the boots themselves.
+ */
+function bootGlow(env: Env, h: Hero, a: number, pass: 'under' | 'over') {
   const ctx = env.ctx;
   for (const [bx, by] of bootsOf(env, h.key)) {
     const x = h.x + (bx - PIVOT[0]) * h.sc, y = h.y + (by - PIVOT[1]) * h.sc;
-    ctx.globalCompositeOperation = 'source-over';
-    drawGlow(ctx, glowOf(PAL.uvDeep), x, y, 9 * h.sc, 0.4 * a);
-    drawGlow(ctx, glowOf(PAL.uv), x, y, 6.5 * h.sc, 0.28 * a);
-    ctx.globalCompositeOperation = 'lighter';
-    drawGlow(ctx, glowOf(PAL.ivory), x, y, 3.5 * h.sc, 0.22 * a);
+    if (pass === 'under') {
+      ctx.globalCompositeOperation = 'source-over';
+      drawGlow(ctx, glowOf(PAL.uvDeep), x, y, 9 * h.sc, 0.4 * a);
+      drawGlow(ctx, glowOf(PAL.uv), x, y, 6.5 * h.sc, 0.28 * a);
+    } else {
+      ctx.globalCompositeOperation = 'lighter';
+      drawGlow(ctx, glowOf(PAL.ivory), x, y, 3.5 * h.sc, 0.3 * a);
+    }
   }
   ctx.globalCompositeOperation = 'source-over';
 }
@@ -646,7 +673,7 @@ const spot = new FollowSpot(0.06);
 let spin = new BallSpin();
 let lastT = 0;
 let lastBallX = NaN;
-let fired = { f2: false, f3: false, f4: false, balls: 0, knee: false, skid: 0 };
+let fired = { sell: false, balls: 0, knee: false, skid: 0 };
 
 /** Lateral world position (m) and depth factor of his pinned point. */
 const heroWorld = (h: Hero): [number, number] => [(h.x - VW / 2) / (PXM * h.p), h.p];
@@ -691,8 +718,13 @@ export const shotStepOver: Shot = {
     { at: 0.85, fn: (env) => env.sfx.tom(TOMS.C3, 0.5, -0.3) },
     { at: 0.95, fn: (env) => env.sfx.tom(TOMS.A2, 0.5, -0.35) },
     { at: 1.05, fn: (env) => env.sfx.tom(TOMS.F2, 0.5, -0.4) },
+    // Quiet stud scuffs on the drawn footfalls of the burst (BR3, BR2, BR3, BR2), panned to his side.
+    { at: 1.15, fn: (env) => env.sfx.scuff(0.12, -0.4) },
     { at: T_KNEE, fn: (env) => (env.sfx.boom(0.2, 0.5, 0.5), env.sfx.scuff(0.2, 0.5)) },
     { at: T_OLE, fn: (env) => env.sfx.ole(1) },
+    { at: onGrid(1.3, 'BR2 footfall'), fn: (env) => env.sfx.scuff(0.12, -0.4) },
+    { at: onGrid(1.4, 'BR3 footfall'), fn: (env) => env.sfx.scuff(0.12, -0.45) },
+    { at: onGrid(1.5, 'BR2 footfall'), fn: (env) => env.sfx.scuff(0.12, -0.5) },
     { at: T_IRIS, fn: (env) => env.sfx.lightsOff(0.3) },
   ],
   prepare(env) {
@@ -716,7 +748,7 @@ export const shotStepOver: Shot = {
     spot.snap(X, p);
     lastT = 0;
     lastBallX = NaN;
-    fired = { f2: false, f3: false, f4: false, balls: 0, knee: false, skid: 0 };
+    fired = { sell: false, balls: 0, knee: false, skid: 0 };
   },
   update(env, t, dt) {
     env.sfx.hum(HUM[3](t));
@@ -725,12 +757,11 @@ export const shotStepOver: Shot = {
     // The follow-spot operator: ~60 ms behind him in real time (on the cut he is faster than the light).
     const [X, p] = heroWorld(heroAt(t));
     spot.update(X, p, real);
-    // The chronophotograph of the step-over: F2 and F3 kept on their frames, F4 on THE SELL. The whole set steps down
-    // at 0.90 and 1.00 and is gone at 1.10 (on the grid), as A lands on his knee.
+    // The chronophotograph of the step-over, exposed all at once on THE SELL (exposures drop only on listed beats): F2
+    // and F3 behind, F4 on top. Nothing hangs behind him before the sell to give it away. The whole set steps down at
+    // 0.90 and 1.00 and is gone at 1.10 (on the grid), as A lands on his knee.
     const drop = (key: SoloKey, at: number) => ghosts.dropHero(key, VW / 2, groundY(1), 2, at, T_EXPO_END - at, { pivot: PIVOT });
-    if (!fired.f2 && t >= T_F2 - 1e-6) (fired.f2 = true), drop('SO2', T_F2);
-    if (!fired.f3 && t >= T_F3 - 1e-6) (fired.f3 = true), drop('SO3', T_F3);
-    if (!fired.f4 && t >= T_SELL - 1e-6) (fired.f4 = true), drop('SO4', T_SELL);
+    if (!fired.sell && t >= T_SELL - 1e-6) (fired.sell = true), drop('SO2', T_SELL), drop('SO3', T_SELL), drop('SO4', T_SELL);
     // Three ball exposures along the cut.
     while (fired.balls < BALL_DROPS.length && t >= BALL_DROPS[fired.balls] - 1e-6) {
       const at = BALL_DROPS[fired.balls++];
@@ -761,7 +792,7 @@ export const shotStepOver: Shot = {
   render(env, t) {
     const ctx = env.ctx;
     soloGrade(env.fx);
-    const cam = beatCam(CAM, t);
+    const cam = camAt(t);
     const h = heroAt(t);
     const a = defAt(t);
     const ball = ballAt(env, t);
@@ -770,7 +801,13 @@ export const shotStepOver: Shot = {
 
     // A's light: the dark-stage silhouette until THE SELL, then (4-frame cross-fade) his colour render, drawn under the
     // stage dim so only the half of him inside the pool is lit; back to the silhouette once he has fallen out of it.
-    const aLit = clamp((t - T_SELL) / (4 / 60)) * (1 - clamp((t - A_DARK) / (4 / 60)));
+    // On the match cut from shot 2 (where he ends half-lit at the edge of the pool) a little of his colour carries over
+    // (under the stage dim, so it is brightest on the side nearest the pool) and falls away over 0.2 s as he drops back
+    // into the dark to jockey.
+    const aLit = Math.max(
+      clamp((t - T_SELL) / (4 / 60)) * (1 - clamp((t - A_DARK) / (4 / 60))),
+      0.35 * clamp(1 - t / 0.2),
+    );
     const aLight = t < T_CUT ? LIGHT_R : LIGHT_L;
 
     // ---- the world in the dark: night, stands, towers, turf, A's dust
@@ -838,8 +875,9 @@ export const shotStepOver: Shot = {
     ctx.beginPath();
     ctx.ellipse(h.x, h.y - 1, 30 * h.p, 6 * h.p, 0, 0, TAU);
     ctx.fill();
+    bootGlow(env, h, 1, 'under');
     drawSolo(env, h.key, h.x, h.y, h.sc, { pivot: PIVOT });
-    bootGlow(env, h, 1);
+    bootGlow(env, h, 1, 'over');
     // The ball's exposures: in a front view the ball rolls in front of his boots, so its strobe chain does too.
     layer(env, cam, 1);
     ghosts.draw(env, t, 'ball');

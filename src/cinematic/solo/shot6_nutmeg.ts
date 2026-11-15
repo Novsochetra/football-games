@@ -6,8 +6,8 @@
 // (crotch near y 172, the inner edges of his boots 226 px apart at the bottom of frame). The arch's numbers put his
 // shirt in frame up to the shoulder blades (the brief's "from the waist down" cannot hold with an arch top at y 170
 // and No.10 at x1 inside it). No.10 (FrontTouch / Nutmeg / Break Front, x1) stands inside the arch in his pool; the
-// beam falls behind D from the main-stand roof (top right of frame) and its light spills through the arch onto the
-// turf between D's boots and No.10.
+// beam falls behind D from the main-stand roof (top of frame, just right of centre, so it shows beside his torso)
+// and its light spills through the arch onto the turf between D's boots and No.10.
 //
 // Geometry (one pinhole: F 400 px/m, horizon y 272, lens 0.31 m high): No.10 at x1 (56 px/m) is 7.1 m from the lens,
 // soles on y 289; D (250 px/m) is 1.6 m from it, soles on y 350; the ball (0.22 m) is r 6 at No.10's toe and r 27 on
@@ -22,23 +22,27 @@
 //   0.30           F3 set: the left foot plants beside the ball, the right toe aimed at the gap.
 //   0.40  beat 16  THE POKE (F4, held to 0.55; the ONE of bar 5): the toe pokes the ball straight at the lens through
 //                  the arch (kick drum + crash + the toe's tap). Beat flare (pool only), beat-snap push in (zoom 1.06),
-//                  an exposure of F4 left where he poked; the ball's next four frames are strobed as exposures.
+//                  and the ball's strobe: four prints off the toe (1, 2, 3 and 5 frames after it, oldest faintest).
 //                  0.42-0.47 D's knees twitch inward, too late.
 //   0.45           the NUTMEG tag.
-//   0.50-0.70      the money frame (rate 0.2): the ball rolls between D's boots (r 22 -> 28, on his boot line at 0.69),
-//                  ivory-bright, framed by the arch, its four exposures trailing back to the F4 exposure's toe; No.10,
-//                  in his spot, already stepping round (Break BR1, 0.55). Clean: no echo, no impact.
-//   0.60-0.68      D folds forward; his upside-down head swings down into the arch, rim-lit hair hanging, eyes wide in
-//                  the dark, and follows the ball through his own legs (0.70 the crowd laughs; 0.82 his eyes drop).
-//   0.70           BR2: No.10 goes round behind D's left knee.
+//   0.50-0.70      the money frame (rate 0.2): the ball rolls between D's boots (r 22 -> 28, on his boot line at 0.71),
+//                  ivory-bright, framed by the arch, its four prints trailing back toward his boot; No.10, in his
+//                  spot inside the arch, already stepping round (Break BR1, 0.55). Clean: no echo, no impact, no
+//                  exposure of No.10.
+//   0.60-0.68      D folds forward, hands braced on his knees; his upside-down head (hand-drawn: open mouth, wide eyes,
+//                  raised brows, ginger crown hanging, lilac rim) swings down into the right of the arch and follows the
+//                  ball through his own legs (0.70 the crowd laughs; 0.82 his eyes drop).
+//   0.70           BR2: No.10 in the left of the arch, beside D's hanging head, going round.
 //   0.80  beat 17  OLÉ! 4, the loudest (all four pads flare, the phone lights lift) and the fill's climax (16th toms D3
-//                  D3 C3 A2): the beat-snap trucks left with him as he comes round D's side, his scale 1 -> 2.
-//   0.80-0.92      the ball rolls out under the lens (bottom edge).
-//   0.84-0.90      D's boots slip and he sits down hard (0.90 boom), then rolls back out of the bottom of frame (1.04).
-//   0.85-1.20      BR3 / BR2 / BR3: No.10 sprints out of frame-left past the lens, his pool sliding with him; the hard
-//                  cut at 1.20 takes him half out of frame.
+//                  D3 C3 A2): the beat-snap trucks left with him and pushes in (zoom 1.1) as he comes round D's side,
+//                  his scale 1 -> 2.
+//   0.80-1.06      the ball rolls out under the lens (bottom centre at 0.90-1.00).
+//   0.84-0.90      D's boots slip and he sits down hard (0.90 boom), then rolls back out of the bottom of frame (1.10).
+//   0.85-1.20      BR3 / BR2 / BR3: No.10 sprints out of frame-left past the lens, his pool sliding with him; each
+//                  drawing pops one stride on from its planted boot (no foot slides); the hard cut at 1.20 takes him
+//                  half out of frame.
 //
-// The ball is poked on 0.40 and decelerates as it rolls (rolling friction, exaggerated, settling at about 4.6 m/s): on
+// The ball is poked on 0.40 and decelerates as it rolls (rolling friction, exaggerated, settling at about 3 m/s): on
 // screen it approaches at an even pace into the slow window and crawls through it, so the window reads as a speed
 // ramp, not a stop.
 //
@@ -77,10 +81,14 @@ const T_OLE = onGrid(0.8, 'OLE 4');
 const T_SIT = onGrid(0.9, 'D sits');
 /** Beat flares (pool only): THE POKE. */
 const FLARES = [T_POKE] as const;
-/** The exposures (F4 and the ball's strobe) step down at 0.70 and 0.80 and are gone at 0.90. */
+/** The ball's strobe exposures step down at 0.70 and 0.80 and are gone at 0.90. */
 const EXPO_END = 0.9;
-/** The ball's strobe: its four frames after the poke. */
-const BALL_DROPS = [T_POKE + 1 / 60, T_POKE + 2 / 60, T_POKE + 3 / 60, T_POKE + 4 / 60];
+/**
+ * The ball's strobe: four prints off the toe, spaced so each reads on its own (r about 9, 11, 14, 19), oldest faintest,
+ * so the trail fades back toward his boot. No exposure of No.10 here: the money frame stays clean.
+ */
+const BALL_DROPS = [1, 2, 3, 5].map((f) => T_POKE + f / 60);
+const BALL_A0 = [0.3, 0.4, 0.5, 0.6];
 
 // ---------------------------------------------------------------- the lens (metres -> px)
 
@@ -104,11 +112,14 @@ function proj(X: number, Y: number, Z: number, camX = 0): [number, number] {
 
 /** Zoom pivot: the arch (No.10's middle). */
 const PIV = { x: 320, y: 250 };
-/** [t, truck (m; - = left), tilt (px), zoom]: a push in on THE POKE, then a truck left with him on the OLÉ. */
+/**
+ * [t, truck (m; - = left), tilt (px), zoom]: a push in on THE POKE, then on the OLÉ a truck left with him and a further
+ * push in, so his x1 -> x2 step reads as the camera snapping in on him as he comes round D (never pulling away).
+ */
 const CAM: readonly CamKey[] = [
   [0, 0, 0, 1],
   [T_POKE, 0, 0, 1.06],
-  [T_OLE, -0.32, 0, 1],
+  [T_OLE, -0.32, 0, 1.1],
 ];
 type Cam = { x: number; y: number; zoom: number };
 /** Transform for a layer at distance Z (m): base coordinates (camera untrucked) -> screen, with the truck parallax. */
@@ -126,17 +137,21 @@ function scr(cam: Cam, Z: number, x: number, y: number): [number, number] {
 /** Every front frame shares one registration (body centre x 64, soles on row 102): pin that point. */
 const PIVOT: [number, number] = [64, 103];
 /**
- * Stride placements: [time, base x of the pinned point, approach (px down), ease frames]. Pinned between keys (the
- * planted foot never slides), eased over 3 frames on a stride; the x1 -> x2 step on the OLÉ beat-snap is a cut.
+ * Stride placements: [time, base x of the pinned point, approach (px down), ease frames]. Each key pops on its frame
+ * change (ease 0) and holds: the planted boot keeps its pixels until the next drawing, whose planted boot lands one
+ * stride ahead. From the contact anchors (Break BR1/BR2 contact x 58, BR3 x 66; pivot = contact - (anchor - 64) * sc):
+ * at x1 the planted boot steps 330 (NM4) -> 306 (BR1) -> 284 (BR2); at x2, 105 (BR2) -> 69 (BR3) -> 33 (BR2) -> -3 (BR3),
+ * about 36 px a stride. Until the OLÉ he stays inside the arch (BR1 under its rim, BR2 beside D's upside-down head);
+ * the x1 -> x2 step on the OLÉ beat-snap is a cut.
  */
 const RUN: readonly (readonly [number, number, number, number])[] = [
   [0, 320, 0, 0],
-  [T_GO, 284, 0, 3], // BR1: the first step to screen-left (his right), round D
-  [0.7, 254, 0, 3], // BR2: behind D's left knee
+  [T_GO, 312, 0, 0], // BR1: the first step to screen-left (his right), still inside the arch
+  [0.7, 290, 0, 0], // BR2: in the left of the arch, beside D's hanging head
   [T_OLE, 116, 0, 0], // x2: round D's side (the beat-snap)
-  [0.85, 84, 3, 3], // BR3: after the ball, toward the lens
-  [1.0, 6, 7, 3], // BR2: accelerating
-  [1.1, -22, 11, 3], // BR3: going out of frame-left past the lens (the cut takes him on the way out)
+  [0.85, 64, 3, 0], // BR3: after the ball, toward the lens
+  [1.0, 44, 7, 0], // BR2: accelerating
+  [1.1, -8, 11, 0], // BR3: going out of frame-left past the lens (the cut takes him on the way out)
 ];
 
 interface Hero {
@@ -175,7 +190,7 @@ const Z_PRE1 = Z_HERO - 0.3;
  * through the window, then the same pace again until it rolls out under the lens.
  */
 const ROLL_TAU = 0.04;
-const ROLL_VINF = 4.6;
+const ROLL_VINF = 3.0;
 const Z_SLOW = 2.0;
 const ROLL_V0 = ROLL_VINF + (Z_PRE1 - Z_SLOW - ROLL_VINF * 0.1) / (ROLL_TAU * (1 - Math.exp(-0.1 / ROLL_TAU)));
 const rollDist = (s: number) => (s <= 0 ? 0 : ROLL_VINF * s + (ROLL_V0 - ROLL_VINF) * ROLL_TAU * (1 - Math.exp(-s / ROLL_TAU)));
@@ -268,11 +283,14 @@ const D_LEAN: DPose = {
 };
 /** Too late (0.47): the knees twitch inward over the ball that has already gone through. */
 const D_PINCH: DPose = { ...D_LEAN, py: 0.745, kL: [-0.3, 0.49], kR: [0.41, 0.44] };
-/** Looking back through his own legs (0.68): folded forward, hands on his knees, upside-down head in the arch. */
+/**
+ * Looking back through his own legs (0.68): folded forward, hands braced on his knees, upside-down head in the arch.
+ * His pelvis stays on the side he bit toward (screen-right), which keeps the left of the arch clear for No.10.
+ */
 const D_LOOK: DPose = {
-  ...D_LEAN, px: 0.02, py: 0.84, kL: [-0.39, 0.48], kR: [0.41, 0.47], aL: [-0.5, 0.11], aR: [0.5, 0.11],
+  ...D_LEAN, px: 0.1, py: 0.84, kL: [-0.39, 0.48], kR: [0.41, 0.47], aL: [-0.5, 0.11], aR: [0.5, 0.11],
   bL: [-0.52, 0], bR: [0.52, 0], fold: 108 * D2R, lean: 0,
-  eL: [-0.26, 0.38], eR: [0.29, 0.38], hL: [-0.3, 0.25], hR: [0.33, 0.25], look: 0,
+  eL: [-0.3, 0.6], eR: [0.32, 0.6], hL: [-0.38, 0.5], hR: [0.4, 0.49], look: 0,
 };
 /** Following the ball as it rolls under the lens (0.82): head a little lower, eyes down. */
 const D_LOOK2: DPose = { ...D_LOOK, py: 0.825, fold: 112 * D2R, look: 1 };
@@ -287,7 +305,7 @@ const D_SAT: DPose = {
   ...D_FALL, py: 0.12, kL: [-0.25, 0.42], kR: [0.25, 0.42], aL: [-0.3, 0.26], aR: [0.3, 0.26], bL: [-0.33, 0.2],
   bR: [0.33, 0.2], fold: -20 * D2R, eL: [-0.38, 0.4], eR: [0.38, 0.4], hL: [-0.46, 0.04], hR: [0.46, 0.04], grow: 1.08,
 };
-/** Rolled back on out of the bottom of frame (1.04). */
+/** Rolled back on out of the bottom of frame (1.10). */
 const D_GONE: DPose = {
   ...D_SAT, fold: -52 * D2R, eL: [-0.42, 0.52], eR: [0.42, 0.52], hL: [-0.6, 0.62], hR: [0.6, 0.6], drop: 1.7, grow: 1.35,
 };
@@ -319,7 +337,7 @@ const D_TRACK: readonly (readonly [number, DPose, (u: number) => number])[] = [
   [0.84, D_LOOK2, ease.linear],
   [0.87, D_FALL, ease.inQuad], // overbalances backward...
   [T_SIT, D_SAT, ease.inQuad], // ...and sits down hard
-  [1.04, D_GONE, ease.inQuad], // then rolls back out of the bottom of frame
+  [1.1, D_GONE, ease.inQuad], // then rolls back out of the bottom of frame
 ];
 
 function dPose(t: number): DPose {
@@ -337,11 +355,76 @@ const DW = 230;
 const DH = 214;
 const DOX = 115;
 const DOY = 190;
-/** Back-lit body (#0E0618), the seams inside it, his face (in his own shadow), his eyes catching the light. */
+/** Back-lit body (#0E0618) and the seams inside it. */
 const D_FILL: RGB = [14, 6, 24];
 const D_SEAM: RGB = [32, 18, 54];
-const D_FACE: RGB = [24, 13, 42];
-const D_EYE: RGB = [201, 182, 255];
+
+/**
+ * His upside-down head as he looks back through his legs, hand-drawn (silhouette px, screen orientation: chin at the
+ * top under his neck, the crown hanging toward the turf; 20 x 26). A head, not a box: the narrow chin and jaw widen
+ * through the dropped jaw to the ears, which stand out 2 px either side, and the round crown of short ginger hair
+ * (RIVAL_KIT_D) hangs lowest, a few strands dripping toward the turf (gravity says upside down). Back-lit, the face is mostly in shadow (it turned away from the pool); the glow of the ball rolling away
+ * under it lights only the planes facing the turf (the forehead band, the nose bridge, the lips), so the features read
+ * by value at film scale: the O of a dropped jaw (above the nose, since he is upside down), wide white eyes, brows
+ * raised in surprise (below the eyes). The back light rims his ears, cheeks, crown and hair in lilac.
+ */
+const FACE = [
+  '........nnnn........',
+  '......nnSSSSnn......',
+  '.....sSllllllSs.....',
+  '....sSlmmttmmlSs....',
+  '...sSSlmttttmlSSs...',
+  '...sSSlmmmmmmlSSs...',
+  '..sSSSSlmmmmlSSSSs..',
+  '..sSSSSSllllSSSSSs..',
+  '..sSSSSSnLLnSSSSSs..',
+  'eesSSSSSSLLSSSSSSsee',
+  'eesSSwwSSLLSSwwSSsee',
+  'eesSwwwwSSSSwwwwSsee',
+  '.esSwwwwSSSSwwwwSse.',
+  '..sSSwwSSSSSSwwSSs..',
+  '..sSSSSSSSSSSSSSSs..',
+  '..sSbbbSSSSSSbbbSs..',
+  '..sSSSLLLLLLLLSSSs..',
+  '..hHSHLLLLLLLLHSHh..',
+  '..hHRHHHRHHRHHHRHh..',
+  '...hHHRHHHHRHHHHh...',
+  '...hHRHHHRHHHRHHh...',
+  '....hHHRHHHHRHHh....',
+  '.....hHRHHRHHRh.....',
+  '.....hRh.hHh.hRh....',
+  '......h...R...h.....',
+  '..........h.........',
+] as const;
+const FW = FACE[0].length;
+const FH = FACE.length;
+/** The 2x2 pupils (left / right eye: first column, first row), one row lower once he looks down at the ball. */
+const PUPILS = [5, 13] as const;
+const PUPIL_ROW = 11;
+const FACE_PAL: Record<string, RGB> = {
+  n: [24, 10, 34], // under the chin, in the shadow of his neck
+  s: [40, 20, 50], // the face's edges, turned from the glow
+  S: [62, 34, 68], // skin in shadow (back-lit: his face is turned away from the pool)
+  L: [176, 116, 140], // the planes facing the turf catch the ball's glow: forehead, nose bridge
+  e: [62, 34, 68], // ears (rimmed in lilac)
+  m: D_FILL, // the open mouth
+  t: [168, 66, 98], // his tongue
+  l: [140, 76, 108], // lit lips round the O
+  w: [242, 236, 255], // eye whites
+  b: [150, 60, 44], // brows (ginger)
+  h: [64, 22, 28], // hair (RIVAL_KIT_D ginger, in the dark), the round crown hanging toward the turf
+  H: [128, 48, 36],
+  R: [206, 100, 62], // strands catching the glow
+};
+/** The back light rims his ears, cranium and hair (FACE rows from here down); the jaw under his neck keeps a dark edge. */
+const FACE_RIM_ROW = 9;
+const FACE_EDGE: RGB = [26, 12, 36];
+/** Top-left of the FACE mask (silhouette px) for a pose. */
+function faceAt(p: DPose): V2 {
+  const b = body(p);
+  const [cx, cy] = toPx(p, b.head[0], b.head[1]);
+  return [Math.round(cx - FW / 2), Math.round(cy - FH / 2)];
+}
 
 let dScratch: HTMLCanvasElement | null = null;
 interface DMasks {
@@ -378,11 +461,19 @@ function rasterD(p: DPose): DMasks {
   g.fillStyle = '#00f';
   paintTorso(g, p);
   g.strokeStyle = '#0f0';
-  paintLegSeams(g, p);
-  paintTorsoSeams(g, p);
+  paintLegSeams(g, p); // (no spine seam on the shirt: with the hem it drew a crosshair on his back)
   const d = g.getImageData(0, 0, DW, DH).data;
   const n = DW * DH;
   const legs = new Uint8Array(n), torso = new Uint8Array(n), seams = new Uint8Array(n);
+  // Upside down, his head is the hand-drawn FACE mask: stamp its shape into the torso layer.
+  if (body(p).inv) {
+    const [ox, oy] = faceAt(p);
+    for (let r = 0; r < FH; r++)
+      for (let c = 0; c < FW; c++) {
+        const x = ox + c, y = oy + r;
+        if (FACE[r][c] !== '.' && x >= 0 && y >= 0 && x < DW && y < DH) d[(y * DW + x) * 4 + 2] = 255;
+      }
+  }
   let x0 = DW, y0 = DH, x1 = -1, y1 = -1;
   for (let i = 0, y = 0; y < DH; y++)
     for (let x = 0; x < DW; x++, i++) {
@@ -493,14 +584,18 @@ function paintLegs(g: CanvasRenderingContext2D, p: DPose) {
   ]);
 }
 
-/** Seams inside the legs layer: the shorts' centre seam and hems, the sock tops, the boot collars. */
+/**
+ * Seams inside the legs layer: the shorts' centre seam and hems (short, inside each thigh, so no line runs across his
+ * back), the sock tops, the boot collars. Folded forward, only the centre seam: no net on his back.
+ */
 function paintLegSeams(g: CanvasRenderingContext2D, p: DPose) {
   const b = body(p);
   line(g, [p.px, p.py + 0.17], [p.px, p.py - 0.04]);
+  if (p.fold > Math.PI / 2) return;
   for (const [hip, k, a] of [[b.hipL, p.kL, p.aL], [b.hipR, p.kR, p.aR]] as const) {
     const hem = at(hip, k, 0.4), n = nrm(hip, k), d = nrm(n, [0, 0]);
     const up = [-d[0] * 0.012, -d[1] * 0.012] as V2;
-    line(g, add(add(hem, [-n[0] * 0.1, -n[1] * 0.1]), up), add(add(hem, [n[0] * 0.1, n[1] * 0.1]), up));
+    line(g, add(add(hem, [-n[0] * 0.06, -n[1] * 0.06]), up), add(add(hem, [n[0] * 0.06, n[1] * 0.06]), up));
     const sock = at(k, a, 0.2), ns = nrm(k, a);
     line(g, add(sock, [-ns[0] * 0.075, -ns[1] * 0.075]), add(sock, [ns[0] * 0.075, ns[1] * 0.075]));
     line(g, [a[0] - 0.05, a[1] - 0.025], [a[0] + 0.05, a[1] - 0.025]);
@@ -526,24 +621,17 @@ function paintTorso(g: CanvasRenderingContext2D, p: DPose) {
     ellipse(g, h, 0.052, 0.058);
     ellipse(g, add(h, [-o * 0.04, 0.03]), 0.022, 0.028);
   }
-  // Neck and head: the back of his head when upright; upside down between his legs when folded.
+  // Neck and head: the back of his head when upright; upside down between his legs when folded, the head is the
+  // hand-drawn mask (FACE), stamped into this layer after rasterising.
   capsule(g, b.S, b.head, 0.06, 0.055);
-  ellipse(g, b.head, HEAD_RX, HEAD_RY);
-  const c = b.inv ? -1 : 1;
-  for (const sx of [-1, 1]) ellipse(g, [b.head[0] + sx * HEAD_RX, b.head[1] - c * 0.005], 0.024, 0.032);
-  // Short cropped hair, fuller at the crown, four tufts off it (hanging down when he is upside down).
-  ellipse(g, [b.head[0], b.head[1] + c * 0.045], HEAD_RX + 0.012, HEAD_RY * 0.72);
-  const crown = b.head[1] + c * (HEAD_RY - 0.01);
-  for (const [x0, x1, tip, len] of [[-0.11, -0.05, -0.1, 0.04], [-0.06, 0.0, -0.035, 0.055], [-0.005, 0.055, 0.03, 0.058], [0.05, 0.11, 0.095, 0.04]] as const)
-    poly(g, [[b.head[0] + x0, crown - c * 0.03], [b.head[0] + x1, crown - c * 0.03], [b.head[0] + tip, crown + c * len]]);
-}
-
-/** Seams inside the torso layer: the spine of his shirt (upright only). */
-function paintTorsoSeams(g: CanvasRenderingContext2D, p: DPose) {
-  const b = body(p);
   if (b.inv) return;
-  const u = (k: number): V2 => add(b.P, [b.up[0] * k, b.up[1] * k]);
-  line(g, u(0.38), u(0.6));
+  ellipse(g, b.head, HEAD_RX, HEAD_RY);
+  for (const sx of [-1, 1]) ellipse(g, [b.head[0] + sx * HEAD_RX, b.head[1] - 0.005], 0.024, 0.032);
+  // Short cropped hair, fuller at the crown, four tufts off it.
+  ellipse(g, [b.head[0], b.head[1] + 0.045], HEAD_RX + 0.012, HEAD_RY * 0.72);
+  const crown = b.head[1] + (HEAD_RY - 0.01);
+  for (const [x0, x1, tip, len] of [[-0.11, -0.05, -0.1, 0.04], [-0.06, 0.0, -0.035, 0.055], [-0.005, 0.055, 0.03, 0.058], [0.05, 0.11, 0.095, 0.04]] as const)
+    poly(g, [[b.head[0] + x0, crown - 0.03], [b.head[0] + x1, crown - 0.03], [b.head[0] + tip, crown + len]]);
 }
 
 type DLight = { x: number; y: number; w: number; reach: number };
@@ -651,32 +739,20 @@ function dFrame(f: number): HTMLCanvasElement {
     img.data[i + 2] = c[2];
     img.data[i + 3] = 255;
   };
-  // Looking back through his legs: the pool behind him rims his head and his hanging hair in lilac; his upside-down
-  // face catches the glow of the ball rolling away under it; eyes (pupils toward the ball), brows, a dropped jaw.
-  if (b.inv && p.fold > 100 * D2R) {
-    const [cx, cy] = toPx(p, b.head[0], b.head[1]);
-    const R = (HEAD_RY + 0.12) * M * p.grow;
+  // Looking back through his legs: the hand-drawn upside-down head (behind his legs), rimmed in lilac by the pool
+  // behind him wherever its outline meets the dark; pupils on the ball (one row lower once it rolls under the lens).
+  if (b.inv) {
+    const [ox, oy] = faceAt(p);
     const both = (x: number, y: number) => x >= 0 && y >= 0 && x < DW && y < DH && (torso[y * DW + x] === 1 || legs[y * DW + x] === 1);
-    for (let y = Math.floor(cy - R * 0.3); y <= Math.ceil(cy + R); y++)
-      for (let x = Math.floor(cx - R); x <= Math.ceil(cx + R); x++) {
-        if (x < 0 || y < 0 || x >= DW || y >= DH || !torso[y * DW + x] || legs[y * DW + x]) continue;
-        if (!both(x - 1, y) || !both(x + 1, y) || !both(x, y - 1) || !both(x, y + 1)) set(x, y, PAL.lilac);
-      }
-    const rx = HEAD_RX * M * p.grow - 1.6, ry = HEAD_RY * M * p.grow - 1.6;
-    const hair = cy + 4.5; // the hairline (upside down: chin at the top, the crown hangs below)
-    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++)
-      for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
-        const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
-        if (dx * dx + dy * dy > 1 || y + 0.5 > hair || legs[y * DW + x]) continue;
-        set(x, y, D_FACE);
-      }
     const look = Math.round(p.look);
-    for (const sx of [-1, 1]) {
-      // Wide-open eyes in the dark (3x3), the pupil low: watching the ball roll away under him.
-      const ex = Math.round(cx + sx * 0.045 * M * p.grow), ey = Math.round(cy) - 1;
-      for (let dx = -1; dx <= 1; dx++) for (let dy = 0; dy < 3; dy++) set(ex + dx, ey + dy, D_EYE);
-      set(ex, ey + 1 + look, D_FILL);
-    }
+    for (let r = 0; r < FH; r++)
+      for (let c = 0; c < FW; c++) {
+        const ch = FACE[r][c], x = ox + c, y = oy + r;
+        if (ch === '.' || x < 0 || y < 0 || x >= DW || y >= DH || legs[y * DW + x]) continue;
+        const edge = !both(x - 1, y) || !both(x + 1, y) || !both(x, y - 1) || !both(x, y + 1);
+        const pupil = r >= PUPIL_ROW + look && r <= PUPIL_ROW + 1 + look && PUPILS.some((pc) => c === pc || c === pc + 1);
+        set(x, y, edge ? (r >= FACE_RIM_ROW ? PAL.lilac : FACE_EDGE) : pupil ? D_FILL : FACE_PAL[ch]);
+      }
   }
   g.putImageData(img, 0, 0);
   dCache.set(key, cv);
@@ -946,7 +1022,7 @@ const spot = new FollowSpot(0.06);
 let spin = new BallSpin();
 let lastT = 0;
 let lastRoll = 0;
-let fired = { ghost: false, balls: 0 };
+let fired = { balls: 0 };
 
 const heroWorld = (h: Hero): [number, number] => [((h.x - VW / 2) * h.Z) / F, h.Z];
 
@@ -989,7 +1065,7 @@ export const shotNutmeg: Shot = {
     { at: onGrid(1.1, 'tom A2'), fn: (env) => env.sfx.tom(TOMS.A2, 0.5, -0.65) },
   ],
   prepare(env) {
-    warmSolo(env, SEQ[6].map(([, k]) => k), { ghosts: true });
+    warmSolo(env, SEQ[6].map(([, k]) => k)); // no hero exposures in this shot
     for (const [, k] of SEQ[6]) bootsOf(env, k);
     backdrop(env);
     phones();
@@ -1003,11 +1079,13 @@ export const shotNutmeg: Shot = {
     ghosts.clear();
     ballZ = [];
     spin = new BallSpin();
+    // Turn the panel pattern about the view axis: no symmetric pair of black panels over a third (no "face" on the ball).
+    spin.rotate(0, 0, 1, 0.6);
     const [X, Z] = heroWorld(heroAt(0));
     spot.snap(X, Z);
     lastT = 0;
     lastRoll = 0;
-    fired = { ghost: false, balls: 0 };
+    fired = { balls: 0 };
   },
   update(env, t) {
     env.sfx.hum(HUM[6](t));
@@ -1016,16 +1094,11 @@ export const shotNutmeg: Shot = {
     // The follow-spot operator: ~60 ms behind him in real time (the pool slides after him round D).
     const [X, Z] = heroWorld(heroAt(t));
     spot.update(X, Z, real);
-    // The exposure of THE POKE, left where he stood (it shows once he steps round, 0.55).
-    if (!fired.ghost && t >= T_POKE - 1e-6) {
-      fired.ghost = true;
-      ghosts.dropHero('NM4', VW / 2, groundY(Z_HERO), 1, T_POKE, EXPO_END - T_POKE, { pivot: PIVOT });
-    }
-    // The ball's strobe: its first four frames off the toe.
+    // The ball's strobe: four prints off the toe (oldest faintest). No exposure of No.10: the money frame stays clean.
     while (fired.balls < BALL_DROPS.length && t >= BALL_DROPS[fired.balls] - 1e-6) {
-      const at = BALL_DROPS[fired.balls++];
+      const i = fired.balls++, at = BALL_DROPS[i];
       const b = ballAt(env, at);
-      ghosts.dropBall(b.x, b.y, Math.round(b.r), at, EXPO_END - at);
+      ghosts.dropBall(b.x, b.y, Math.round(b.r), at, EXPO_END - at, BALL_A0[i]);
       ballZ.push(b.Z);
     }
     // Spin locked to the roll (capped per frame so the fast first frames do not alias backwards).
@@ -1067,7 +1140,7 @@ export const shotNutmeg: Shot = {
     // ---- the follow-spot: the beam from the main-stand roof behind D, the pool round No.10, the spill through the arch
     {
       layer(env, cam, sZ);
-      stage.beam(ctx, 468, -44, sx, sy, 34, 150 * sk * fl.size, 0.16 * fl.gain, { t, motes: 26, seed: 61 });
+      stage.beam(ctx, 430, -44, sx, sy, 34, 150 * sk * fl.size, 0.16 * fl.gain, { t, motes: 26, seed: 61 });
       stage.floorPool(ctx, sx, sy + 1, 66 * sk * fl.size, 9 * sk * fl.size, 0.34 * fl.gain);
       // The light spills on through the arch toward D's boots (while No.10 is still in it).
       const spill = 1 - clamp((t - 0.72) / 0.12);
@@ -1077,9 +1150,7 @@ export const shotNutmeg: Shot = {
       }
     }
 
-    // ---- exposures (where he poked from; the ball's strobe off his toe)
-    layer(env, cam, Z_HERO);
-    ghosts.draw(env, t, 'hero');
+    // ---- exposures: the ball's strobe off his toe
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     ghosts.ball.forEach((e, i) => {
@@ -1133,7 +1204,7 @@ export const shotNutmeg: Shot = {
     env.screen();
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
-    marqueeTag(ctx, 'NUTMEG', 24, 60, t - T_TAG);
+    marqueeTag(ctx, 'NUTMEG', 18, 12, t - T_TAG); // where shot 5's ELASTICO tag sat
     fourCount(ctx, padsFor(6), t, { flareAt: T_OLE });
 
     // ---- opens out of shot 5's violet ghost wipe
