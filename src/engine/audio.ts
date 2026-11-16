@@ -17,7 +17,8 @@ export const AIR_TONES = { G5: 783.99, B5: 987.77, D6: 1174.66 } as const;
  */
 export const THREAD_NOTES = { D3: 146.83, D4: 293.66, A4: 440, D5: 587.33, E5: 659.26, Fs5: 739.99, A5: 880, D6: 1174.66 } as const;
 
-type VoiceKind = 'tail' | 'ring';
+/** 'bow' (MERIDIAN THREAD v2): the held bowed-string voice; choke('bow') and clearBus({ tails: true }) stop it. */
+type VoiceKind = 'tail' | 'ring' | 'bow';
 interface Voice {
   kind: VoiceKind;
   g: GainNode;
@@ -39,7 +40,7 @@ export class Sfx {
   private lpGain!: GainNode;
   /** Bus that bypasses the low-pass (whine, breath, air tones). */
   private dry!: GainNode;
-  /** Shared crowd bus: crowd() feeds crowdIn; duck() drives crowdDuck; muffle() also drives crowdMuf. */
+  /** Shared crowd bus: crowd() feeds crowdIn; duck() sets crowdDuck; muffle() also sets crowdMuf. */
   private crowdIn!: GainNode;
   private crowdDuck!: GainNode;
   private crowdMuf!: GainNode;
@@ -271,7 +272,10 @@ export class Sfx {
       this.crowdDuck.gain.setTargetAtTime(1, t, 0.04);
     }
     this.choke('ring');
-    if (o.tails) this.choke('tail');
+    if (o.tails) {
+      this.choke('tail');
+      this.choke('bow');
+    }
   }
 
   private noiseSrc() {
@@ -556,7 +560,8 @@ export class Sfx {
   }
 
   /** Short UI blip for the command menu. */
-  blip(f = 880) {
+  /** A square UI blip (f Hz, then 1.5 f after 50 ms). `gain` (default 0.08, the shipped level): GALE v2's digit clacks use 0.18. */
+  blip(f = 880, gain = 0.08) {
     if (!this.ok()) return;
     const ac = this.ac!, t = ac.currentTime;
     const o = ac.createOscillator();
@@ -564,7 +569,7 @@ export class Sfx {
     o.frequency.setValueAtTime(f, t);
     o.frequency.setValueAtTime(f * 1.5, t + 0.05);
     const g = ac.createGain();
-    this.env(g, t, 0.002, 0.08, 0.12);
+    this.env(g, t, 0.002, gain, 0.12);
     o.connect(g).connect(this.dest(0));
     o.start(t);
     o.stop(t + 0.15);
@@ -1205,6 +1210,374 @@ export class Sfx {
     n.stop(t + 0.1);
   }
 
+  // ---------------------------------------------------------------- SPOTLIGHT SOLO v2 voices
+  // The snap, the stomps, the lamps, torn turf, the strobe, the banks blowing and coming back, the war drums, the crowd's
+  // stomp and gasp, and the prints shattering. Each is an event (ignored while `silent`); scheduled tails that outlive
+  // the call (crowdStomp's four stomps) are 'tail' voices, so a seek (clearBus({ tails: true })) chokes them.
+
+  /** A band-passed noise click at AudioContext time t (f Hz, Q, gain, decay s) into `to`. */
+  private clickAt(t: number, f: number, q: number, gain: number, dec: number, to: AudioNode, hp = false) {
+    const ac = this.ac!;
+    const n = this.noiseSrc();
+    const bp = ac.createBiquadFilter();
+    bp.type = hp ? 'highpass' : 'bandpass';
+    bp.frequency.value = f;
+    bp.Q.value = q;
+    const g = ac.createGain();
+    this.env(g, t, 0.0006, Math.max(0.0002, gain), dec);
+    n.connect(bp).connect(g).connect(to);
+    n.start(t);
+    n.stop(t + dec + 0.03);
+    return n;
+  }
+
+  /** A sine (type) gliding f0 -> f1 over `glide` s with a decay envelope, at time t, into `to`. */
+  private toneAt(t: number, f0: number, f1: number, glide: number, gain: number, dec: number, to: AudioNode, type: OscillatorType = 'sine', att = 0.002) {
+    const ac = this.ac!;
+    const o = ac.createOscillator();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + Math.max(0.005, glide));
+    const g = ac.createGain();
+    this.env(g, t, att, Math.max(0.0002, gain), dec);
+    o.connect(g).connect(to);
+    o.start(t);
+    o.stop(t + att + dec + 0.03);
+    return o;
+  }
+
+  /** About n band-passed glass ticks (3-8 kHz) spread over `dur` from t (the shared glass layer of surge and shatter). */
+  private glassTicks(t: number, n: number, dur: number, gain: number, to: AudioNode) {
+    for (let i = 0; i < n; i++) {
+      const u = i / Math.max(1, n - 1);
+      const at = t + dur * (u * u * 0.6 + 0.4 * u) + Math.random() * 0.006;
+      this.clickAt(at, 3000 + Math.random() * 5000, 6 + Math.random() * 6, gain * (0.55 + 0.45 * Math.random()) * (1 - 0.5 * u), 0.012 + Math.random() * 0.02, to);
+    }
+  }
+
+  /**
+   * SPOTLIGHT SOLO v2: the finger snap that kills the stadium. A 15 ms noise burst band-passed 2-6 kHz, a 1.5 kHz ping
+   * and a 1.2 s hall tail (a long wet send plus a faint decaying noise tail). Ducks the crowd bus for 0.15 s, so it
+   * is alone in the mix.
+   */
+  snap(power = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(1.1);
+    const n = this.noiseSrc();
+    const hp = ac.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 2000;
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 6000;
+    const g = ac.createGain();
+    this.env(g, t, 0.0004, 0.95 * power, 0.015);
+    n.connect(hp).connect(lp).connect(g).connect(out);
+    n.start(t);
+    n.stop(t + 0.05);
+    this.toneAt(t, 1650, 1500, 0.01, 0.22 * power, 0.07, out);
+    // The hall: a faint band-passed noise tail decaying over 1.2 s.
+    const tail = this.noiseSrc();
+    const tb = ac.createBiquadFilter();
+    tb.type = 'bandpass';
+    tb.frequency.value = 2600;
+    tb.Q.value = 0.7;
+    const tg = ac.createGain();
+    tg.gain.setValueAtTime(0.0001, t);
+    tg.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.05 * power), t + 0.03);
+    tg.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+    tail.connect(tb).connect(tg).connect(this.held('tail', this.dest(0.9), [tail], t + 1.25));
+    tail.start(t);
+    tail.stop(t + 1.25);
+    this.duck(0.9, 0.15);
+  }
+
+  /**
+   * SPOTLIGHT SOLO v2: an arena stomp (the wall of four; the crowd's stomp at the curtain drop): a 55-60 Hz kick body
+   * with a beater click, boom(0.5·power), four stud scuffs inside 15 ms and a short stadium room tail.
+   */
+  stomp(power = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.35);
+    this.toneAt(t, 118, 56, 0.09, 0.95 * power, 0.5, out);
+    this.toneAt(t, 240, 110, 0.05, 0.25 * power, 0.12, this.dest(0.1), 'triangle');
+    this.clickAt(t, 2400, 0.8, 0.35 * power, 0.008, out, true);
+    for (let i = 0; i < 4; i++) this.clickAt(t + i * 0.005, 1100 + i * 140, 0.9, 0.16 * power, 0.05, this.dest(0.15, (i - 1.5) * 0.25));
+    // Room tail: low-passed noise, 0.35 s.
+    const n = this.noiseSrc();
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 600;
+    const g = ac.createGain();
+    this.env(g, t + 0.01, 0.01, 0.22 * power, 0.35);
+    n.connect(lp).connect(g).connect(this.dest(0.6));
+    n.start(t);
+    n.stop(t + 0.45);
+    this.boom(0.5 * power);
+  }
+
+  /**
+   * SPOTLIGHT SOLO v2: the drop beam slamming on: spotOn(power) + boom(0.8·power) + kickDrum(0.85·power) +
+   * crash(0.6·power) + a 40 Hz sine drop (0.4 s) + a shutter clack.
+   */
+  lampSlam(power = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    this.spotOn(power);
+    this.boom(0.8 * power);
+    this.kickDrum(0.85 * power);
+    this.crash(0.6 * power);
+    this.toneAt(t, 62, 38, 0.4, 0.7 * power, 0.42, this.dest(0.3));
+    const out = this.dest(0.3);
+    this.toneAt(t + 0.004, 2200, 2200, 0, 0.06 * power, 0.008, out, 'square', 0.0005);
+    this.clickAt(t + 0.004, 4200, 2.5, 0.3 * power, 0.012, out);
+  }
+
+  /** SPOTLIGHT SOLO v2: turf tearing: band-passed noise sweeping 1.5 kHz -> 400 Hz, crackle grains, a soil thud. pan -1..1. */
+  rip(power = 1, pan = 0) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const dur = 0.18 + 0.1 * Math.min(1.5, power);
+    const out = this.dest(0.3, pan);
+    const n = this.noiseSrc();
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 1.6;
+    bp.frequency.setValueAtTime(1500, t);
+    bp.frequency.exponentialRampToValueAtTime(400, t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.6 * power), t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    // Crackle: a fast sawtooth amplitude flutter (the fibres tearing).
+    const am = ac.createGain();
+    am.gain.value = 0.6;
+    const lfo = ac.createOscillator();
+    lfo.type = 'sawtooth';
+    lfo.frequency.setValueAtTime(70, t);
+    lfo.frequency.linearRampToValueAtTime(38, t + dur);
+    const lg = ac.createGain();
+    lg.gain.value = 0.4;
+    lfo.connect(lg).connect(am.gain);
+    n.connect(bp).connect(g).connect(am).connect(out);
+    n.start(t);
+    lfo.start(t);
+    n.stop(t + dur + 0.05);
+    lfo.stop(t + dur + 0.05);
+    for (let i = 0; i < 6; i++) this.clickAt(t + Math.random() * dur * 0.8, 2500 + Math.random() * 3000, 5, 0.12 * power, 0.01, out);
+    this.toneAt(t + 0.01, 95, 48, 0.12, 0.55 * power, 0.16, this.dest(0.2, pan));
+  }
+
+  /** SPOTLIGHT SOLO v2: the strobe pop: a capacitor whine rising 2 -> 6 kHz in 0.12 s, then a hard CLACK and a short tail. */
+  strobeZap(power = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.35);
+    const o = ac.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(2000, t);
+    o.frequency.exponentialRampToValueAtTime(6000, t + 0.12);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.07 * power), t + 0.115);
+    g.gain.linearRampToValueAtTime(0, t + 0.122);
+    o.connect(g).connect(out);
+    o.start(t);
+    o.stop(t + 0.14);
+    const c = t + 0.12;
+    this.clickAt(c, 1500, 0.7, 0.75 * power, 0.01, out, true);
+    this.toneAt(c, 900, 600, 0.01, 0.12 * power, 0.012, out, 'square', 0.0005);
+    this.toneAt(c, 160, 70, 0.05, 0.4 * power, 0.08, this.dest(0.2));
+    this.clickAt(c + 0.005, 3000, 1.2, 0.12 * power, 0.15, this.dest(0.6));
+  }
+
+  /**
+   * SPOTLIGHT SOLO v2: a floodlight bank blowing out: a relay slam, an electrical zap, about 30 glass ticks and a sub
+   * thump.
+   */
+  surge(power = 1, pan = 0) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.4, pan);
+    this.toneAt(t, 74, 40, 0.18, 0.75 * power, 0.22, out);
+    this.clickAt(t, 900, 0.7, 0.5 * power, 0.06, out);
+    // Zap: a 120 Hz sawtooth buzz through a 2 kHz band, chopped at 60 Hz, 0.12 s.
+    const z = ac.createOscillator();
+    z.type = 'sawtooth';
+    z.frequency.setValueAtTime(120, t);
+    z.frequency.linearRampToValueAtTime(80, t + 0.12);
+    const zb = ac.createBiquadFilter();
+    zb.type = 'bandpass';
+    zb.frequency.value = 2000;
+    zb.Q.value = 1.4;
+    const zg = ac.createGain();
+    this.env(zg, t, 0.002, 0.16 * power, 0.12);
+    const ch = ac.createGain();
+    ch.gain.value = 0.5;
+    const lfo = ac.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.value = 60;
+    const lg = ac.createGain();
+    lg.gain.value = 0.5;
+    lfo.connect(lg).connect(ch.gain);
+    z.connect(zb).connect(zg).connect(ch).connect(out);
+    z.start(t);
+    lfo.start(t);
+    z.stop(t + 0.16);
+    lfo.stop(t + 0.16);
+    this.glassTicks(t + 0.02, 30, 0.15, 0.2 * power, this.dest(0.45, pan));
+    this.toneAt(t + 0.01, 48, 36, 0.25, 0.6 * power, 0.28, this.dest(0.2));
+  }
+
+  /**
+   * SPOTLIGHT SOLO v2: the stadium slamming back on: an electrical swell rising over 0.3 s under three relay slams
+   * (0, 0.1, 0.2 s: the far banks, the near banks, the roof) and the crowd's roar onset (through the crowd bus).
+   */
+  relight(power = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.45);
+    for (let i = 0; i < 3; i++) {
+      this.toneAt(t + i * 0.1, 86, 46, 0.15, 0.7 * power, 0.22, out);
+      this.clickAt(t + i * 0.1, 1400, 0.7, 0.4 * power, 0.05, out);
+    }
+    const o = ac.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(82, t);
+    o.frequency.exponentialRampToValueAtTime(122, t + 0.3);
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(300, t);
+    lp.frequency.exponentialRampToValueAtTime(3200, t + 0.3);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.1 * power), t + 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    o.connect(lp).connect(g).connect(this.held('tail', this.dest(0.4), [o], t + 1.15));
+    o.start(t);
+    o.stop(t + 1.15);
+    this.crowd(1.6, Math.min(0.9, 0.3 * power));
+  }
+
+  /** SPOTLIGHT SOLO v2: a trophy spot CLANKing on: a darker spotOn with a low metallic ring (180 + 540 Hz, 0.8 s). */
+  exhibit(power = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.45);
+    this.toneAt(t, 84, 44, 0.12, 0.75 * power, 0.2, out);
+    this.clickAt(t, 900, 0.7, 0.45 * power, 0.05, out);
+    this.toneAt(t + 0.003, 180, 180, 0, 0.12 * power, 0.8, out);
+    this.toneAt(t + 0.003, 541.7, 538, 0.8, 0.07 * power, 0.7, out);
+    this.toneAt(t + 0.003, 1093, 1090, 0.5, 0.02 * power, 0.35, out);
+  }
+
+  /** SPOTLIGHT SOLO v2: a war drum (DOOM): a 58 Hz floor tom with a long body, a skin slap and kickDrum(0.8·power). */
+  warDrum(power = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.5);
+    this.toneAt(t, 87, 58, 0.06, 0.95 * power, 0.95, out);
+    this.toneAt(t, 138, 92, 0.05, 0.3 * power, 0.4, out, 'triangle');
+    this.clickAt(t, 320, 1.2, 0.45 * power, 0.035, out);
+    void ac;
+    this.kickDrum(0.8 * power);
+  }
+
+  /**
+   * SPOTLIGHT SOLO v2: the stands stomping four times on the beat (one stomp per 0.4 s beat from the call), louder and
+   * denser with `level` (1 = with the wall; 2-4 = for him: crowdStomp(4) is the curtain drop's trigger). Through the
+   * crowd bus (duck applies); the four stomps are one 'tail' voice, so a seek chokes them.
+   */
+  crowdStomp(level = 1, beat = 0.4) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const L = Math.max(1, Math.min(4, Math.round(level)));
+    const srcs: AudioScheduledSourceNode[] = [];
+    const out = this.held('tail', this.crowdIn, srcs, t + 3 * beat + 0.6);
+    const gain = 0.22 + 0.1 * L;
+    const voices = 4 + 3 * L;
+    for (let k = 0; k < 4; k++) {
+      const t0 = t + k * beat;
+      for (let i = 0; i < voices; i++) {
+        const at = t0 + Math.random() * (0.012 + 0.006 * L);
+        const n = this.noiseSrc();
+        const lp = ac.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 160 + Math.random() * 120;
+        const g = ac.createGain();
+        this.env(g, at, 0.003, gain / Math.sqrt(voices), 0.16);
+        n.connect(lp).connect(g).connect(out);
+        n.start(at);
+        n.stop(at + 0.2);
+        srcs.push(n);
+      }
+      const o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(70, t0);
+      o.frequency.exponentialRampToValueAtTime(44, t0 + 0.12);
+      const og = ac.createGain();
+      this.env(og, t0, 0.004, 0.35 * gain, 0.22);
+      o.connect(og).connect(out);
+      o.start(t0);
+      o.stop(t0 + 0.3);
+      srcs.push(o);
+    }
+  }
+
+  /** SPOTLIGHT SOLO v2: a short crowd gasp (a reversed ooh envelope: rising to a sharp cut), through the crowd bus. */
+  gasp(power = 0.6) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const dur = 0.32;
+    const env = ac.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(Math.max(0.0002, 0.45 * power), t + dur * 0.85);
+    env.gain.linearRampToValueAtTime(0, t + dur);
+    env.connect(this.crowdIn);
+    const mix = ac.createGain();
+    mix.gain.value = 0.3;
+    for (const [fr, q, lvl] of [[700, 3, 1], [1250, 4, 0.6], [2600, 2, 0.35]] as const) {
+      const bp = ac.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = fr;
+      bp.Q.value = q;
+      const bg = ac.createGain();
+      bg.gain.value = lvl * 3;
+      mix.connect(bp).connect(bg).connect(env);
+    }
+    const nz = this.noiseSrc();
+    const ng = ac.createGain();
+    ng.gain.value = 0.9;
+    nz.connect(ng).connect(mix);
+    nz.start(t);
+    nz.stop(t + dur + 0.05);
+    for (let i = 0; i < 6; i++) {
+      const o = ac.createOscillator();
+      o.type = 'sawtooth';
+      const f = 190 * (1 + (Math.random() - 0.5) * 0.12);
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f * 1.25, t + dur);
+      const og = ac.createGain();
+      og.gain.value = 0.35;
+      o.connect(og).connect(mix);
+      o.start(t + Math.random() * 0.03);
+      o.stop(t + dur + 0.05);
+    }
+  }
+
+  /** SPOTLIGHT SOLO v2: a neon print shattering: about 30 glass ticks over 0.15 s, a bright 3.2 kHz ping, a short tail. */
+  shatter(power = 0.5, pan = 0) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.5, pan);
+    this.glassTicks(t, 30, 0.15, 0.3 * power, out);
+    this.toneAt(t, 3200, 3150, 0.3, 0.12 * power, 0.35, out);
+    this.toneAt(t + 0.002, 4870, 4850, 0.2, 0.05 * power, 0.22, out);
+    this.clickAt(t, 5000, 0.8, 0.12 * power, 0.25, this.dest(0.7, pan));
+  }
+
   // ---------------------------------------------------------------- GALE HAMMER voices
 
   /** Reverse air sweep: a noise band falling 4 kHz -> 200 Hz with rising gain and a hard cut (the inhale). */
@@ -1464,6 +1837,281 @@ export class Sfx {
     }
   }
 
+  // ---------------------------------------------------------------- GALE HAMMER v2 voices
+
+  /**
+   * Storm howl: three band-passed noises with resonant peaks near 380 / 900 / 2100 Hz, each drifting on its own slow
+   * LFO, the whole bank rising in pitch by `rise` (1 = steady) over `dur`. A tail voice (choke('tail') cuts it off).
+   */
+  howl(dur = 2, gain = 0.4, rise = 1) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const srcs: AudioScheduledSourceNode[] = [];
+    const out = this.held('tail', this.dest(0.45), srcs, t + dur + 0.1);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t + Math.min(0.25, dur * 0.25));
+    g.gain.setValueAtTime(Math.max(0.0002, gain), t + dur * 0.8);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    g.connect(out);
+    const bands: [number, number, number, number][] = [[380, 7, 1, 0.37], [900, 9, 0.7, 0.53], [2100, 11, 0.4, 0.71]];
+    for (const [f0, q, lvl, rate] of bands) {
+      const n = this.noiseSrc();
+      const bp = ac.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = q;
+      bp.frequency.setValueAtTime(f0, t);
+      bp.frequency.exponentialRampToValueAtTime(f0 * Math.max(0.2, rise), t + dur);
+      const lfo = ac.createOscillator();
+      lfo.frequency.value = rate;
+      const lg = ac.createGain();
+      lg.gain.value = f0 * 0.12;
+      lfo.connect(lg).connect(bp.frequency);
+      const bg = ac.createGain();
+      bg.gain.value = lvl * 2.2;
+      n.connect(bp).connect(bg).connect(g);
+      for (const s of [n, lfo]) {
+        s.start(t);
+        s.stop(t + dur + 0.08);
+        srcs.push(s);
+      }
+    }
+  }
+
+  /**
+   * The vacuum (dry bus, heard inside a muffle gap): a 0.12 s reverse swell, then a 38 Hz sub-drone, a 7 kHz tinnitus
+   * whine at about -30 dB and filtered air creaks, for `dur` s. It only adds sound: the shot's muffle curve closes the
+   * master. Its own timbre (never timeStop). A tail voice.
+   */
+  vacuum(dur = 0.85) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const srcs: AudioScheduledSourceNode[] = [];
+    const out = this.held('tail', this.dest(0.15, 0, this.dry), srcs, t + dur + 0.2);
+    // Reverse swell.
+    const n = this.noiseSrc();
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(600, t);
+    bp.frequency.exponentialRampToValueAtTime(3200, t + 0.12);
+    const ng = ac.createGain();
+    ng.gain.setValueAtTime(0.0001, t);
+    ng.gain.exponentialRampToValueAtTime(0.35, t + 0.11);
+    ng.gain.linearRampToValueAtTime(0, t + 0.13);
+    n.connect(bp).connect(ng).connect(out);
+    // Sub-drone.
+    const o = ac.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = 38;
+    const og = ac.createGain();
+    og.gain.setValueAtTime(0.0001, t + 0.1);
+    og.gain.exponentialRampToValueAtTime(0.55, t + 0.25);
+    og.gain.setValueAtTime(0.55, t + dur - 0.08);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
+    o.connect(og).connect(out);
+    const o2 = ac.createOscillator();
+    o2.type = 'triangle';
+    o2.frequency.value = 76;
+    const o2g = ac.createGain();
+    o2g.gain.setValueAtTime(0.0001, t + 0.1);
+    o2g.gain.exponentialRampToValueAtTime(0.12, t + 0.25);
+    o2g.gain.setValueAtTime(0.12, t + dur - 0.08);
+    o2g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
+    o2.connect(o2g).connect(out);
+    // Tinnitus whine.
+    const w = ac.createOscillator();
+    w.type = 'sine';
+    w.frequency.setValueAtTime(7000, t);
+    w.frequency.linearRampToValueAtTime(7060, t + dur);
+    const wg = ac.createGain();
+    wg.gain.setValueAtTime(0.0001, t + 0.12);
+    wg.gain.exponentialRampToValueAtTime(0.03, t + 0.3);
+    wg.gain.setValueAtTime(0.03, t + dur - 0.05);
+    wg.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+    w.connect(wg).connect(out);
+    // Air creaks: a narrow band of noise, gated by a slow irregular square LFO.
+    const c = this.noiseSrc();
+    const cf = ac.createBiquadFilter();
+    cf.type = 'bandpass';
+    cf.Q.value = 14;
+    cf.frequency.value = 520;
+    const cg = ac.createGain();
+    cg.gain.value = 0;
+    const gate = ac.createOscillator();
+    gate.type = 'square';
+    gate.frequency.value = 3.3;
+    const gg = ac.createGain();
+    gg.gain.value = 0.18;
+    gate.connect(gg).connect(cg.gain);
+    c.connect(cf).connect(cg).connect(out);
+    for (const s of [n, o, o2, w, c, gate]) {
+      s.start(t);
+      s.stop(t + dur + 0.15);
+      srcs.push(s);
+    }
+  }
+
+  /** A faint glass ring (2.6 kHz and 3.9 kHz partials, 1.2 s decay), dry: heard in the deepest silence. */
+  glassRing(gain = 0.25) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const out = this.dest(0.35, 0, this.dry);
+    for (const [f, lvl, d] of [[2600, 1, 1.2], [3900, 0.55, 0.8], [5230, 0.18, 0.5]] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      const g = ac.createGain();
+      this.env(g, t, 0.003, Math.max(0.0002, gain * lvl * 0.5), d);
+      o.connect(g).connect(out);
+      o.start(t);
+      o.stop(t + d + 0.05);
+    }
+  }
+
+  /**
+   * Rolling thunder that approaches over `dur`: a low rumble crescendo whose low-pass opens as it nears (120 Hz ->
+   * 1.4 kHz), a rising crackle and a 40 Hz sub; it peaks at the end and dies in 0.35 s. Through the main bus (a shot's
+   * muffle can open under it). A tail voice.
+   */
+  thunderFront(dur = 0.7, gain = 0.8) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const srcs: AudioScheduledSourceNode[] = [];
+    const end = t + dur;
+    const out = this.held('tail', this.dest(0.5), srcs, end + 0.45);
+    const n = this.noiseSrc();
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 1.2;
+    lp.frequency.setValueAtTime(120, t);
+    lp.frequency.exponentialRampToValueAtTime(1400, end);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), end);
+    g.gain.exponentialRampToValueAtTime(0.0001, end + 0.35);
+    n.connect(lp).connect(g).connect(out);
+    const cr = this.noiseSrc();
+    const hp = ac.createBiquadFilter();
+    hp.type = 'bandpass';
+    hp.Q.value = 0.8;
+    hp.frequency.setValueAtTime(900, t);
+    hp.frequency.exponentialRampToValueAtTime(2600, end);
+    const crg = ac.createGain();
+    crg.gain.value = 0;
+    const am = ac.createOscillator();
+    am.type = 'sawtooth';
+    am.frequency.setValueAtTime(9, t);
+    am.frequency.linearRampToValueAtTime(23, end);
+    const amg = ac.createGain();
+    amg.gain.setValueAtTime(0.0001, t);
+    amg.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * 0.45), end);
+    amg.gain.exponentialRampToValueAtTime(0.0001, end + 0.25);
+    am.connect(amg).connect(crg.gain);
+    cr.connect(hp).connect(crg).connect(out);
+    const sub = ac.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(34, t);
+    sub.frequency.linearRampToValueAtTime(46, end);
+    const sg = ac.createGain();
+    sg.gain.setValueAtTime(0.0001, t);
+    sg.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * 0.9), end);
+    sg.gain.exponentialRampToValueAtTime(0.0001, end + 0.4);
+    sub.connect(sg).connect(out);
+    for (const s of [n, cr, am, sub]) {
+      s.start(t);
+      s.stop(end + 0.45);
+      srcs.push(s);
+    }
+  }
+
+  /** The thunder's hammer, as one call: boom(p) + sonicBoom(0.87 p) + crack(0.8 p) + a sub drop (60 -> 38 Hz, 0.6 s). */
+  hammerBoom(power = 1) {
+    if (!this.ok()) return;
+    this.boom(power);
+    this.sonicBoom(0.87 * power);
+    this.crack(0.8 * power);
+    const ac = this.ac!, t = ac.currentTime;
+    const o = ac.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(60, t);
+    o.frequency.exponentialRampToValueAtTime(38, t + 0.6);
+    const g = ac.createGain();
+    this.env(g, t, 0.004, 0.7 * power, 0.75);
+    o.connect(g).connect(this.dest(0.3));
+    o.start(t);
+    o.stop(t + 0.85);
+  }
+
+  /** The goal frame bending and scraping: detuned saws through a falling band-pass (1.4 kHz -> 300 Hz) for `dur`. */
+  metalGroan(dur = 0.8, gain = 0.3) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 7;
+    bp.frequency.setValueAtTime(1400, t);
+    bp.frequency.exponentialRampToValueAtTime(300, t + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t + 0.03);
+    g.gain.setValueAtTime(Math.max(0.0002, gain * 0.8), t + dur * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    bp.connect(g).connect(this.dest(0.45));
+    const vib = ac.createOscillator();
+    vib.frequency.value = 6;
+    const vg = ac.createGain();
+    vg.gain.value = 4;
+    vib.connect(vg);
+    for (const [f, lvl] of [[112, 0.6], [115.5, 0.5], [171, 0.35]] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f * 0.82, t + dur);
+      vg.connect(o.frequency);
+      const og = ac.createGain();
+      og.gain.value = lvl;
+      o.connect(og).connect(bp);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    }
+    vib.start(t);
+    vib.stop(t + dur + 0.05);
+  }
+
+  /** A net peg ripped out of the turf: a short pitched pop and a dirt crumble. */
+  pegPop(gain = 0.4) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const o = ac.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(320, t);
+    o.frequency.exponentialRampToValueAtTime(110, t + 0.05);
+    const g = ac.createGain();
+    this.env(g, t, 0.002, gain, 0.07);
+    o.connect(g).connect(this.dest(0.25));
+    o.start(t);
+    o.stop(t + 0.1);
+    const n = this.noiseSrc();
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1300;
+    const ng = ac.createGain();
+    ng.gain.value = 0;
+    const am = ac.createOscillator();
+    am.type = 'square';
+    am.frequency.value = 37;
+    const amg = ac.createGain();
+    amg.gain.setValueAtTime(gain * 0.5, t + 0.02);
+    amg.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    am.connect(amg).connect(ng.gain);
+    n.connect(lp).connect(ng).connect(this.dest(0.2));
+    for (const s of [n, am]) {
+      s.start(t + 0.02);
+      s.stop(t + 0.24);
+    }
+  }
+
   // ---------------------------------------------------------------- MERIDIAN THREAD voices
 
   /** A soft waveshaper curve (cached): the faint "buzz" that leans the pluck toward a Cambodian chapei. */
@@ -1475,7 +2123,7 @@ export class Sfx {
    * a 15-cent sharp onset settling to pitch in 40 ms (string tension), a 3 ms band-passed noise "pick" at 3 kHz and
    * a quiet waveshaped buzz. Wet 0.65 (it rings in the stadium). A 'tail' voice: it rings across a cut, a seek chokes it.
    */
-  private pluckAt(t0: number, freq: number, decay: number, gain: number, pan = 0) {
+  private pluckAt(t0: number, freq: number, decay: number, gain: number, pan = 0, bright = 0) {
     const ac = this.ac!;
     const d = Math.max(0.05, decay);
     const end = t0 + d + 0.1;
@@ -1493,7 +2141,9 @@ export class Sfx {
       o.detune.setValueAtTime(15, t0);
       o.detune.linearRampToValueAtTime(0, t0 + 0.04);
       const g = ac.createGain();
-      this.env(g, t0, 0.002, gain * amp, d * dk);
+      // bright (harpGliss): the upper partials louder and longer (bright 0 = the shipped pluck, unchanged).
+      const up = k > 1 ? 1 + bright : 1;
+      this.env(g, t0, 0.002, gain * amp * up, d * Math.min(1, dk * up));
       o.connect(g).connect(body);
       o.start(t0);
       o.stop(end);
@@ -1604,5 +2254,312 @@ export class Sfx {
     lfo.start(t);
     n.stop(t + dur + 0.05);
     lfo.stop(t + dur + 0.05);
+  }
+
+  // ---------------------------------------------------------------- MERIDIAN THREAD v2 voices
+
+  /** Karplus-Strong string buffers, cached per (f0, length): the twang's body. */
+  private ksCache = new Map<string, AudioBuffer>();
+
+  /**
+   * A Karplus-Strong low string rendered into a buffer (noise burst into a tuned delay line, damping 0.996, a
+   * two-point average low-pass), its pitch dropping 2 semitones onto f0 over the first 80 ms (fractional delay).
+   */
+  private ksString(f0: number, dur: number): AudioBuffer {
+    const ac = this.ac!;
+    const key = `${f0.toFixed(2)}|${dur.toFixed(2)}`;
+    let b = this.ksCache.get(key);
+    if (b) return b;
+    const sr = ac.sampleRate, n = Math.floor(sr * dur);
+    b = ac.createBuffer(1, n, sr);
+    const out = b.getChannelData(0);
+    const maxL = Math.ceil(sr / f0) + 4;
+    const line = new Float32Array(maxL * 2);
+    const L0 = sr / (f0 * Math.pow(2, 2 / 12));
+    let seed = 12345;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff) * 2 - 1;
+    // The pluck excitation: one period of filtered noise.
+    let prev = 0;
+    for (let i = 0; i < Math.ceil(L0); i++) {
+      const v = rnd();
+      prev = prev * 0.5 + v * 0.5;
+      line[i] = prev;
+    }
+    const N = line.length;
+    let w = Math.ceil(L0);
+    for (let i = 0; i < n; i++) {
+      const t = i / sr;
+      const L = t < 0.08 ? L0 + (sr / f0 - L0) * (t / 0.08) : sr / f0;
+      // Read L samples behind the write head (linear interpolation).
+      const rp = w - L;
+      const i0 = Math.floor(rp), fr = rp - i0;
+      const a = line[((i0 % N) + N) % N], c = line[(((i0 + 1) % N) + N) % N], d = line[(((i0 - 1) % N) + N) % N];
+      const y = (a * (1 - fr) + c * fr) * 0.5 + (d * (1 - fr) + a * fr) * 0.5;
+      const v = y * 0.996;
+      line[w % N] = v;
+      out[i] = v;
+      w++;
+    }
+    this.ksCache.set(key, b);
+    return b;
+  }
+
+  /**
+   * MERIDIAN THREAD v2: the move's name sound. A Karplus-Strong low string on f0 (default D2) with a 2-semitone pitch
+   * drop over 80 ms, a noise slap (band-pass 1.8 kHz, 15 ms), a sub thump (55 Hz sine, 0.12 s) and a long metallic ring
+   * (band-pass 2.2 kHz noise plus two beating partials, a 1.5 s tail scaled by `power`). Dry-ish (wet 0.3). A tail voice.
+   */
+  twang(power = 1, f0 = 73.42, pan = 0) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const p = Math.max(0.05, power);
+    const ring = 1.5 * Math.min(1.6, p);
+    const end = t + Math.max(1.8, ring) + 0.2;
+    const srcs: AudioScheduledSourceNode[] = [];
+    const out = this.held('tail', this.dest(0.3, pan), srcs, end);
+    // The string.
+    const ks = ac.createBufferSource();
+    ks.buffer = this.ksString(f0, 1.8);
+    const kg = ac.createGain();
+    kg.gain.setValueAtTime(Math.min(1.4, 0.9 * p), t);
+    kg.gain.exponentialRampToValueAtTime(0.0001, t + 1.78);
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(5200, t);
+    lp.frequency.exponentialRampToValueAtTime(900, t + 0.6);
+    ks.connect(lp).connect(kg).connect(out);
+    ks.start(t);
+    ks.stop(t + 1.8);
+    srcs.push(ks);
+    // The slap.
+    const n = this.noiseSrc();
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1800;
+    bp.Q.value = 1.2;
+    const ng = ac.createGain();
+    this.env(ng, t, 0.001, 0.55 * p, 0.015);
+    n.connect(bp).connect(ng).connect(out);
+    n.start(t);
+    n.stop(t + 0.05);
+    // The sub thump.
+    const sub = ac.createOscillator();
+    sub.type = 'sine';
+    sub.frequency.setValueAtTime(70, t);
+    sub.frequency.exponentialRampToValueAtTime(55, t + 0.05);
+    const sg = ac.createGain();
+    this.env(sg, t, 0.004, 0.7 * Math.min(1.3, p), 0.12);
+    sub.connect(sg).connect(out);
+    sub.start(t);
+    sub.stop(t + 0.2);
+    srcs.push(sub);
+    // The metallic ring.
+    const rn = this.noiseSrc();
+    const rb = ac.createBiquadFilter();
+    rb.type = 'bandpass';
+    rb.frequency.value = 2200;
+    rb.Q.value = 28;
+    const rg = ac.createGain();
+    this.env(rg, t, 0.003, 0.9 * Math.min(1.3, p), ring);
+    rn.connect(rb).connect(rg).connect(out);
+    rn.start(t);
+    rn.stop(t + ring + 0.05);
+    srcs.push(rn);
+    for (const [f, gn] of [[2200, 0.05], [2213, 0.04], [3310, 0.02]] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      const g = ac.createGain();
+      this.env(g, t, 0.002, gn * Math.min(1.3, p), ring * 0.8);
+      o.connect(g).connect(out);
+      o.start(t);
+      o.stop(t + ring + 0.05);
+      srcs.push(o);
+    }
+  }
+
+  /**
+   * MERIDIAN THREAD v2: a bowed string. A sawtooth through a band-pass (Q 4) that tracks the pitch, vibrato 5.5 Hz
+   * ±12 cents, a quiet bow-noise layer (band-passed noise at 3 kHz), a 0.15 s attack and a 0.2 s release, an optional
+   * exponential glide to `glideTo` over `dur` and an amplitude tremolo at `tremolo` Hz. Wet 0.5. A held 'bow' voice:
+   * choke('bow') cuts it (the TWANG, the header) and clearBus({ tails: true }) stops it on a seek.
+   */
+  bow(freq: number, dur: number, gain = 0.25, glideTo?: number, tremolo = 0, pan = 0) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const D = Math.max(0.1, dur);
+    const end = t + D + 0.25;
+    const srcs: AudioScheduledSourceNode[] = [];
+    const out = this.held('bow', this.dest(0.5, pan), srcs, end);
+    const amp = ac.createGain();
+    amp.gain.setValueAtTime(0.0001, t);
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain), t + Math.min(0.15, D * 0.4));
+    amp.gain.setValueAtTime(Math.max(0.0002, gain), t + Math.max(0.16, D - 0.2));
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + D);
+    amp.connect(out);
+    let into: AudioNode = amp;
+    if (tremolo > 0) {
+      const tg = ac.createGain();
+      tg.gain.value = 0.75;
+      const lfo = ac.createOscillator();
+      lfo.frequency.value = tremolo;
+      const lg = ac.createGain();
+      lg.gain.value = 0.25;
+      lfo.connect(lg).connect(tg.gain);
+      tg.connect(amp);
+      lfo.start(t);
+      lfo.stop(end);
+      srcs.push(lfo);
+      into = tg;
+    }
+    const o = ac.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(freq, t);
+    if (glideTo && glideTo > 0) o.frequency.exponentialRampToValueAtTime(glideTo, t + D);
+    const vib = ac.createOscillator();
+    vib.frequency.value = 5.5;
+    const vg = ac.createGain();
+    vg.gain.value = 12;
+    vib.connect(vg).connect(o.detune);
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 4;
+    bp.frequency.setValueAtTime(freq * 2, t);
+    if (glideTo && glideTo > 0) bp.frequency.exponentialRampToValueAtTime(glideTo * 2, t + D);
+    const og = ac.createGain();
+    og.gain.value = 0.9;
+    o.connect(bp).connect(og).connect(into);
+    // A second, softer copy an octave down keeps the body (cello-ish) under the band-pass.
+    const o2 = ac.createOscillator();
+    o2.type = 'triangle';
+    o2.frequency.setValueAtTime(freq, t);
+    if (glideTo && glideTo > 0) o2.frequency.exponentialRampToValueAtTime(glideTo, t + D);
+    vg.connect(o2.detune);
+    const g2 = ac.createGain();
+    g2.gain.value = 0.35;
+    o2.connect(g2).connect(into);
+    // Bow noise.
+    const n = this.noiseSrc();
+    const nb = ac.createBiquadFilter();
+    nb.type = 'bandpass';
+    nb.frequency.value = 3000;
+    nb.Q.value = 2;
+    const ng = ac.createGain();
+    ng.gain.value = 0.06;
+    n.connect(nb).connect(ng).connect(into);
+    for (const s of [o, vib, o2, n]) {
+      s.start(t);
+      s.stop(end);
+      srcs.push(s);
+    }
+  }
+
+  /**
+   * MERIDIAN THREAD v2: the Sky Eye opening. A `lead`-second reverse whoosh swelling into a deep bell on D2 (inharmonic
+   * partials 1, 2.0, 2.76, 5.4; 4 s decay) struck at t + lead, and a soft choir pad (3 detuned saws on D3 / A3 / F#4,
+   * low-passed at 1.2 kHz, 1.5 s) blooming with it. A tail voice.
+   */
+  eyeOpen(gain = 0.5, lead = 0.3) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const tb = t + Math.max(0, lead);
+    const end = tb + 4.2;
+    const srcs: AudioScheduledSourceNode[] = [];
+    const out = this.held('tail', this.dest(0.6), srcs, end);
+    // Reverse whoosh into the strike.
+    if (lead > 0) {
+      const n = this.noiseSrc();
+      const bp = ac.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = 1.6;
+      bp.frequency.setValueAtTime(400, t);
+      bp.frequency.exponentialRampToValueAtTime(2600, tb);
+      const ng = ac.createGain();
+      ng.gain.setValueAtTime(0.0001, t);
+      ng.gain.exponentialRampToValueAtTime(0.32 * gain, tb - 0.01);
+      ng.gain.linearRampToValueAtTime(0, tb + 0.02);
+      n.connect(bp).connect(ng).connect(out);
+      n.start(t);
+      n.stop(tb + 0.05);
+      srcs.push(n);
+    }
+    // The bell.
+    const f0 = 73.42;
+    for (const [k, a, d] of [[1, 1, 4], [2.0, 0.55, 3], [2.76, 0.4, 2.2], [5.4, 0.22, 1.2]] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f0 * k;
+      const g = ac.createGain();
+      this.env(g, tb, 0.004, 0.5 * gain * a, d);
+      o.connect(g).connect(out);
+      o.start(tb);
+      o.stop(tb + d + 0.05);
+      srcs.push(o);
+    }
+    // The choir pad.
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 1200;
+    const pg = ac.createGain();
+    pg.gain.setValueAtTime(0.0001, tb);
+    pg.gain.exponentialRampToValueAtTime(0.06 * gain, tb + 0.35);
+    pg.gain.exponentialRampToValueAtTime(0.0001, tb + 1.5);
+    lp.connect(pg).connect(out);
+    for (const [f, det] of [[146.83, -7], [220, 5], [369.99, -3]] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = f;
+      o.detune.value = det;
+      o.connect(lp);
+      o.start(tb);
+      o.stop(tb + 1.55);
+      srcs.push(o);
+    }
+  }
+
+  /**
+   * MERIDIAN THREAD v2: a string under tension (the thread fraying at the Tower's fist): band-passed noise (600 ->
+   * 1400 Hz over `dur`) gated in random 30-60 Hz grains. A tail voice.
+   */
+  fray(dur = 0.3, gain = 0.3) {
+    if (!this.ok()) return;
+    const ac = this.ac!, t = ac.currentTime;
+    const D = Math.max(0.05, dur);
+    const srcs: AudioScheduledSourceNode[] = [];
+    const out = this.held('tail', this.dest(0.3), srcs, t + D + 0.1);
+    const n = this.noiseSrc();
+    const bp = ac.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 5;
+    bp.frequency.setValueAtTime(600, t);
+    bp.frequency.exponentialRampToValueAtTime(1400, t + D);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0, t);
+    let tt = t;
+    let k = 0;
+    while (tt < t + D) {
+      const step = 1 / (30 + 30 * ((Math.sin(k * 12.9898) * 43758.5453) % 1 + 1) / 2);
+      const on = k % 2 === 0;
+      const a = on ? gain * (0.5 + 0.5 * Math.abs(Math.sin(k * 4.7))) * (0.6 + 0.4 * ((tt - t) / D)) : 0;
+      g.gain.setValueAtTime(a, tt);
+      tt += step;
+      k++;
+    }
+    g.gain.setValueAtTime(0, t + D);
+    n.connect(bp).connect(g).connect(out);
+    n.start(t);
+    n.stop(t + D + 0.02);
+    srcs.push(n);
+  }
+
+  /**
+   * MERIDIAN THREAD v2: the harp glissando across the net: plucks `gap` seconds apart, each panned along a sweep from
+   * panFrom to panTo, with brighter partials than strum().
+   */
+  harpGliss(freqs: readonly number[], gap = 0.03, panFrom = -0.8, panTo = 0.8, decay = 1.8, gain = 0.3) {
+    if (!this.ok()) return;
+    const t = this.ac!.currentTime;
+    const n = Math.max(1, freqs.length - 1);
+    freqs.forEach((f, i) => this.pluckAt(t + i * gap, f, decay, gain, panFrom + (panTo - panFrom) * (i / n), 0.6));
   }
 }

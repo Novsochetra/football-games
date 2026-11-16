@@ -1,0 +1,153 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Rivals",
+  "animation": "TowerLeap",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "p": "#ffffff",
+  "q": "#d6deec",
+  "r": "#828caa",
+  "t": "#28beaa",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "v": "#c89646",
+  "w": "#96622c",
+  "x": "#5a361e",
+  "y": "#464e5c",
+  "z": "#2a2e3a",
+  "G": "#161620",
+  "B": "#5ae6d2",
+  "C": "#146e6e"
+ },
+ "notes": "THE TOWER in shot 6b (Rivals project, side, facing east; plain shirt, no number, so a runtime flip is legal without a west strip). All four frames are AIRBORNE by pelvis (bbox inside 2..125). fist = TJ1 the higher (near) gloved hand (53,11), TJ2/TJ2b the grab-hand knuckle centre (60,12) on the glove's 2 px crease (the thread hangs through this pixel; identical on TJ2 and TJ2b), TJ3 the flailing near fist; head = skull centre. TJ3 is used rotated (14 rad/s about com, computed by studioAnim). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 6b (x2.4): TJ1 0.70-0.86 (the leap), TJ2 0.86, TJ2b 0.94, TJ2 1.02, TJ2b 1.10, TJ2 1.18 (the tug-of-war: dead weight on the line, every 0.08 s), TJ3 1.20-1.55 (flung). Palette: Rivals 17. Studio layer: Art only. Studio: Rivals / TowerLeap / Side (Front/Back views blank).",
+ "frames": [
+  {
+   "name": "TJ1",
+   "id": "TJ1",
+   "label": "the leap",
+   "type": "N",
+   "ms": 160,
+   "pelvis": [
+    64,
+    91
+   ],
+   "contact": null,
+   "anchors": {
+    "fist": [
+     53,
+     11
+    ],
+    "head": [
+     69,
+     32
+    ],
+    "bbox": [
+     23,
+     3,
+     83,
+     112
+    ]
+   },
+   "meridian2": "s6b 0.70-0.86 (x2.4)"
+  },
+  {
+   "name": "TJ2",
+   "id": "TJ2",
+   "label": "the tug-of-war (dead weight)",
+   "type": "N key",
+   "ms": 170,
+   "pelvis": [
+    64,
+    87
+   ],
+   "contact": null,
+   "anchors": {
+    "fist": [
+     60,
+     12
+    ],
+    "head": [
+     76,
+     41
+    ],
+    "bbox": [
+     19,
+     5,
+     89,
+     125
+    ]
+   },
+   "meridian2": "s6b 0.86, 1.02, 1.18 (x2.4 (TJ2/TJ2b every 0.08 s))"
+  },
+  {
+   "name": "TJ2b",
+   "id": "TJ2b",
+   "label": "strain tremble",
+   "type": "V of TJ2 (added)",
+   "ms": 80,
+   "pelvis": [
+    64,
+    88
+   ],
+   "contact": null,
+   "anchors": {
+    "fist": [
+     60,
+     12
+    ],
+    "head": [
+     76,
+     41
+    ],
+    "bbox": [
+     19,
+     5,
+     89,
+     125
+    ]
+   },
+   "meridian2": "s6b 0.94, 1.10 (x2.4)"
+  },
+  {
+   "name": "TJ3",
+   "id": "TJ3",
+   "label": "flung",
+   "type": "N",
+   "ms": 120,
+   "pelvis": [
+    63,
+    66
+   ],
+   "contact": null,
+   "anchors": {
+    "fist": [
+     98,
+     20
+    ],
+    "head": [
+     91,
+     41
+    ],
+    "bbox": [
+     45,
+     8,
+     110,
+     93
+    ]
+   },
+   "meridian2": "s6b 1.20-1.55 (x2.4 rotated 14 rad/s about com)"
+  }
+ ]
+}

@@ -12,7 +12,7 @@
    "Art"
   ]
  },
- "notes": "Side view, facing east (No.10 is right-footed: near/right leg kicks, far/left leg plants). GALE never mirrors, so there is no west strip. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (constant while the foot is planted; the toe outline is 1 px further right); airborne frames (contact null) sit on pelvis. ball = the 12 px ball guide centre at rest (never drawn in the frame); boot = instep point; head = skull point; eye = the side eye; bbox = [x0,y0,x1,y1] measured on the art. Layers in the studio: Art only (no Num/Ball layer; numbers are in Art). Strike: one fixed patch of turf. Plant (far/left) toe-tip (76,102) on F5a-F7 (identical boot pixels); ball at rest (83,96). F8/F8b are airborne: drawn at their canvas pelvis, placed so that pelvis lands on world = [x,y] in Strike-canvas coords (sprite offset +5,-5 and +8,-2). F9/F10 land on the near toe-tip (97,102) in the same canvas. GALE 2: the Strike canvas origin = Run canvas origin + 56 px. F7: boot/laces are measured on the drawn boot (the drawn instep is 8 px past the rest ball, the ball has already left); ballHit = the ball tangent to those laces; lacesKey/bootKey = the library contact key at the rest ball (77,96)/(76,94). F7 is not on screen in GALE (shot 3 goes M3 -> F8).",
+ "notes": "Side view, facing east (No.10 is right-footed: near/right leg kicks, far/left leg plants). GALE never mirrors, so there is no west strip. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Ground frames sit on contact = the planted boot's toe-tip column on row 102 (constant while the foot is planted; the toe outline is 1 px further right); airborne frames (contact null) sit on pelvis. ball = the 12 px ball guide centre at rest (never drawn in the frame); boot = instep point; head = skull point; eye = the side eye; bbox = [x0,y0,x1,y1] measured on the art. Layers in the studio: Art only (no Num/Ball layer; numbers are in Art). Strike: one fixed patch of turf. Plant (far/left) toe-tip (76,102) on F5a-F7 (identical boot pixels); ball at rest (83,96). F8/F8b are airborne: drawn at their canvas pelvis, placed so that pelvis lands on world = [x,y] in Strike-canvas coords (sprite offset +5,-5 and +8,-2). F9/F10 land on the near toe-tip (97,102) in the same canvas. GALE 2: the Strike canvas origin = Run canvas origin + 56 px. F7: boot/laces are measured on the drawn boot (the drawn instep is 8 px past the rest ball, the ball has already left); ballHit = the ball tangent to those laces; lacesKey/bootKey = the library contact key at the rest ball (77,96)/(76,94). F7 is not on screen in GALE (shot 3 goes M3 -> F8). GALE v2 (appended, studio Strike Side frames 9-10; frames 1-8 and their data unchanged): F9r = the recoil skid, a ground frame on the plant HEEL (contact (78,102)), drawn at the Strike canvas origin; GALE v2 shot 5 slides it 10 world px west (outQuad) over 0.80-1.04. F9s = the step out of the skid (breakdown), drawn at Strike-canvas dx -10 (heel contact (78,102) -> world 68 = F9r's slid heel: no slip; world = its pelvis in Strike-canvas coords) over 1.04-1.12; then F9 1.12 and F10 1.30 at dx -18. toe = the plant toe tip (F9r: toe up 26 deg), kickToe = the kicking boot's toe tip. Never cut F9r straight to F9.",
  "frames": [
   {
    "name": "F5a",
@@ -319,6 +319,93 @@
     ]
    },
    "gale": "s3 1.45-1.60"
+  },
+  {
+   "name": "F9r",
+   "id": "F9r",
+   "label": "recoil skid",
+   "type": "N (moving hold: the skid)",
+   "ms": 240,
+   "pelvis": [
+    68,
+    64
+   ],
+   "contact": [
+    78,
+    102
+   ],
+   "anchors": {
+    "toe": [
+     91,
+     94
+    ],
+    "kickToe": [
+     105,
+     77
+    ],
+    "head": [
+     59,
+     19
+    ],
+    "eye": [
+     67,
+     25
+    ],
+    "bbox": [
+     31,
+     5,
+     105,
+     102
+    ]
+   },
+   "slide": {
+    "dx": -10,
+    "from": 0.8,
+    "to": 1.04,
+    "ease": "outQuad"
+   },
+   "gale": "GALE 5: 0.80-1.04 (sprite slides 10 world px WEST, outQuad, ending at 1.04); then F9s 1.04-1.12 at dx -10; F9 1.12 / F10 1.30 at Strike-canvas dx -18"
+  },
+  {
+   "name": "F9s",
+   "id": "F9s",
+   "label": "step out of the skid",
+   "type": "N (breakdown, new in review r1)",
+   "ms": 80,
+   "pelvis": [
+    73,
+    65
+   ],
+   "contact": [
+    78,
+    102
+   ],
+   "anchors": {
+    "kickToe": [
+     100,
+     90
+    ],
+    "head": [
+     68,
+     19
+    ],
+    "eye": [
+     77,
+     25
+    ],
+    "bbox": [
+     44,
+     6,
+     101,
+     102
+    ]
+   },
+   "dx": -10,
+   "world": [
+    63,
+    65
+   ],
+   "gale": "GALE 5: 1.04-1.12 (dx -10, rate 1); then F9 1.12 at dx -18"
   }
  ]
 }

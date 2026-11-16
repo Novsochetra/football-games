@@ -1,0 +1,127 @@
+{
+ "frameW": 48,
+ "frameH": 26,
+ "view": "face",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Sochetra Face",
+  "animation": "SoloFace",
+  "view": "Front",
+  "fps": 2,
+  "layers": [
+   "Art"
+  ]
+ },
+ "crop": {
+  "src": "src/art/hero_no10.png",
+  "x": 26,
+  "y": 8,
+  "w": 48,
+  "h": 26
+ },
+ "notes": "SPOTLIGHT SOLO v2 SOLO FACE: the GlanceFace crop re-lit from straight above (48x26 canvas and registration of GlanceFace: a crop of src/art/hero_no10.png at (26,8); studio project \"Sochetra Face\", palette = the face letters, h = #ffffff). The fringe throws a jagged shadow band over the eyes; inside it each eye is a dark pit with exactly ONE white pupil pixel: pupilL / pupilR (eyeGlow and the stage-light cross glints sit here); eyeL / eyeR = the eye centres, eye = their midpoint, head = the crown point. SF2 = the glare (brows down 1 px, lids to 2 px slits; only the eyes and mouth change, the same grid as SF1). pelvis = the crop centre (23.5,12.5), contact null; draw at integer x8 on the centre. Points are pixel indices (studioAnim adds 0.5). Shot 1: SF1 0.06-0.60, SF2 0.60-1.45 (x8, the cut-in panel in the drop-beam pool). Fallback if missing: GlanceFace G1 with a code shadow band. Studio: Sochetra Face / SoloFace / Front, layer Art (Side/Back blank).",
+ "frames": [
+  {
+   "name": "SF1",
+   "id": "SF1",
+   "label": "lit from straight above",
+   "type": "N (key; re-light of G1)",
+   "ms": 540,
+   "pelvis": [
+    23.5,
+    12.5
+   ],
+   "contact": null,
+   "anchors": {
+    "eyeL": [
+     18,
+     14
+    ],
+    "eyeR": [
+     27,
+     14
+    ],
+    "pupilL": [
+     18,
+     15
+    ],
+    "pupilR": [
+     27,
+     15
+    ],
+    "head": [
+     23,
+     4
+    ],
+    "bbox": [
+     4,
+     0,
+     38,
+     25
+    ],
+    "eye": [
+     22.5,
+     14.0
+    ]
+   },
+   "whitePixels": 2,
+   "com": [
+    21.9,
+    11.8
+   ],
+   "solo2": "1 / 0.06-0.60 / x8 (384 x 208, centred (320,140), in the drop beam pool)"
+  },
+  {
+   "name": "SF2",
+   "id": "SF2",
+   "label": "the glare",
+   "type": "V of SF1 (the glare)",
+   "ms": 850,
+   "pelvis": [
+    23.5,
+    12.5
+   ],
+   "contact": null,
+   "anchors": {
+    "eyeL": [
+     18,
+     14
+    ],
+    "eyeR": [
+     27,
+     14
+    ],
+    "pupilL": [
+     18,
+     15
+    ],
+    "pupilR": [
+     27,
+     15
+    ],
+    "head": [
+     23,
+     4
+    ],
+    "bbox": [
+     4,
+     0,
+     38,
+     25
+    ],
+    "eye": [
+     22.5,
+     14.0
+    ]
+   },
+   "variantOf": "SF1",
+   "whitePixels": 2,
+   "com": [
+    21.9,
+    11.8
+   ],
+   "solo2": "1 / 0.60-1.45 / x8 (under the push, the title and the count-in)"
+  }
+ ]
+}

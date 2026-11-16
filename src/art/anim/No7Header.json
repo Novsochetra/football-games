@@ -1,0 +1,304 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "No.7",
+  "animation": "Header",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "b": "#f49348",
+  "c": "#36224a",
+  "d": "#df2321",
+  "e": "#283ca0",
+  "f": "#850d19",
+  "g": "#b8502b",
+  "h": "#dfdae6",
+  "i": "#8980ae",
+  "j": "#fcb94c",
+  "k": "#370e22",
+  "l": "#b7101c",
+  "m": "#191c5a",
+  "n": "#000000",
+  "o": "#2f2c6e",
+  "p": "#d69668",
+  "q": "#b06e4a",
+  "r": "#74422c",
+  "s": "#463428",
+  "t": "#281c16"
+ },
+ "notes": "MERIDIAN v2 FLYING HEADER, No.7 (project \"No.7\"): the shared No.10 body re-skinned (skin #d69668/#b06e4a/#74422c, his own short dark crop #463428/#281c16, yellow \"7\"), same scale (98 px standing, ground row 102). Side view, facing east, not mirrored (no west strip). H1 is a ground frame on the push (left, far) toe contact (52,102), shot 7 0.80-0.95. H1b sits on the same toe pixel only 0.95-0.98, then is AIRBORNE by pelvis (71,64) on the rising take-off arc (frame.arc: s7 0.98-1.20 dx = 10u, dy = -14(1.4286u - 0.4286u^2), u = (t-0.98)/0.22; s8 0.00-0.10 dx = 10 + 45.45t, dy = -14 - 36.36t; sprite px at x1, +x forward). H2, H3, H3b, H4 are airborne by pelvis; H5 lies on the turf: contact = the chest-on-turf pixel (59,102) (chest = (71,102) the sternum on the turf), lowest row 102. forehead = the brow-front point the ball touches (the game places the ball touching it): H1 (87,21), H1b (101,33), H2 (99,57), H3/H3b (103,58), H4 (99,43). H1b -> H2 hand-off (shot 8 0.10, brief production note): forehead - pelvis is (+30,-31) on H1b and (+47,-9) on H2, so head-lock the swap: place H2 with pelvis = H1b forehead (world) - (47,-9), then ease the pelvis offset back onto the planned path over 0.10-0.18 (outCubic) so H3 still meets the ball at 0.36. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 7: H1 0.80-0.95 (x1), H1b 0.95-1.20. Shot 8 (x2): H1b 0.00-0.10, H2 0.10-0.36, H3 0.36-0.40, H3b 0.40-0.58 (hit-stop), H3 0.58-0.62, H4 0.62-0.80, H5 0.80-1.00 (and behind the bead). Studio layer: Art only (numbers in Art; no Num/Ball layer). The ball is never drawn in a frame: the game draws it at ball/boot/forehead. Studio: No.7 / Header / Side (Front/Back views blank).",
+ "frames": [
+  {
+   "name": "H1",
+   "id": "H1",
+   "label": "push-off",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    64,
+    62
+   ],
+   "contact": [
+    52,
+    102
+   ],
+   "anchors": {
+    "forehead": [
+     87,
+     21
+    ],
+    "bbox": [
+     41,
+     11,
+     88,
+     102
+    ]
+   },
+   "meridian2": "s7 0.80-0.95 (x1 on the push toe contact (52,102)); s8 (fallback 0.00-0.10 if H1b is not drawn) (x2)"
+  },
+  {
+   "name": "H1b",
+   "id": "H1b",
+   "label": "take-off",
+   "type": "N (added)",
+   "ms": 80,
+   "pelvis": [
+    71,
+    64
+   ],
+   "contact": [
+    52,
+    102
+   ],
+   "anchors": {
+    "forehead": [
+     101,
+     33
+    ],
+    "bbox": [
+     47,
+     24,
+     103,
+     102
+    ]
+   },
+   "arc": {
+    "anchor": "pelvis",
+    "pelvis": [
+     71,
+     64
+    ],
+    "ground": "H1b ground-registered pelvis = plant toe world + (19,-38) (the toe (52,102) on H1's plant pixel); the arc offsets are added to it",
+    "units": "sprite px at x1 (multiply by the shot scale), +x = forward/east as drawn (mirror with the sprite), -y = up",
+    "s7": {
+     "t0": 0.98,
+     "t1": 1.2,
+     "formula": "u = clamp((t - 0.98)/0.22, 0, 1); dx = 10u; dy = -14(1.4286u - 0.4286u^2)",
+     "keys": [
+      [
+       0.95,
+       0.0,
+       0.0
+      ],
+      [
+       0.98,
+       0.0,
+       0.0
+      ],
+      [
+       1.0,
+       0.91,
+       -1.77
+      ],
+      [
+       1.03,
+       2.27,
+       -4.24
+      ],
+      [
+       1.05,
+       3.18,
+       -5.76
+      ],
+      [
+       1.1,
+       5.45,
+       -9.12
+      ],
+      [
+       1.15,
+       7.73,
+       -11.87
+      ],
+      [
+       1.2,
+       10.0,
+       -14.0
+      ]
+     ],
+     "note": "shot-local unwarped t; 0.95-0.98 dx = dy = 0 (toe planted, the extension); decelerating rise that is still climbing at the cut (40 % of the take-off speed), not an apex"
+    },
+    "s8": {
+     "formula": "dx = 10 + 45.45 t; dy = -14 - 36.36 t (t = shot-8 local, 0.00-0.10; screen = x2)",
+     "keys": [
+      [
+       0.0,
+       10.0,
+       -14.0
+      ],
+      [
+       0.05,
+       12.27,
+       -15.82
+      ],
+      [
+       0.1,
+       14.55,
+       -17.64
+      ]
+     ],
+     "then": "H2 at 0.10 by pelvis (52,66) on the same world path"
+    }
+   },
+   "airborne": "s7 0.98-1.20 and s8 0.00-0.10 (by pelvis); contact (52,102) only s7 0.95-0.98",
+   "meridian2": "s7 0.95-1.20 (x1: on the push toe contact (52,102) 0.95-0.98, then AIRBORNE by pelvis (71,64) on the take-off arc (see arc): toe off row 102 by 1.00, head rising 14 px into the ball); s8 0.00-0.10 (x2 AIRBORNE by pelvis (71,64), continuing the arc (arc.s8) into H2 (motion cut on the same drawing))"
+  },
+  {
+   "name": "H2",
+   "id": "H2",
+   "label": "full flight",
+   "type": "N key",
+   "ms": 120,
+   "pelvis": [
+    52,
+    66
+   ],
+   "contact": null,
+   "anchors": {
+    "forehead": [
+     99,
+     57
+    ],
+    "bbox": [
+     5,
+     37,
+     101,
+     77
+    ]
+   },
+   "meridian2": "s8 0.10-0.36 (x2 (body ~200 px))"
+  },
+  {
+   "name": "H3",
+   "id": "H3",
+   "label": "contact (the nod)",
+   "type": "N key",
+   "ms": 160,
+   "pelvis": [
+    52,
+    66
+   ],
+   "contact": null,
+   "anchors": {
+    "forehead": [
+     103,
+     58
+    ],
+    "bbox": [
+     5,
+     41,
+     103,
+     89
+    ]
+   },
+   "meridian2": "s8 0.36-0.40, 0.58-0.62 (x2 (0.36-0.62 if H3b is not drawn))"
+  },
+  {
+   "name": "H3b",
+   "id": "H3b",
+   "label": "hit-stop hold",
+   "type": "V of H3 (optional)",
+   "ms": 120,
+   "pelvis": [
+    52,
+    66
+   ],
+   "contact": null,
+   "anchors": {
+    "forehead": [
+     103,
+     58
+    ],
+    "bbox": [
+     5,
+     41,
+     103,
+     89
+    ]
+   },
+   "meridian2": "s8 0.40-0.58 (x2 (optional, inside the hit-stop))"
+  },
+  {
+   "name": "H4",
+   "id": "H4",
+   "label": "follow-through, bracing",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    56,
+    64
+   ],
+   "contact": null,
+   "anchors": {
+    "forehead": [
+     99,
+     43
+    ],
+    "bbox": [
+     13,
+     27,
+     101,
+     81
+    ]
+   },
+   "meridian2": "s8 0.62-0.80 (x2)"
+  },
+  {
+   "name": "H5",
+   "id": "H5",
+   "label": "belly slide, gritted grin",
+   "type": "N",
+   "ms": 140,
+   "pelvis": [
+    49,
+    92
+   ],
+   "contact": [
+    59,
+    102
+   ],
+   "anchors": {
+    "chest": [
+     71,
+     102
+    ],
+    "bbox": [
+     6,
+     47,
+     103,
+     102
+    ]
+   },
+   "groundDy": 9,
+   "meridian2": "s8 0.80-1.00 (and behind the bead) (x2)"
+  }
+ ]
+}

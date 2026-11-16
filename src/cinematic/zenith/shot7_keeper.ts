@@ -1,6 +1,6 @@
 // SHOT 7 — THE KEEPER: close side view on the goal line. The keeper catches the meteor,
 // but it keeps spinning in his gloves: sparks spray, his boots carve skid marks, the
-// gloves glow and smoke... then his arms are blown open and he is driven into the net.
+// gloves glow and smoke... then his arms are blown open and he is forced into the net.
 
 import type { Shot } from '../timeline';
 import { VW, VH } from '../../engine/camera';
@@ -73,7 +73,7 @@ export const shotKeeper: Shot = {
       trail.push(ball.x, ball.y);
       meteorFlames(env, ball.x, ball.y, 10, 0, 1, dt);
     } else if (t < BREAK) {
-      // Driven back: slow at first, then accelerating.
+      // Forced back: slow at first, then accelerating.
       const s = (t - CATCH) / (BREAK - CATCH);
       keeper.x = HIP0 + ease.inCubic(s) * 90 + s * 20;
       keeper.y = hipY0;

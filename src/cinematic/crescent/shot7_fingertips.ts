@@ -193,7 +193,7 @@ function camAt(t: number) {
   }
   return { x, y, z, r };
 }
-/** Whip speed 0..1 (drives streaks, radial blur, smear). */
+/** Whip speed 0..1 (feeds streaks, radial blur, smear). */
 const whipAt = (t: number) => (t < SNAP ? 0 : Math.pow(clamp(1 - (t - SNAP) / 0.4), 2));
 function freezeAt(t: number) {
   if (t < SLOW0) return 0;

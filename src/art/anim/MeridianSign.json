@@ -1,0 +1,402 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "MeridianSign",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "MERIDIAN v2 MERIDIAN SIGN (No.10, front, full body; drawn full so the same frames serve the shot-1 x3 chest-up crop and the 9b x1 bridge). Front view, never mirrored (no west strip). Registration = Stand Front: body centre x 64, soles on row 102, contact = [64, 102] (centre between the planted boots; contactL / contactR = the outer row-102 sole pixels, soleL / soleR = sole centres); the feet rows 92-102 are pixel-identical on all six frames, the hips pop 1-3 px toward screen-right above them. The sign arm is his LEFT arm (screen-right, the friend side; lead decision, PLAN.md 4.1). fingertip = the index tip, one rising-then-falling arc MS1 (70,30) -> MS2 (83,14) -> MS3 (87,7) -> MS3b (105,14) -> MS4/MS4b (113,33); eye = the tapped eye (his left = screen-right; the needle pupil / needle's-eye iris anchor: OPEN on MS4 (75,25)); eyeL / eyeR = screen-left / screen-right eye; fist = the sign hand's knuckle block; head = skull centre; pelvis = hip centre (popped). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 1 (x3 crop): MS1 0.00-0.30, MS2 0.30-0.40, MS3 0.40-0.57, MS3b 0.57-0.74, MS4 0.74-1.05, MS4b 1.05-1.15 (the blink), MS4 1.15-1.40 (eyes OPEN under the needle's-eye iris push 1.22-1.40: the brief's \"MS4b 1.05\" returns to MS4 by 1.15). Shot 9b (x1): Run -> Point P1 1.34 (turn-in bridge) -> MS1 1.40 -> MS3 1.52 -> (MS3b 1.59) -> MS4 1.66 -> MS4b 1.98 -> MS4 2.10-2.30. Studio layer: Art only (numbers in Art; no Num/Ball layer). The ball is never drawn in a frame: the game draws it at ball/boot/forehead. Studio: Sochetra / MeridianSign / Front (Side/Back views blank).",
+ "frames": [
+  {
+   "name": "MS1",
+   "id": "MS1",
+   "label": "the tap",
+   "type": "N key",
+   "ms": 300,
+   "pelvis": [
+    66,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "fingertip": [
+     70,
+     30
+    ],
+    "eye": [
+     73,
+     27
+    ],
+    "eyeL": [
+     62,
+     27
+    ],
+    "eyeR": [
+     73,
+     27
+    ],
+    "fist": [
+     80,
+     32
+    ],
+    "head": [
+     67,
+     18
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ],
+    "bbox": [
+     41,
+     5,
+     92,
+     102
+    ]
+   },
+   "meridian2": "s1 0.00-0.30 (x3 chest-up crop (to 0.40 if MS2 is not drawn)); s9b 1.40-1.52 (x1)"
+  },
+  {
+   "name": "MS2",
+   "id": "MS2",
+   "label": "the fling",
+   "type": "N (optional)",
+   "ms": 100,
+   "pelvis": [
+    67,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "fingertip": [
+     83,
+     14
+    ],
+    "eye": [
+     75,
+     25
+    ],
+    "eyeL": [
+     64,
+     25
+    ],
+    "eyeR": [
+     75,
+     25
+    ],
+    "fist": [
+     85,
+     19
+    ],
+    "head": [
+     69,
+     17
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ],
+    "bbox": [
+     38,
+     4,
+     97,
+     102
+    ]
+   },
+   "meridian2": "s1 0.30-0.40 (x3 (optional))"
+  },
+  {
+   "name": "MS3",
+   "id": "MS3",
+   "label": "the sweep",
+   "type": "N key",
+   "ms": 170,
+   "pelvis": [
+    68,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "fingertip": [
+     87,
+     7
+    ],
+    "eye": [
+     77,
+     25
+    ],
+    "eyeL": [
+     66,
+     25
+    ],
+    "eyeR": [
+     77,
+     25
+    ],
+    "fist": [
+     88,
+     13
+    ],
+    "head": [
+     71,
+     17
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ],
+    "bbox": [
+     36,
+     4,
+     96,
+     102
+    ]
+   },
+   "meridian2": "s1 0.40-0.57 (x3); s9b 1.52-1.59 (x1)"
+  },
+  {
+   "name": "MS3b",
+   "id": "MS3b",
+   "label": "the follow",
+   "type": "N (added)",
+   "ms": 170,
+   "pelvis": [
+    68,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "fingertip": [
+     105,
+     14
+    ],
+    "eye": [
+     78,
+     25
+    ],
+    "eyeL": [
+     67,
+     25
+    ],
+    "eyeR": [
+     78,
+     25
+    ],
+    "fist": [
+     98,
+     16
+    ],
+    "head": [
+     72,
+     17
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ],
+    "bbox": [
+     35,
+     4,
+     106,
+     102
+    ]
+   },
+   "meridian2": "s1 0.57-0.74 (x3); s9b 1.59-1.66 (x1 (optional use))"
+  },
+  {
+   "name": "MS4",
+   "id": "MS4",
+   "label": "the point",
+   "type": "N key",
+   "ms": 300,
+   "pelvis": [
+    67,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "fingertip": [
+     113,
+     33
+    ],
+    "eye": [
+     75,
+     25
+    ],
+    "eyeL": [
+     64,
+     25
+    ],
+    "eyeR": [
+     75,
+     25
+    ],
+    "fist": [
+     104,
+     35
+    ],
+    "head": [
+     69,
+     16
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ],
+    "bbox": [
+     40,
+     3,
+     114,
+     102
+    ]
+   },
+   "meridian2": "s1 0.74-1.05, 1.15-1.40 (x3 (eyes open under the iris push 1.22-1.40)); s9b 1.66-1.98, 2.10-2.30 (x1)"
+  },
+  {
+   "name": "MS4b",
+   "id": "MS4b",
+   "label": "blink-grin",
+   "type": "V of MS4",
+   "ms": 100,
+   "pelvis": [
+    67,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "fingertip": [
+     113,
+     33
+    ],
+    "eye": [
+     75,
+     25
+    ],
+    "eyeL": [
+     64,
+     25
+    ],
+    "eyeR": [
+     75,
+     25
+    ],
+    "fist": [
+     104,
+     35
+    ],
+    "head": [
+     69,
+     16
+    ],
+    "contactL": [
+     43,
+     102
+    ],
+    "contactR": [
+     85,
+     102
+    ],
+    "soleL": [
+     46.5,
+     102
+    ],
+    "soleR": [
+     81.5,
+     102
+    ],
+    "bbox": [
+     40,
+     2,
+     114,
+     102
+    ]
+   },
+   "meridian2": "s1 1.05-1.15 (x3 (the blink)); s9b 1.98-2.10 (x1)"
+  }
+ ]
+}

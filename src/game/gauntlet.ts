@@ -39,7 +39,7 @@ interface Actor {
   h: number;
 }
 
-/** The parts of Field this scenario drives (all public on Field). */
+/** The parts of Field this scenario controls (all public on Field). */
 export interface GauntletField {
   mode: 'intro' | 'command' | 'result';
   t: number;

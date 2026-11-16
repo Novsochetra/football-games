@@ -12,7 +12,7 @@
    "Art"
   ]
  },
- "notes": "Side view at macro x4 (shin and boot fill the canvas), facing east. Anchor on laces (pelvis = laces, contact null, so the default anchor is the laces). turf = row 109; the ball (radius ballR = 23 at macro scale) is centred at ball = 23 px right of the laces on M1/M2/M2b; M3 is past contact (laces 18 px on, 6 px up), no ball. GALE 3: M1 0.00, M2 0.12, M2b 0.37 (hit-stop second drawing), M3 0.62. Points are pixel indices (studioAnim adds 0.5). Studio layer: Art only.",
+ "notes": "Side view at macro x4 (shin and boot fill the canvas), facing east. Anchor on laces (pelvis = laces, contact null, so the default anchor is the laces). turf = row 109; the ball (radius ballR = 23 at macro scale) is centred at ball = 23 px right of the laces on M1/M2/M2b; M3 is past contact (laces 18 px on, 6 px up), no ball. GALE 3: M1 0.00, M2 0.12, M2b 0.37 (hit-stop second drawing), M3 0.62. Points are pixel indices (studioAnim adds 0.5). Studio layer: Art only. GALE v2 (appended, studio StrikeMacro Side frame 5; M1-M3 and their data unchanged): M2c = the deepest squash, a V of M2b. laces = the SHARED registration point (58,86) on M1/M2/M2b/M2c (the sock they share; = pelvis = pivot), so laces-anchored placement lands the boot 6 px inside the r 23 ball; lacesDrawn (64,86) = M2c's drawn laces (17 px from the ball centre instead of 23). GALE v2 shot 5 (MD 2): M1 0.00, M2 0.08, M2b 0.14, M2c 0.40, M3 0.56 (place M3 with pivot (58,86): its shipped laces (76,80) are its own drawn laces).",
  "frames": [
   {
    "name": "M1",
@@ -169,6 +169,42 @@
     ]
    },
    "gale": "s3 0.62-0.66"
+  },
+  {
+   "name": "M2c",
+   "id": "M2c",
+   "label": "deepest squash",
+   "type": "V of M2b",
+   "ms": 160,
+   "pelvis": [
+    58,
+    86
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     58,
+     86
+    ],
+    "lacesDrawn": [
+     64,
+     86
+    ],
+    "ball": [
+     81,
+     86
+    ],
+    "bbox": [
+     13,
+     0,
+     67,
+     108
+    ]
+   },
+   "gale": "GALE 5 macro (MD 2), the ONE schedule: M1 0.00, M2 0.08, M2b 0.14, M2c 0.40 (the deepest squash at the code squash peak, up to the 0.58 release), M3 0.56. The boot only ever moves forward (drawn laces 58 -> 58 -> 58 -> 64 -> through). Place every macro frame on `laces` (= the shared registration (58,86) on M1/M2/M2b/M2c); M2c's drawn laces are `lacesDrawn` (64,86). M3's shipped `laces` is its own drawn laces (76,80): place M3 with pivot (58,86) (or 18,-6 canvas px on from the M2b laces point, as v1 shot 3 did) so the boot carries on through instead of pulling back. (Supersedes the brief's 'M2c 0.14 -> M2b 0.40' order.)"
   }
  ],
  "scale": 4

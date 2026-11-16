@@ -1,7 +1,7 @@
 // SHOT 5 — ZENITH: at the top of the sky, the ball hangs in front of the full moon.
 // Time slows; No.10 (a rim-lit silhouette against the moon) somersaults over it and
 // volleys it straight down. Contact detonates: red impact frame, shock ring across the sky.
-// The whole move is hand-drawn No.10: the rise (continuing shot 4's knee-drive loop) and the
+// The whole move is hand-drawn No.10: the rise (continuing shot 4's knee-lift loop) and the
 // spinning tuck are the jump frames, rotated by the spin track around the tuck's centre of mass;
 // out of the tuck he snaps open (V0), cocks the volley (V1), strikes (V2: his instep meets the ball
 // on HIT, the leg drawn along the shot line) and follows through (V3) to the end of the shot
@@ -26,7 +26,7 @@ const D = Math.PI / 180;
 const SHOT_DIR = 34 * D; // ball leaves down-right
 const BALL_R = 7 * 2; // world px (drawBall r 7 at scale 2)
 
-// Drawn frames by local time. Opens on shot 4's F6/F7 knee-drive loop (no rewind to the F5 leap),
+// Drawn frames by local time. Opens on shot 4's F6/F7 knee-lift loop (no rewind to the F5 leap),
 // gathers into the tuck and somersaults, then snaps open into the volley.
 const V0_AT = 1.13; // snap open out of the tuck
 const V1_AT = 1.22; // volley load (scissor wind-up)
@@ -70,7 +70,7 @@ const trail = new Trail(30);
 let hipAtHit: [number, number] = [0, 0];
 
 // Top of the rise (where the somersault turns over), in world px. Kept where the rise has always peaked
-// so the knee drive and the tuck frame the same way; the strike then settles from here onto hipAtHit.
+// so the knee lift and the tuck frame the same way; the strike then settles from here onto hipAtHit.
 const APEX: [number, number] = [246.24, 85.45];
 
 function hipPos(t: number): [number, number] {

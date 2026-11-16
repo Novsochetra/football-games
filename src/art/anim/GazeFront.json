@@ -1,0 +1,205 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "GazeFront",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "bust": {
+  "scale": 2,
+  "pivot": "chest"
+ },
+ "notes": "MERIDIAN v2 GAZE (No.10 front BUST at 2x figure scale, GALE v2 bust convention, re-based on GALE's BUST0 = the set's one No.10 bust model, same palette, 1 px outline). The bust runs off the bottom edge by design. contact null; pelvis = chest = the sternum (64,86) = the bust pivot (default anchor; GZ3's crouch is drawn 2 px lower against it). eyeL / eyeR = screen-left / screen-right pupils (where the eye threads leave); tip1-tip3 = index, middle, ring fingertips of the screen-left hand (his right), tip4-tip6 = the screen-right hand (GZ2/GZ2b: the loom threads leave from them going UP; the fingers are hooked over the strings); head = skull centre. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 2a (x3): GZ3 0.00-0.30, GZ2 0.30-0.42, GZ2b 0.42-0.57, GZ2 0.57-0.72, GZ2b 0.72-0.80, GZ3 0.80-0.90; shot 1: GZ3 as the cached still inside the needle's-eye iris (1.26-1.40). Placement (screen2a): chest at screen (320,286) at x3 (crown y 28, eyes y 169, canvas bottom y 409, off-screen through the 1.00 -> 1.10 push); keep the chest >= y 237 so the row-127 shirt cut never shows. Studio layer: Art only (numbers in Art; no Num/Ball layer). The ball is never drawn in a frame: the game draws it at ball/boot/forehead. Studio: Sochetra / GazeFront / Front (Side/Back views blank).",
+ "frames": [
+  {
+   "name": "GZ3",
+   "id": "GZ3",
+   "label": "the decision",
+   "type": "N",
+   "ms": 300,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "eyeL": [
+     57,
+     56
+    ],
+    "eyeR": [
+     75,
+     56
+    ],
+    "head": [
+     64,
+     34
+    ],
+    "bbox": [
+     19,
+     8,
+     109,
+     127
+    ]
+   },
+   "screen2a": {
+    "chest": [
+     320,
+     286
+    ],
+    "zoom": "1.00 -> 1.10 about the chest",
+    "note": "r3: crown (row 0) at y 28 (zoom 1.00) / y 2 (1.10), eyes (row 47) at y 169, canvas bottom (row 127) at y 409 / 421: off-screen for the whole push, so no flat shirt cut shows; the mop spike tips are closed inside row 0. The chest must stay >= y 237 (zoom 1.00) for the bottom cut to stay off-screen. Shot 1's cached 2a still (GZ3 in the needle's-eye iris) uses the same placement."
+   },
+   "meridian2": "s1 1.26-1.40 (cached still inside the needle's-eye iris); s2a 0.00-0.30, 0.80-0.90 (x3 bust)"
+  },
+  {
+   "name": "GZ2",
+   "id": "GZ2",
+   "label": "the loom",
+   "type": "N key",
+   "ms": 150,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "eyeL": [
+     56,
+     47
+    ],
+    "eyeR": [
+     76,
+     47
+    ],
+    "head": [
+     64,
+     28
+    ],
+    "tip1": [
+     17,
+     64
+    ],
+    "tip2": [
+     13,
+     63
+    ],
+    "tip3": [
+     9,
+     64
+    ],
+    "tip4": [
+     111,
+     64
+    ],
+    "tip5": [
+     115,
+     63
+    ],
+    "tip6": [
+     119,
+     64
+    ],
+    "bbox": [
+     1,
+     0,
+     127,
+     127
+    ]
+   },
+   "screen2a": {
+    "chest": [
+     320,
+     286
+    ],
+    "zoom": "1.00 -> 1.10 about the chest",
+    "note": "r3: crown (row 0) at y 28 (zoom 1.00) / y 2 (1.10), eyes (row 47) at y 169, canvas bottom (row 127) at y 409 / 421: off-screen for the whole push, so no flat shirt cut shows; the mop spike tips are closed inside row 0. The chest must stay >= y 237 (zoom 1.00) for the bottom cut to stay off-screen. Shot 1's cached 2a still (GZ3 in the needle's-eye iris) uses the same placement."
+   },
+   "meridian2": "s2a 0.30-0.42, 0.57-0.72 (x3 bust)"
+  },
+  {
+   "name": "GZ2b",
+   "id": "GZ2b",
+   "label": "the loom, flexed",
+   "type": "V of GZ2",
+   "ms": 150,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "eyeL": [
+     56,
+     47
+    ],
+    "eyeR": [
+     76,
+     47
+    ],
+    "head": [
+     64,
+     28
+    ],
+    "tip1": [
+     18,
+     66
+    ],
+    "tip2": [
+     13,
+     65
+    ],
+    "tip3": [
+     8,
+     66
+    ],
+    "tip4": [
+     110,
+     66
+    ],
+    "tip5": [
+     115,
+     65
+    ],
+    "tip6": [
+     120,
+     66
+    ],
+    "bbox": [
+     2,
+     0,
+     126,
+     127
+    ]
+   },
+   "screen2a": {
+    "chest": [
+     320,
+     286
+    ],
+    "zoom": "1.00 -> 1.10 about the chest",
+    "note": "r3: crown (row 0) at y 28 (zoom 1.00) / y 2 (1.10), eyes (row 47) at y 169, canvas bottom (row 127) at y 409 / 421: off-screen for the whole push, so no flat shirt cut shows; the mop spike tips are closed inside row 0. The chest must stay >= y 237 (zoom 1.00) for the bottom cut to stay off-screen. Shot 1's cached 2a still (GZ3 in the needle's-eye iris) uses the same placement."
+   },
+   "meridian2": "s2a 0.42-0.57, 0.72-0.80 (x3 bust)"
+  }
+ ]
+}

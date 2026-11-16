@@ -1,0 +1,446 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 109,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "MacroBoots",
+  "view": "Side",
+  "fps": 10,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "SPOTLIGHT SOLO v2 MACRO BOOTS (No.10 boots and shins at macro x4, side view, facing east; StrikeMacro convention). No numbers: may be mirrored in code (MB3 mirrored = the LEFT boot; no west strip needed). turf = row 109 (MB1's studs sink 2 px under it), scale = 4 (the brief's \"xN\" is figure-equivalent: draw scale = N/4, x4 = 1.0, x5 = 1.25 nearest), ballR = 23 = the canonical macro ball (a turf ball centre on row 86). pelvis = laces (the default anchor; contact null); place with any named anchor: boot = the contact point of the touching surface (MB1 ball of the planted foot, MB2 toe = boot, MB3 the inside face, MB4 the outside of the forefoot, MB5 the arch, MB6 the sole = boot), toe, heel, ankle, knee (may lie outside the canvas: the shin leaves the top edge on purpose), soleMid, ballPt = where the ball meets the boot. ball = the r 23 ball centre (never drawn); ballDir = the unit vector from the contact to the ball centre (a bigger hero ball slides its centre along it); ballUnder: false = draw the ball OVER the sprite (MB1, MB4, MB5), true = under. Points are pixel indices (studioAnim adds 0.5). Uses: MB1 4 / 0.00 (x5, then the far planted boot at 70 %); MB2 4 / 0.10-0.21 (x5), 8a / 0.80 black silhouette; MB3 4 / 0.40, 0.60 (x5; mirrored 0.50, 0.70), 7a / 0.00, 1.00 (x4; mirrored 0.20), 8b / 1.00, 1.40 (x4; mirrored 1.20); MB4 7a / 0.40-0.767 (x4); MB5 7a / 0.80-1.00 (x4; a 2-frame smear at 0.767); MB6 3 / 1.00-1.20 (x5, the ball 108 px under the sole), 8b / 1.50-1.60 (x4). Studio: Sochetra / MacroBoots / Side, layer Art (Front/Back blank).",
+ "frames": [
+  {
+   "name": "MB1",
+   "id": "MB1",
+   "label": "the plant (studs biting)",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    60,
+    80
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     60,
+     80
+    ],
+    "toe": [
+     80,
+     104
+    ],
+    "heel": [
+     13,
+     88
+    ],
+    "ballPt": [
+     58,
+     107
+    ],
+    "soleMid": [
+     45,
+     104
+    ],
+    "knee": [
+     65,
+     24
+    ],
+    "ankle": [
+     39,
+     69
+    ],
+    "boot": [
+     58,
+     111
+    ],
+    "ball": [
+     84,
+     86
+    ],
+    "bbox": [
+     11,
+     0,
+     80,
+     111
+    ]
+   },
+   "ballUnder": false,
+   "heelLift": 14,
+   "ballDir": [
+    0.721,
+    -0.693
+   ],
+   "com": [
+    49.4,
+    59.6
+   ],
+   "solo2": "4 / 0.00 (beat 3, g 5.6) / x5; stays as the far planted boot (70 % brightness) under MB2 and the touches"
+  },
+  {
+   "name": "MB2",
+   "id": "MB2",
+   "label": "toe-poke burst",
+   "type": "N (key; THE TOE-POKE BURST)",
+   "ms": 110,
+   "pelvis": [
+    77,
+    69
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     77,
+     69
+    ],
+    "toe": [
+     106,
+     86
+    ],
+    "heel": [
+     35,
+     92
+    ],
+    "ballPt": [
+     84,
+     95
+    ],
+    "soleMid": [
+     71,
+     96
+    ],
+    "knee": [
+     17,
+     28
+    ],
+    "ankle": [
+     53,
+     65
+    ],
+    "boot": [
+     106,
+     86
+    ],
+    "ball": [
+     126,
+     86
+    ],
+    "bbox": [
+     0,
+     0,
+     107,
+     103
+    ]
+   },
+   "ballUnder": true,
+   "ballDir": [
+    1.0,
+    0.0
+   ],
+   "edges": {
+    "left": [
+     0,
+     34
+    ],
+    "top": [
+     0,
+     7
+    ],
+    "topColours": "a",
+    "leftColours": "a"
+   },
+   "com": [
+    46.2,
+    60.3
+   ],
+   "solo2": "4 / 0.10-0.21 (contact g 5.7, inside the hit-stop) / x5; 8a / 0.80 as a black silhouette in the gap"
+  },
+  {
+   "name": "MB3",
+   "id": "MB3",
+   "label": "inside tap (end-on boot)",
+   "type": "N",
+   "ms": 100,
+   "pelvis": [
+    56,
+    80
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     56,
+     80
+    ],
+    "toe": [
+     57,
+     96
+    ],
+    "ballPt": [
+     56,
+     104
+    ],
+    "soleMid": [
+     56,
+     104
+    ],
+    "knee": [
+     58,
+     24
+    ],
+    "ankle": [
+     56,
+     74
+    ],
+    "boot": [
+     69,
+     88
+    ],
+    "ball": [
+     91,
+     86
+    ],
+    "bbox": [
+     41,
+     0,
+     73,
+     107
+    ]
+   },
+   "ballUnder": true,
+   "ballDir": [
+    0.996,
+    -0.091
+   ],
+   "com": [
+    56.8,
+    51.3
+   ],
+   "solo2": "4 / 0.40, 0.60 / x5; 7a / 0.00, 1.00 / x4; 8b / 1.00, 1.40 / x4 (from behind the ball, the front ride); mirrored = the left boot (4 / 0.50, 0.70; 7a / 0.20; 8b / 1.20)"
+  },
+  {
+   "name": "MB4",
+   "id": "MB4",
+   "label": "outside push (the show)",
+   "type": "N (key; the elastico SHOW)",
+   "ms": 370,
+   "pelvis": [
+    78,
+    68
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     78,
+     68
+    ],
+    "toe": [
+     92,
+     99
+    ],
+    "heel": [
+     30,
+     65
+    ],
+    "ballPt": [
+     70,
+     94
+    ],
+    "soleMid": [
+     58,
+     88
+    ],
+    "knee": [
+     53,
+     0
+    ],
+    "ankle": [
+     59,
+     52
+    ],
+    "boot": [
+     82,
+     96
+    ],
+    "ball": [
+     86,
+     86
+    ],
+    "bbox": [
+     26,
+     0,
+     93,
+     108
+    ]
+   },
+   "ballUnder": false,
+   "ballDir": [
+    0.371,
+    -0.928
+   ],
+   "com": [
+    57.7,
+    57.9
+   ],
+   "solo2": "7a / 0.40-0.767 / x4 (under the +35 deg whip and the rest); the Chorus copy left at the turn"
+  },
+  {
+   "name": "MB5",
+   "id": "MB5",
+   "label": "inside snap (hooked toe)",
+   "type": "N (key; the elastico SNAP)",
+   "ms": 200,
+   "pelvis": [
+    70,
+    64
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     70,
+     64
+    ],
+    "toe": [
+     94,
+     51
+    ],
+    "heel": [
+     40,
+     99
+    ],
+    "ballPt": [
+     91,
+     79
+    ],
+    "soleMid": [
+     75,
+     88
+    ],
+    "knee": [
+     31,
+     15
+    ],
+    "ankle": [
+     48,
+     67
+    ],
+    "boot": [
+     72,
+     75
+    ],
+    "ball": [
+     93,
+     86
+    ],
+    "bbox": [
+     4,
+     0,
+     102,
+     107
+    ]
+   },
+   "ballUnder": false,
+   "ballDir": [
+    0.886,
+    0.464
+   ],
+   "com": [
+    49.5,
+    54.3
+   ],
+   "solo2": "7a / 0.80-1.00 / x4 (THE SNAP, g 11.2, with the -70 deg glue-cam whip); 0.767 the 2-frame volt smear of MB5"
+  },
+  {
+   "name": "MB6",
+   "id": "MB6",
+   "label": "sole on top",
+   "type": "N (key; the sole clamp)",
+   "ms": 200,
+   "pelvis": [
+    60,
+    33
+   ],
+   "contact": null,
+   "scale": 4,
+   "turf": 109,
+   "ballR": 23,
+   "anchors": {
+    "laces": [
+     60,
+     33
+    ],
+    "toe": [
+     88,
+     54
+    ],
+    "heel": [
+     17,
+     55
+    ],
+    "ballPt": [
+     66,
+     60
+    ],
+    "soleMid": [
+     53,
+     61
+    ],
+    "knee": [
+     31,
+     -23
+    ],
+    "ankle": [
+     36,
+     29
+    ],
+    "sole": [
+     62,
+     63
+    ],
+    "boot": [
+     62,
+     63
+    ],
+    "ball": [
+     62,
+     86
+    ],
+    "bbox": [
+     16,
+     0,
+     88,
+     67
+    ]
+   },
+   "ballUnder": true,
+   "ballDir": [
+    0.0,
+    1.0
+   ],
+   "com": [
+    43.3,
+    37.5
+   ],
+   "solo2": "3 / 1.00-1.20 / x5 (the crash-zoom swap: the ball 108 px under the sole); 8b / 1.50-1.60 / x4 (the descending sole: the match cut)"
+  }
+ ]
+}

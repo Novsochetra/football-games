@@ -5,6 +5,7 @@ import { Cinematic } from '../cinematic/timeline';
 import { Field } from './field';
 import { SPECIALS, specialById, type SpecialDef, type SpecialId } from '../cinematic/specials';
 import { gauntletLaunch, gauntletLaunched, gauntletLaunching } from './gauntlet';
+import { gauntlet2Launch, gauntlet2Launched, gauntlet2Launching } from './gauntlet2';
 
 export type Phase = 'field' | 'special';
 
@@ -21,7 +22,7 @@ export class Game {
   constructor(private env: Env) {
     this.def = SPECIALS[0];
     this.field = new Field(env, this.def);
-    this.special = new Cinematic(this.def.name, this.def.shots, env);
+    this.special = new Cinematic(this.def.name, this.def.shots, env, { flashBudget: this.def.flashBudget });
     this.prepare();
   }
 
@@ -33,7 +34,7 @@ export class Game {
   /** Switch which special shot is being reviewed; returns to the field for that situation. */
   select(id: SpecialId) {
     this.def = specialById(id);
-    this.special = new Cinematic(this.def.name, this.def.shots, this.env);
+    this.special = new Cinematic(this.def.name, this.def.shots, this.env, { flashBudget: this.def.flashBudget });
     this.prepare();
     this.field.setSpecial(this.def);
     this.kickoff();
@@ -59,6 +60,11 @@ export class Game {
   confirm() {
     this.env.sfx.unlock();
     if (this.phase === 'field') {
+      if (this.def.scenario === 'gauntlet2' && this.field.mode === 'command' && this.field.cmdT > 0.25) {
+        // SPOTLIGHT SOLO v2: the same 0.15 s launch bridge; update() unleashes.
+        if (!gauntlet2Launching(this.field)) gauntlet2Launch(this.field, this.env);
+        return;
+      }
       if (this.def.scenario === 'gauntlet' && this.field.mode === 'command' && this.field.cmdT > 0.25) {
         // SPOTLIGHT SOLO: the 0.15 s launch bridge (sticks, the pool snaps tight, every light to black); update() unleashes.
         if (!gauntletLaunching(this.field)) gauntletLaunch(this.field, this.env);
@@ -69,12 +75,22 @@ export class Game {
         this.unleash(0);
       } else if (this.field.mode === 'result') {
         this.kickoff();
-      } else if (this.field.mode === 'intro' && this.def.scenario === 'gauntlet') {
+      } else if (this.field.mode === 'intro' && (this.def.scenario === 'gauntlet' || this.def.scenario === 'gauntlet2')) {
         // Skip ahead to just before the command window (it opens at x 860).
         this.field.hero.x = Math.max(this.field.hero.x, 850);
       } else if (this.field.mode === 'intro') {
-        // Skip ahead to the command window (the long shot opens it at 30 m, x 880; the through ball at x 900).
-        this.field.hero.x = Math.max(this.field.hero.x, this.def.scenario === 'longshot' ? 879 : this.def.scenario === 'through' ? 899 : 924);
+        // Skip ahead to the command window (the long shot opens it at 30 m, x 880; the through ball at x 900; MERIDIAN v2's
+        // lofted pass at x 760).
+        this.field.hero.x = Math.max(
+          this.field.hero.x,
+          this.def.scenario === 'longshot' || this.def.scenario === 'longshot2'
+            ? 879
+            : this.def.scenario === 'through'
+              ? 899
+              : this.def.scenario === 'through2'
+                ? 759
+                : 924,
+        );
       }
     }
   }
@@ -85,6 +101,7 @@ export class Game {
       this.field.update(dt);
       if (this.autoplay && this.field.mode === 'command' && this.field.cmdT > 1.2) this.unleash(0);
       if (this.phase === 'field' && this.def.scenario === 'gauntlet' && gauntletLaunched(this.field)) this.unleash(0);
+      if (this.phase === 'field' && this.def.scenario === 'gauntlet2' && gauntlet2Launched(this.field)) this.unleash(0);
     } else {
       this.special.step(dt);
       if (this.special.done) {

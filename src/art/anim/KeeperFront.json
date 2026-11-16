@@ -1,0 +1,321 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Rivals",
+  "animation": "KeeperFront",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "S": "#ffd6b2",
+  "v": "#787882",
+  "w": "#464654",
+  "x": "#1e1e28",
+  "p": "#c4ff5a",
+  "q": "#8cd632",
+  "r": "#3c7828",
+  "W": "#ffffff",
+  "O": "#ff9632",
+  "R": "#be461e"
+ },
+ "bust": {
+  "scale": 2,
+  "pivot": "chest"
+ },
+ "notes": "The keeper (KEEPER_KIT: fair skin, short grey crop, lime long-sleeved shirt, white gloves with orange palms and strap), front three-quarter BUST at 2x figure scale, body turned toward screen-left, keeper palette (KPAL, 15 colours). The bust runs off the bottom edge by design. contact null; pelvis = chest = the sternum (66,90) = the bust pivot (default anchor). glove = his right (far, screen-left) glove centre, gloveR = his left (near, screen-right) glove centre (KF3/KF3b/KF4); eyeL / eyeR = the far (screen-left) / near (screen-right) eye; mouth = mouth centre; head = skull centre; bbox measured on the art. Points are pixel indices (studioAnim adds 0.5). GALE v2 shot 1: KF1 0.00, KF1b 0.14, KF1 0.22, KF1b 0.30 (x2); shot 4 insert: KF2 0.94-1.14; shot 7: KF3 0.42-0.70, KF3b 0.70-0.95, KF3/KF3b alternating every 0.1 s 0.95-1.15, KF4 1.15-1.50; shot 8: KF4 0.00-0.32 (+1 px code tremor). Studio: Rivals / KeeperFront / Front, layer Art (Side/Back blank).",
+ "frames": [
+  {
+   "name": "KF1",
+   "id": "KF1",
+   "label": "smirk, the dare",
+   "type": "N (key)",
+   "ms": 140,
+   "pelvis": [
+    66,
+    90
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     66,
+     90
+    ],
+    "glove": [
+     24,
+     67
+    ],
+    "eyeL": [
+     53,
+     43
+    ],
+    "eyeR": [
+     70,
+     43
+    ],
+    "mouth": [
+     60,
+     58
+    ],
+    "head": [
+     66,
+     35
+    ],
+    "bbox": [
+     1,
+     7,
+     113,
+     127
+    ]
+   },
+   "gale": "GALE 1: 0.00-0.14, 0.22-0.30 (x2)"
+  },
+  {
+   "name": "KF1b",
+   "id": "KF1b",
+   "label": "the beckon",
+   "type": "V of KF1",
+   "ms": 140,
+   "pelvis": [
+    66,
+    90
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     66,
+     90
+    ],
+    "glove": [
+     24,
+     67
+    ],
+    "eyeL": [
+     53,
+     43
+    ],
+    "eyeR": [
+     70,
+     43
+    ],
+    "mouth": [
+     60,
+     58
+    ],
+    "head": [
+     66,
+     35
+    ],
+    "bbox": [
+     6,
+     7,
+     113,
+     127
+    ]
+   },
+   "gale": "GALE 1: 0.14-0.22, 0.30-0.38"
+  },
+  {
+   "name": "KF2",
+   "id": "KF2",
+   "label": "the gulp",
+   "type": "N",
+   "ms": 200,
+   "pelvis": [
+    66,
+    90
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     66,
+     90
+    ],
+    "glove": [
+     30,
+     106
+    ],
+    "eyeL": [
+     53,
+     43
+    ],
+    "eyeR": [
+     70,
+     43
+    ],
+    "mouth": [
+     60,
+     58
+    ],
+    "head": [
+     66,
+     35
+    ],
+    "bbox": [
+     2,
+     7,
+     113,
+     127
+    ]
+   },
+   "gale": "GALE 4 insert: 0.94-1.14 (x2)"
+  },
+  {
+   "name": "KF3",
+   "id": "KF3",
+   "label": "the grin",
+   "type": "N (key: the grin)",
+   "ms": 280,
+   "pelvis": [
+    66,
+    90
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     66,
+     90
+    ],
+    "glove": [
+     36,
+     110
+    ],
+    "gloveR": [
+     92,
+     112
+    ],
+    "eyeL": [
+     53,
+     42
+    ],
+    "eyeR": [
+     70,
+     42
+    ],
+    "mouth": [
+     60,
+     56
+    ],
+    "head": [
+     66,
+     34
+    ],
+    "bbox": [
+     18,
+     6,
+     113,
+     127
+    ]
+   },
+   "gale": "GALE 7: 0.42-0.70; alternating 0.95-1.15"
+  },
+  {
+   "name": "KF3b",
+   "id": "KF3b",
+   "label": "grin, hair lifting",
+   "type": "V of KF3",
+   "ms": 100,
+   "pelvis": [
+    66,
+    90
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     66,
+     90
+    ],
+    "glove": [
+     36,
+     110
+    ],
+    "gloveR": [
+     92,
+     112
+    ],
+    "eyeL": [
+     53,
+     42
+    ],
+    "eyeR": [
+     70,
+     42
+    ],
+    "mouth": [
+     60,
+     56
+    ],
+    "head": [
+     66,
+     34
+    ],
+    "bbox": [
+     18,
+     6,
+     113,
+     127
+    ]
+   },
+   "gale": "GALE 7: 0.70-0.95; alternating 0.95-1.15"
+  },
+  {
+   "name": "KF4",
+   "id": "KF4",
+   "label": "terror",
+   "type": "N (key: terror)",
+   "ms": 350,
+   "pelvis": [
+    66,
+    90
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     66,
+     90
+    ],
+    "glove": [
+     36,
+     110
+    ],
+    "gloveR": [
+     92,
+     112
+    ],
+    "eyeL": [
+     53,
+     43
+    ],
+    "eyeR": [
+     70,
+     43
+    ],
+    "mouth": [
+     60,
+     58
+    ],
+    "head": [
+     66,
+     35
+    ],
+    "bbox": [
+     15,
+     7,
+     120,
+     127
+    ]
+   },
+   "gale": "GALE 7: 1.15-1.50; GALE 8: 0.00-0.32 (+1 px code tremor)"
+  }
+ ]
+}

@@ -1,0 +1,78 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Rivals",
+  "animation": "TowerFace",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "p": "#ffffff",
+  "q": "#d6deec",
+  "r": "#828caa",
+  "t": "#28beaa",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "v": "#c89646",
+  "w": "#96622c",
+  "x": "#5a361e",
+  "y": "#464e5c",
+  "z": "#2a2e3a",
+  "G": "#161620",
+  "B": "#5ae6d2",
+  "C": "#146e6e"
+ },
+ "bust": {
+  "scale": 2,
+  "pivot": "chest"
+ },
+ "notes": "THE TOWER'S FACE (Rivals project): front three-quarter BUST at 2x figure scale (GALE v2 bust convention, built on TowerIdle Front: head x1.5, body x2), GRIM: teeth gritted, brows knotted down, eyes UP (code adds the jade almond reflections at eyeL / eyeR = screen-left / screen-right pupils), the armband on the screen-right sleeve; SOLO v2's RivalFearFace FF1 is drawn on this head. The bust runs off the bottom and side edges by design. contact null; pelvis = chest = the sternum (64,80) = the bust pivot; head = skull centre. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 6a GRR panel (x2): TF3 0.42-0.70. Palette: Rivals 17. Studio layer: Art only. Studio: Rivals / TowerFace / Front (Side/Back views blank).",
+ "frames": [
+  {
+   "name": "TF3",
+   "id": "TF3",
+   "label": "the face (grim)",
+   "type": "N",
+   "ms": 280,
+   "pelvis": [
+    64,
+    80
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     80
+    ],
+    "eyeL": [
+     60,
+     40
+    ],
+    "eyeR": [
+     74,
+     40
+    ],
+    "head": [
+     67,
+     40
+    ],
+    "bbox": [
+     0,
+     20,
+     127,
+     127
+    ]
+   },
+   "meridian2": "s6a 0.42-0.70 (x2 bust in the GRR panel)"
+  }
+ ]
+}

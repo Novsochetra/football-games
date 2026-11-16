@@ -1,5 +1,5 @@
 // SHOT 8 — THE NET: reverse angle from behind the goal. The keeper slams into the
-// mesh, then the meteor drives the net toward the lens until strands snap. GOAL!
+// mesh, then the meteor forces the net toward the lens until strands snap. GOAL!
 
 import type { Shot } from '../timeline';
 import { VW, VH } from '../../engine/camera';

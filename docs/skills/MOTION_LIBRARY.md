@@ -270,7 +270,7 @@ with the flight between R4→R5 and R8→R1):
 |---|---|---|
 | R1 | R-contact: right midfoot lands under the knee just ahead of the hips, left heel kicked up behind, left fist forward at chin height, right arm back, torso 10° | c R toe |
 | R2 | R-down: pelvis −3 px, right knee 25° absorbing, left thigh swinging forward, both fists passing the hips | c |
-| R3 | L-pass: left knee driving past the standing leg, left heel tucked high under the seat, pelvis rising, arms crossing (most compact silhouette) | c |
+| R3 | L-pass: left knee swinging past the standing leg, left heel tucked high under the seat, pelvis rising, arms crossing (most compact silhouette) | c |
 | R4 | R-push: right toe-tip still on the turf, leg long behind, left thigh horizontal in front, right fist forward, pelvis +2 px (highest) | c R toe-tip |
 | R5-R8 | the same four phases on the other leg (L-contact, L-down, R-pass, L-push) | c |
 
@@ -376,7 +376,7 @@ Write them to the studio as `Flick` and `Volley` (Side) with the `Num` layer.
 |---|---|---|---|---|
 | BK1 | gather: standing on the far leg, near (plant) knee lifted high in front, torso 4° back, head tipped back 30° with eyes UP on the cross, near arm forward-low, far arm back | 100 | c far toe | `STAND0→LIFT` · s3 0.00-0.27 |
 | BK2 | load (the stamp): near foot flat, deep crouch on it (knee ~80°), torso leaning **back** 24°, far heel kicked up behind, both arms swung back behind the hips, head back 40°, hair compressed | 140 | c near foot | `LOAD` · s3 0.27-0.44 (held through the hit-stop) |
-| BK3 | spring: near leg snapping straight onto the toes, far knee driving up, near arm swinging forward-up, far arm back, torso 30° back | 60 | c near toe-tip | `PUSH` · s3 0.44-0.54 |
+| BK3 | spring: near leg snapping straight onto the toes, far knee punching up, near arm swinging forward-up, far arm back, torso 30° back | 60 | c near toe-tip | `PUSH` · s3 0.44-0.54 |
 | BK4 | rise: airborne, lead (far) leg swinging up nearly straight, near knee bent and hanging, near arm forward-up, far arm back-down, head back, eyes on the ball above | 80 | p | `bikeRise` · s3 0.54-0.72 |
 | BK5 | swing: lead leg past horizontal, reaching over, near knee starting to rise, arms opening, spine arching | 90 | p | (breakdown) · s3 0.72-0.92 |
 | BK6 | scissor: lead leg high overhead and straight, kicking leg bent down-forward, arms spread opposite (near forward, far back), legs an open scissor | 110 | p | `bikeScissor` · s3 0.92-1.18 |

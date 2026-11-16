@@ -12,7 +12,7 @@ must feel like a sibling (same engine, same pixel art and post-FX look, same pun
 **one tier below ZENITH METEOR**: 6 shots and 11.3 s instead of 8 shots and about 17 s. It stays at
 ground level the whole time, with no sky, no moon and no fire, and the net balloons but does not
 tear. It must not copy the look, motion or name of any existing anime move. In particular the ball
-never rises high and then dips sharply, and the word "drive" appears nowhere: not in the name,
+never rises high and then dips sharply, and the banned d-word appears nowhere: not in the name,
 captions or code names (use `gale` and `strike`).
 
 Where it came from: this brief takes pitch A (GALE HAMMER) and adds the best ideas from pitches B and C:
@@ -25,7 +25,7 @@ Where it came from: this brief takes pitch A (GALE HAMMER) and adds the best ide
 It also fixes three problems in pitch A:
 - the net now moves **after** the ball, never before, so every shot follows the same "ball first,
   sound later" rule;
-- the caption no longer says "drives";
+- the caption no longer uses the banned d-word;
 - the Mach cone is drawn on the canvas, so there is only one new shader effect.
 
 **Set-critic fixes** (Nov 2026; these keep the five specials apart, see the identity table):
@@ -624,7 +624,7 @@ like the Jump ground frames.
   x ≈ 1022 (z 292), facing −1, and side-step to mirror his z, forming a screen at the edge of the
   box that blocks the lane.
 - The keeper stands about 2 m off his line (x 1160).
-- Caption: `No.10 RUNS AT A PACKED DEFENCE · 30 M OUT`. Never "drives".
+- Caption: `No.10 RUNS AT A PACKED DEFENCE · 30 M OUT`. Never the banned d-word.
 
 **Command window**
 - It opens when No.10 reaches x 880 (30 m), with `blip(660)`.

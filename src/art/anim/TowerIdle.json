@@ -1,0 +1,156 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "mixed",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Rivals",
+  "animation": "TowerIdle",
+  "view": "Side (frame 1) + Front (frame 1) + Back (frame 1)",
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "p": "#ffffff",
+  "q": "#d6deec",
+  "r": "#828caa",
+  "t": "#28beaa",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "v": "#c89646",
+  "w": "#96622c",
+  "x": "#5a361e",
+  "y": "#464e5c",
+  "z": "#2a2e3a",
+  "G": "#161620",
+  "B": "#5ae6d2",
+  "C": "#146e6e"
+ },
+ "notes": "THE TOWER model sheet (Rivals project; the set's one big captain, shared with SOLO v2 as defender D, who is drawn on this body with SOLO's own tone-for-tone kit swap): RIVAL_KIT white shirt (plain, no number) with teal collar/sleeve trims, CAPTAIN'S ARMBAND on his LEFT upper arm (front: screen-right sleeve; back: screen-left; side facing east: the far arm), black gloves, grey shorts with white side stripes, white socks, teal boots; buzz cut, heavy brow, square jaw; the same 98 px height as No.10 (crown row 5, soles row 102) at ~1.3x bulk (front shoulders ~64 px across the sleeves). Arm as drawn (the authority for any Tower frame): side shoulder top row 33 -> glove end row 75 (43 rows), front/back collar row 33 -> glove end row 72 (39). One frame per view, each carrying its own \"view\": frame \"Side\" (east; contact (74,102) = the boot toe column on row 102), frame \"Front\" and frame \"Back\" (contact (64,102) = body centre between the boots, contactL / contactR = the outer row-102 sole pixels, soleL / soleR = the sole centres). pelvis = hip point (measured: side the centre of the shorts row 64, front/back (64,64) as No.10's Idle); head = skull centre (measured: centre of the head rows 5-28). No number anywhere, so a runtime flip is legal without a west strip. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Reference / model sheet (TF3 is built on Front, TC1 on Back; SOLO v2 RivalFront RF1T-RF4T on Front; the field draws him 1.3x wide). Palette: the Rivals 17 colours (RIVAL_KIT). Studio layer: Art only. Studio: Rivals / TowerIdle / Side, Front, Back (frame 1 each).",
+ "frames": [
+  {
+   "name": "Side",
+   "id": "TowerIdle_S",
+   "label": "model sheet (side)",
+   "type": "N (model sheet, added)",
+   "ms": 300,
+   "pelvis": [
+    65,
+    64
+   ],
+   "contact": [
+    74,
+    102
+   ],
+   "anchors": {
+    "head": [
+     68,
+     16
+    ],
+    "bbox": [
+     52,
+     5,
+     81,
+     102
+    ]
+   },
+   "view": "side",
+   "meridian2": "reference: SOLO v2 defender D, field 1.3x actor"
+  },
+  {
+   "name": "Front",
+   "id": "TowerIdle_F",
+   "label": "model sheet (front)",
+   "type": "N (model sheet, added)",
+   "ms": 300,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     16
+    ],
+    "contactL": [
+     37,
+     102
+    ],
+    "contactR": [
+     90,
+     102
+    ],
+    "soleL": [
+     43.5,
+     102
+    ],
+    "soleR": [
+     83.5,
+     102
+    ],
+    "bbox": [
+     31,
+     5,
+     96,
+     102
+    ]
+   },
+   "view": "front",
+   "meridian2": "reference: TF3 base; SOLO v2 RivalFront RF1-RF4 base"
+  },
+  {
+   "name": "Back",
+   "id": "TowerIdle_B",
+   "label": "model sheet (back)",
+   "type": "N (model sheet, added)",
+   "ms": 300,
+   "pelvis": [
+    64,
+    64
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     16
+    ],
+    "contactL": [
+     38,
+     102
+    ],
+    "contactR": [
+     89,
+     102
+    ],
+    "soleL": [
+     43.5,
+     102
+    ],
+    "soleR": [
+     83.5,
+     102
+    ],
+    "bbox": [
+     31,
+     5,
+     96,
+     102
+    ]
+   },
+   "view": "back",
+   "meridian2": "reference: TC1 base"
+  }
+ ]
+}

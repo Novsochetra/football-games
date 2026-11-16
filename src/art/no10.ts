@@ -40,7 +40,7 @@ const side = (anim: string, frames: string[], jump: [string, number], more: Ref[
 });
 const back = (anim: string, frames: string[]): Def => ({ view: 'back', refs: [{ anim, view: 'back', frames }], jump: ['load', 0] });
 const LOAD: [string, number] = ['load', 0], CROUCH: [string, number] = ['crouch', 1], PUSH: [string, number] = ['push', 2];
-const TAKEOFF: [string, number] = ['take-off', 3], LEAP: [string, number] = ['leap', 4], KNEE: [string, number] = ['knee drive', 5];
+const TAKEOFF: [string, number] = ['take-off', 3], LEAP: [string, number] = ['leap', 4], KNEE: [string, number] = ['knee lift', 5];
 const FLOAT: [string, number] = ['rise float', 6];
 const F10: Ref = { anim: 'Strike', view: 'side', frames: ['F10'] };
 const STAND_A = ['a', 'Sa', 'B10a', 'S1', 'Stand a'], STAND_B = ['b', 'Sb', 'B10b', 'S2', 'Stand b'];
@@ -57,6 +57,17 @@ const backPass = (anims: string[], f: string, more: Ref[]): Def => ({ view: 'bac
 const frontPass = (f: string, more: Ref[]): Def => ({ view: 'front', refs: [...viewRefs(['Point', 'PointFront'], 'front', [f]), ...more], jump: LOAD });
 const facePass = (f: string, more: Ref[]): Def => ({ view: 'face', refs: [...viewRefs(['Glance'], 'face', [f]), ...more], jump: LOAD });
 const trivela = (f: string, jump: [string, number], more: Ref[]): Def => side('Trivela', [f], jump, more);
+/**
+ * MERIDIAN v2: a strip exported under its own stem first (so ref 0 = the library frame and no10Final() is true), then
+ * the same strip under a view-suffixed stem.
+ */
+const ownRefs = (anim: string, view: StripView, frames: string[]): Ref[] => [exact(anim, frames), { anim, view, frames }];
+/** MERIDIAN v2 MeridianSign frames (front, full body), then the Point frame that reads closest, then Stand Front. */
+const signPass = (frames: string[], point: string, stand: Ref): Def => ({
+  view: 'front',
+  refs: [...ownRefs('MeridianSign', 'front', frames), ...viewRefs(['Point', 'PointFront'], 'front', point === 'P3b' ? ['P3b', 'P3a'] : [point]), stand],
+  jump: LOAD,
+});
 
 /** Every No.10 frame the new specials schedule, by library ID. */
 export const NO10 = {
@@ -126,6 +137,59 @@ export const NO10 = {
   P2: frontPass('P2', [STANDFRONT_A]),
   P3a: frontPass('P3a', [STANDFRONT_B]),
   P3b: frontPass('P3b', [...viewRefs(['Point', 'PointFront'], 'front', ['P3a']), STANDFRONT_B]),
+
+  // ---- GALE HAMMER v2 (GALE_HAMMER_v2.md §9): new strips with the brief's fallbacks; never a puppet.
+  // Settle F1 / F3 / F3b (shot 1's trap), the library strip.
+  SetF1: side('Settle', ['F1'], LOAD, [F10]),
+  SetF3: side('Settle', ['F3'], LOAD, [F10]),
+  SetF3b: side('Settle', ['F3b', 'F3'], LOAD, [F10]),
+  // StrikeMacro M2b (rebound) and M2c (the deepest squash; fallback M2b, the shot squashes the ball deeper).
+  M2b: side('StrikeMacro', ['M2b', 'M2'], TAKEOFF, [strikeRef('F7')]),
+  M2c: side('StrikeMacro', ['M2c', 'M2b', 'M2'], TAKEOFF, [strikeRef('F7')]),
+  // Strike F9r, the recoil skid (fallback F8 -> F8b -> F9, v1's hop).
+  F9r: side('Strike', ['F9r', 'F8', 'F8b', 'F9'], KNEE),
+  // HammerCock HC1 / HC2 / HCs on the Strike canvas (fallback Strike F5b, the shot adds code offsets).
+  HC1: side('HammerCock', ['HC1'], CROUCH, [strikeRef('F5b', 'F5a', 'F5')]),
+  HC2: side('HammerCock', ['HC2', 'HC1'], CROUCH, [strikeRef('F5b', 'F5a', 'F5')]),
+  HCs: side('HammerCock', ['HCs'], PUSH, [strikeRef('F6')]),
+  // StormStand SS1 / SS2 / SS3, front full body (fallback Stand Front a / b, then the hand-drawn sprite).
+  SS1: { view: 'front', refs: [...viewRefs(['StormStand'], 'front', ['SS1']), STANDFRONT_A], jump: LOAD } as Def,
+  SS2: { view: 'front', refs: [...viewRefs(['StormStand'], 'front', ['SS2', 'SS1']), STANDFRONT_B], jump: LOAD } as Def,
+  SS3: { view: 'front', refs: [...viewRefs(['StormStand'], 'front', ['SS3', 'SS1']), STANDFRONT_A], jump: LOAD } as Def,
+  // WindHand WH1-WH7 + WH4b, front busts at 2x figure scale (fallback: the hand-drawn face crop; the shot draws a fist).
+  WH1: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH1']), jump: LOAD } as Def,
+  WH2: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH2', 'WH1']), jump: LOAD } as Def,
+  WH3: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH3']), jump: LOAD } as Def,
+  WH4: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH4', 'WH3']), jump: LOAD } as Def,
+  WH4b: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH4b', 'WH4', 'WH3']), jump: LOAD } as Def,
+  WH5: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH5']), jump: LOAD } as Def,
+  WH6: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH6', 'WH5']), jump: LOAD } as Def,
+  WH7: { view: 'face', refs: viewRefs(['WindHand'], 'front', ['WH7', 'WH5']), jump: LOAD } as Def,
+
+  // ---- MERIDIAN THREAD v2 (MERIDIAN_THREAD_v2.md, Studio art): new strips with the brief's fallbacks; never a puppet.
+  // Loft LF1-LF4b (side, east, on the Trivela canvas; fallback Trivela T3 plant, T5 swing, T6 contact, T5 smear, T7
+  // follow-through, with the same ball path).
+  LF1: side('Loft', ['LF1'], CROUCH, [{ anim: 'Trivela', view: 'side', frames: ['T3'] }, strikeRef('F5a', 'F5')]),
+  LF1s: side('Loft', ['LF1s', 'LF1'], PUSH, [{ anim: 'Trivela', view: 'side', frames: ['T5'] }, strikeRef('F6')]),
+  LF2: side('Loft', ['LF2'], TAKEOFF, [{ anim: 'Trivela', view: 'side', frames: ['T6'] }, strikeRef('F7')]),
+  LF3: side('Loft', ['LF3', 'LF2'], TAKEOFF, [{ anim: 'Trivela', view: 'side', frames: ['T5'] }, strikeRef('F7')]),
+  LF4: side('Loft', ['LF4'], KNEE, [{ anim: 'Trivela', view: 'side', frames: ['T7'] }, strikeRef('F9')]),
+  LF4b: side('Loft', ['LF4b', 'LF4'], KNEE, [{ anim: 'Trivela', view: 'side', frames: ['T7'] }, strikeRef('F9')]),
+  // GazeFront GZ2 / GZ2b / GZ3, front busts at 2x figure scale on the WindHand base (fallback Stand Front a / b, the shot
+  // crops it chest-up at 6x; the loom then leaves from his eyes only).
+  GZ2: { view: 'front', refs: [...ownRefs('GazeFront', 'front', ['GZ2']), STANDFRONT_A], jump: LOAD } as Def,
+  GZ2b: { view: 'front', refs: [...ownRefs('GazeFront', 'front', ['GZ2b', 'GZ2']), STANDFRONT_B], jump: LOAD } as Def,
+  GZ3: { view: 'front', refs: [...ownRefs('GazeFront', 'front', ['GZ3']), STANDFRONT_A], jump: LOAD } as Def,
+  // MeridianSign MS1-MS4b (front, full body; fallback Point P1 -> P2 -> P3a, the stroke drawn from P3a's tip).
+  MS1: signPass(['MS1'], 'P1', STANDFRONT_A),
+  MS2: signPass(['MS2', 'MS1'], 'P2', STANDFRONT_A),
+  MS3: signPass(['MS3'], 'P2', STANDFRONT_A),
+  MS3b: signPass(['MS3b', 'MS3'], 'P2', STANDFRONT_A),
+  MS4: signPass(['MS4'], 'P3a', STANDFRONT_B),
+  MS4b: signPass(['MS4b', 'MS4'], 'P3b', STANDFRONT_B),
+  // Pluck PL1 / PL2 (front busts on the WindHand base; fallback a Point P2 crop, the shot smears the hand in code).
+  PL1: { view: 'front', refs: [...ownRefs('Pluck', 'front', ['PL1']), ...viewRefs(['Point', 'PointFront'], 'front', ['P2']), STANDFRONT_A], jump: LOAD } as Def,
+  PL2: { view: 'front', refs: [...ownRefs('Pluck', 'front', ['PL2']), ...viewRefs(['Point', 'PointFront'], 'front', ['P2']), STANDFRONT_A], jump: LOAD } as Def,
 } satisfies Record<string, Def>;
 
 export type No10Key = keyof typeof NO10;

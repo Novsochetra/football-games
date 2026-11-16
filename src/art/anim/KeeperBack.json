@@ -1,0 +1,173 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "back",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Rivals",
+  "animation": "KeeperBack",
+  "view": "Back",
+  "fps": 5,
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "p": "#ffffff",
+  "q": "#d6deec",
+  "r": "#828caa",
+  "t": "#28beaa",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "v": "#c89646",
+  "w": "#96622c",
+  "x": "#5a361e",
+  "y": "#464e5c",
+  "z": "#2a2e3a",
+  "G": "#161620",
+  "B": "#5ae6d2",
+  "C": "#146e6e",
+  "L": "#c4ff5a",
+  "M": "#8cd632",
+  "N": "#3c7828",
+  "T": "#1e1e28",
+  "O": "#464654",
+  "P": "#282834",
+  "Q": "#14141c",
+  "R": "#5a5a64",
+  "S": "#32323c",
+  "X": "#ff9632",
+  "Y": "#be461e",
+  "H": "#78788c"
+ },
+ "notes": "SPOTLIGHT SOLO v2 KEEPER BACK (the keeper from behind, Rivals project with the KEEPER_KIT letters: lime long-sleeved shirt, dark shorts and socks, white gloves with orange palms and cuffs, short grey crop). Back view, never mirrored (no west strip); his right = screen-right. Registration = Stand Back: body centre x 64, soles on row 102. K1 (set crouch) sits on contact = the outer (screen-left) sole pixel (42,102) (contactL / contactR / soleL / soleR = the row-102 sole runs); K2 (blasted off his feet, thrown back toward the lens) is airborne: contact null, sits on pelvis. gloveL / gloveR = glove centres (K2: gloveR shields his eyes, gloveRHidden = mostly behind the head, gloveRPeek = its visible edge), head = skull centre, elbowR, kneeL / kneeR, bootL / bootR, collar, roll = the body roll in degrees. Points are pixel indices (studioAnim adds 0.5). Shot 9c: K1 1.20-1.62 (x4, box-filtered 2x: out of focus, cut at mid-back; a glove trembles 1 px and the shoulders lift 2 px in code at 1.28 = the flinch), K2 1.62-1.85, then the sitBack puppet lands seated on his line at 1.85. Studio: Rivals / KeeperBack / Back, layer Art (Front/Side blank).",
+ "frames": [
+  {
+   "name": "K1",
+   "id": "K1",
+   "label": "set crouch",
+   "type": "N",
+   "ms": 200,
+   "pelvis": [
+    64,
+    71
+   ],
+   "contact": [
+    42,
+    102
+   ],
+   "anchors": {
+    "head": [
+     62,
+     30
+    ],
+    "gloveL": [
+     36,
+     66
+    ],
+    "gloveR": [
+     92,
+     66
+    ],
+    "contactL": [
+     42,
+     102
+    ],
+    "contactR": [
+     86,
+     102
+    ],
+    "soleL": [
+     45.0,
+     102
+    ],
+    "soleR": [
+     83.0,
+     102
+    ],
+    "bbox": [
+     31,
+     19,
+     97,
+     102
+    ]
+   },
+   "com": [
+    63.8,
+    61.0
+   ],
+   "solo2": "9c / 1.20-1.62 / x4 box-filtered 2x (out of focus, cut at mid-back; a glove trembling 1 px; K1 shoulders +2 px in code at 1.28 = the flinch)"
+  },
+  {
+   "name": "K2",
+   "id": "K2",
+   "label": "blasted off his feet",
+   "type": "N (key; blasted off his feet)",
+   "ms": 230,
+   "pelvis": [
+    64,
+    62
+   ],
+   "contact": null,
+   "anchors": {
+    "head": [
+     59,
+     39
+    ],
+    "gloveL": [
+     25,
+     26
+    ],
+    "gloveR": [
+     66,
+     38
+    ],
+    "elbowR": [
+     87,
+     34
+    ],
+    "gloveRPeek": [
+     72,
+     37
+    ],
+    "kneeL": [
+     29,
+     51
+    ],
+    "kneeR": [
+     98,
+     42
+    ],
+    "bootL": [
+     17,
+     52
+    ],
+    "bootR": [
+     111,
+     40
+    ],
+    "collar": [
+     59,
+     51
+    ],
+    "bbox": [
+     11,
+     19,
+     116,
+     73
+    ]
+   },
+   "gloveRHidden": true,
+   "roll": -8,
+   "com": [
+    59.6,
+    47.2
+   ],
+   "solo2": "9c / 1.62-1.85 (then the `sitBack` puppet from behind, landing on his goal line at 1.85) / x4 box-filtered 2x; his back swells to SC 4.6 across the left 40 % as he is thrown at the lens"
+  }
+ ]
+}

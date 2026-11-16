@@ -416,7 +416,7 @@ export const RATE: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, (t: number) => number> = {
 
 /**
  * Lamp hum per shot (it runs whenever the spot is on): shot 1 0.05-1.25, shot 2 from 0.80, shots 3-6 throughout,
- * shot 7 until 1.60. Drive it from update() every step: `env.sfx.hum(HUM[n](t))` (seek-exact; clearBus in init
+ * shot 7 until 1.60. Feed it from update() every step: `env.sfx.hum(HUM[n](t))` (seek-exact; clearBus in init
  * stops it, the next step restarts it with a 40 ms cross-fade).
  */
 export const HUM: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, (t: number) => boolean> = {

@@ -393,6 +393,155 @@ export function lampTitle(
   return out;
 }
 
+export interface LampTitle2Opts {
+  /** Width of each group's drop beam at the top of frame (px, default 40). */
+  beamW?: number;
+  /** Screen y the beams fall from (default -10). */
+  beamTop?: number;
+  /** The volt Chorus copy's x offset (px, default -10: 10 px to the left). */
+  copyDX?: number;
+  /** Stroke widths in px: the ultraviolet stroke (default 3) and the plum outer stroke (default 4). */
+  stroke?: number;
+  outer?: number;
+  /** Overall alpha (default 1). */
+  alpha?: number;
+  /** The beam's held strength after the slam (0..1 of its peak, default 0.22; 0 = it dies after 0.35 s). */
+  hold?: number;
+  /** Puff of motes on each landing (default true). */
+  motes?: boolean;
+}
+
+/**
+ * SPOTLIGHT SOLO v2 stage lettering: each group is STAMPED by its own narrow drop beam (falling from beamTop in 2
+ * frames, 40 px wide at the top, the word's width at the bottom; plum underlay, ivory body, white-hot core) on its
+ * time in `onTimes`. The word lands with a vertical squash 60 -> 110 -> 100 % about its baseline (2 frames, then 4), a
+ * 1-frame white flash, a puff of lilac motes, and a crisp volt Chorus copy `copyDX` px aside that steps down
+ * 0.6 -> 0.4 -> 0.2 -> 0 on the next three 16ths. Ivory fill, `stroke` px ultraviolet stroke, `outer` px plum outer
+ * stroke. Used for the title (72 px) and 1 ON 1 / GOAL (130 px). Screen space; a pure function of t. Groups are laid
+ * out left to right as one line centred on x (put the spaces in the groups). Returns each group's centre and width.
+ */
+export function lampTitle2(
+  ctx: CanvasRenderingContext2D, groups: readonly string[], x: number, y: number, size: number, t: number,
+  onTimes: readonly number[], o: LampTitle2Opts = {},
+): { cx: number; w: number }[] {
+  const F = 1 / 60;
+  ctx.save();
+  ctx.font = `${size}px ${TITLE_FONT}`;
+  ctx.textBaseline = 'alphabetic';
+  ctx.textAlign = 'left';
+  ctx.lineJoin = 'round';
+  const widths = groups.map((g) => ctx.measureText(g).width);
+  const total = widths.reduce((a, b) => a + b, 0);
+  const out: { cx: number; w: number }[] = [];
+  const A = o.alpha ?? 1;
+  const bw = o.beamW ?? 40, top = o.beamTop ?? -10, dxc = o.copyDX ?? -10;
+  const sw = o.stroke ?? 3, ow = o.outer ?? 4, hold = o.hold ?? 0.22;
+  let gx = x - total / 2;
+  for (let i = 0; i < groups.length; i++) {
+    const vis = groups[i].trimEnd();
+    const vw = ctx.measureText(vis).width;
+    const cx = gx + vw / 2;
+    out.push({ cx, w: vw });
+    const lt = t - (onTimes[i] ?? Infinity);
+    if (lt >= 0) {
+      // The drop beam: its foot falls from the top of frame onto the baseline in 2 frames, blazes for 3 frames, then
+      // holds faintly. Plum underlay (normal), ivory body and a white-hot core (additive).
+      const drop = clamp(lt / (2 * F));
+      const yb = lerp(top, y + 6, ease.outQuad(drop));
+      const k = lt < 5 * F ? 1 : lerp(1, hold, clamp((lt - 5 * F) / 0.3));
+      if (k > 0.003) {
+        const w1 = Math.max(bw, vw * 1.1);
+        const quad = (s: number) => {
+          ctx.beginPath();
+          ctx.moveTo(cx - (bw / 2) * s, top);
+          ctx.lineTo(cx + (bw / 2) * s, top);
+          ctx.lineTo(cx + (lerp(bw, w1, drop) / 2) * s, yb);
+          ctx.lineTo(cx - (lerp(bw, w1, drop) / 2) * s, yb);
+          ctx.closePath();
+        };
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 0.25 * k * A;
+        ctx.fillStyle = SOLO_CSS.plum;
+        quad(1.15);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'lighter';
+        const gr = ctx.createLinearGradient(0, top, 0, yb);
+        gr.addColorStop(0, 'rgba(255,250,236,0.30)');
+        gr.addColorStop(1, 'rgba(246,240,223,0.16)');
+        ctx.globalAlpha = k * A;
+        ctx.fillStyle = gr;
+        quad(1);
+        ctx.fill();
+        ctx.globalAlpha = 0.35 * k * A;
+        ctx.fillStyle = '#FFFAEC';
+        quad(0.3);
+        ctx.fill();
+        // Volt edges.
+        ctx.globalAlpha = 0.5 * k * A;
+        ctx.strokeStyle = '#A880FF';
+        ctx.lineWidth = 1;
+        quad(1);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      // The Chorus copy (behind the letters): volt, stepping down on the 16ths.
+      const ca = lt < 0.1 ? 0.6 : lt < 0.2 ? 0.4 : lt < 0.3 ? 0.2 : 0;
+      if (ca > 0) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = ca * A;
+        ctx.fillStyle = '#A880FF';
+        ctx.fillText(vis, gx + dxc, y);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      // The squash about the baseline: 60 % on the hit, 110 % 2 frames later, 100 % from 6 frames.
+      const sy = lt < 2 * F ? lerp(0.6, 1.1, lt / (2 * F)) : lt < 6 * F ? lerp(1.1, 1, (lt - 2 * F) / (4 * F)) : 1;
+      const sx = 1 / Math.sqrt(sy);
+      ctx.save();
+      ctx.translate(cx, y);
+      ctx.scale(sx, sy);
+      ctx.translate(-cx, -y);
+      ctx.globalAlpha = A;
+      ctx.strokeStyle = SOLO_CSS.plum;
+      ctx.lineWidth = 2 * (sw + ow);
+      ctx.strokeText(vis, gx, y);
+      ctx.strokeStyle = SOLO_CSS.uv;
+      ctx.lineWidth = 2 * sw;
+      ctx.strokeText(vis, gx, y);
+      ctx.fillStyle = SOLO_CSS.ivory;
+      ctx.fillText(vis, gx, y);
+      if (lt < F) {
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = 0.4 * A;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(vis, gx, y);
+        ctx.globalCompositeOperation = 'source-over';
+      }
+      ctx.restore();
+      // Motes puffing out of the landing (seeded per group; a pure function of lt).
+      if ((o.motes ?? true) && lt < 0.45) {
+        ctx.globalCompositeOperation = 'lighter';
+        for (let m = 0; m < 12; m++) {
+          const h1 = Math.sin((i + 1) * 91.7 + m * 37.1) * 43758.5453;
+          const r1 = h1 - Math.floor(h1);
+          const h2 = Math.sin((i + 1) * 13.3 + m * 71.9) * 24634.6345;
+          const r2 = h2 - Math.floor(h2);
+          const ang = Math.PI + r1 * Math.PI;
+          const sp = 40 + 120 * r2;
+          const px = cx + (r1 - 0.5) * vw + Math.cos(ang) * sp * lt;
+          const py = y - 2 + Math.sin(ang) * sp * lt * 0.6 - 20 * lt;
+          ctx.globalAlpha = clamp(0.9 * (1 - lt / 0.45)) * A;
+          ctx.fillStyle = m % 3 === 0 ? SOLO_CSS.ivory : SOLO_CSS.lilac;
+          ctx.fillRect(Math.round(px), Math.round(py), m % 4 === 0 ? 2 : 1, m % 4 === 0 ? 2 : 1);
+        }
+        ctx.globalCompositeOperation = 'source-over';
+      }
+    }
+    gx += widths[i];
+  }
+  ctx.restore();
+  return out;
+}
+
 /** Marquee tag timing (seconds): slide in 3 frames, hold 0.6 s, fade out 4 frames. */
 export const MARQUEE = { slideIn: 3 / 60, hold: 0.6, fadeOut: 4 / 60 } as const;
 
@@ -438,6 +587,13 @@ export interface FourCountOpts {
   alpha?: number;
   /** One frame where every lit pad flares ivory (OLÉ! 4). */
   flareAt?: number;
+  // ---- SPOTLIGHT SOLO v2 (all optional; omitted = the shipped HUD)
+  /** Top-left of the first pad (default 566, 16) and the pad size (default 12; v2's cut-in pads are 16). */
+  x?: number;
+  y?: number;
+  pad?: number;
+  /** Every pad, lit or not, flares white for 2 frames from each of these times (the crowd's stomp at the curtain drop). */
+  flareAllAt?: number | readonly number[];
 }
 
 /**
@@ -448,46 +604,51 @@ export interface FourCountOpts {
 export function fourCount(ctx: CanvasRenderingContext2D, litAt: readonly number[], t: number, o: FourCountOpts = {}) {
   const A = o.alpha ?? 1;
   if (A <= 0) return;
+  // Geometry (the defaults reproduce the shipped HUD exactly: pads 12 px at (566, 16), 15 px apart, pill 69 x 22).
+  const P = o.pad ?? 12, q = P / 12, gap = P + 3;
+  const x0 = o.x ?? 566, y0 = o.y ?? 16;
+  const fa = o.flareAllAt === undefined ? [] : typeof o.flareAllAt === 'number' ? [o.flareAllAt] : o.flareAllAt;
+  const flareAll = fa.some((a) => t >= a - 1e-6 && t < a + 2 / 60 - 1e-6);
   ctx.save();
   ctx.globalAlpha = 0.88 * A;
   ctx.fillStyle = SOLO_CSS.plum;
-  ctx.fillRect(560, 11, 69, 22);
+  ctx.fillRect(x0 - 6, y0 - 5, 3 * gap + P + 12, P + 10);
   ctx.globalAlpha = A;
   ctx.strokeStyle = SOLO_CSS.uvDeep;
   ctx.lineWidth = 1;
-  ctx.strokeRect(560.5, 11.5, 68, 21);
-  ctx.font = `8px ${PIXEL_FONT}`;
+  ctx.strokeRect(x0 - 5.5, y0 - 4.5, 3 * gap + P + 11, P + 9);
+  ctx.font = `${P === 12 ? 8 : Math.round(8 * q)}px ${PIXEL_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   const all = o.flareAt !== undefined && t >= o.flareAt && t < o.flareAt + 1 / 60;
   for (let i = 0; i < 4; i++) {
-    const x = 566 + i * 15, y = 16;
+    const x = x0 + i * gap, y = y0;
     const lt = t - (litAt[i] ?? Infinity);
-    const lit = lt >= 0;
+    const lit = lt >= 0 || flareAll;
     if (!lit) {
       ctx.globalAlpha = A;
       ctx.fillStyle = SOLO_CSS.uvDeep;
-      ctx.fillRect(x, y, 12, 12);
+      ctx.fillRect(x, y, P, P);
       ctx.strokeStyle = SOLO_CSS.lilac;
-      ctx.strokeRect(x + 0.5, y + 0.5, 11, 11);
+      ctx.strokeRect(x + 0.5, y + 0.5, P - 1, P - 1);
       ctx.globalAlpha = 0.4 * A;
       ctx.fillStyle = SOLO_CSS.lilac;
-      ctx.fillText(String(i + 1), x + 6, y + 2);
+      ctx.fillText(String(i + 1), x + P / 2, y + 2 * q);
       continue;
     }
-    const flare = lt < 1 / 60 || all;
+    const flare = lt < 1 / 60 || all || flareAll;
     ctx.globalAlpha = A;
     ctx.globalCompositeOperation = 'source-over';
-    drawGlow(ctx, glowOf([42, 22, 96]), x + 6, y + 6, 13, 0.9 * A);
-    drawGlow(ctx, glowOf([122, 77, 255]), x + 6, y + 6, 10, 0.6 * A);
+    drawGlow(ctx, glowOf([42, 22, 96]), x + P / 2, y + P / 2, 13 * q * (flareAll ? 1.6 : 1), 0.9 * A);
+    drawGlow(ctx, glowOf([122, 77, 255]), x + P / 2, y + P / 2, 10 * q * (flareAll ? 1.6 : 1), 0.6 * A);
     ctx.globalAlpha = A;
     ctx.fillStyle = flare ? '#ffffff' : SOLO_CSS.ivory;
-    ctx.fillRect(x, y, 12, 12);
+    ctx.fillRect(x, y, P, P);
     if (!flare) {
       ctx.strokeStyle = SOLO_CSS.lilac;
-      ctx.strokeRect(x + 0.5, y + 0.5, 11, 11);
+      ctx.strokeRect(x + 0.5, y + 0.5, P - 1, P - 1);
       ctx.fillStyle = SOLO_CSS.plum;
-      ctx.fillText(String(i + 1), x + 6, y + 2);
+      ctx.fillText(String(i + 1), x + P / 2, y + 2 * q);
     }
   }
   ctx.restore();
@@ -649,6 +810,19 @@ function gradeOnto(c: CanvasRenderingContext2D, a: number, tone: number) {
     c.fillRect(0, 0, VW, VH);
   }
   c.restore();
+}
+
+/**
+ * MERIDIAN THREAD v2 (nightInk): the ink page's shared full-canvas scratch and mask buffers (the same canvases inkGrade
+ * uses; reallocated only when the canvas is resized), so v2's Night Ink grade adds no new full-frame canvases.
+ */
+export function inkScratch(w: number, h: number): { scratch: HTMLCanvasElement; sctx: CanvasRenderingContext2D; mask: HTMLCanvasElement; mctx: CanvasRenderingContext2D } {
+  return inkBuffers(w, h);
+}
+
+/** MERIDIAN THREAD v2: the ink page's cached screentone pattern for `c` (4 x 4 logical px tile: tone dots on white). */
+export function inkTone(c: CanvasRenderingContext2D): CanvasPattern {
+  return tonePattern(c);
 }
 
 /** Allocate the ink page's scratch, mask and tone pattern for the current canvas size (call from a shot's prepare()). */

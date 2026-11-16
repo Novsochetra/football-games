@@ -1,0 +1,104 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Pluck",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "bust": {
+  "scale": 2,
+  "pivot": "chest"
+ },
+ "notes": "MERIDIAN v2 STRUM insert (No.10 front BUST at 2x figure scale, GALE v2 bust convention on BUST0). contact null; pelvis = chest = the sternum (64,86) = the bust pivot. hand = PL1 the hook (where the invisible string passes through the curled fingers, (44,84)), PL2 the back of the open trailing hand past the screen-right hip (87,116) after the strum (a 1 px motion arc is drawn in the art; never a snap: no finger-thumb contact); eyeL / eyeR = screen-left / screen-right eyes (up); head = skull centre. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 6b strum panel (x2, 200 x 210, crown to belt): PL1 0.98-1.12, PL2 1.12-1.34. Studio layer: Art only (numbers in Art; no Num/Ball layer). The ball is never drawn in a frame: the game draws it at ball/boot/forehead. Studio: Sochetra / Pluck / Front (Side/Back views blank).",
+ "frames": [
+  {
+   "name": "PL1",
+   "id": "PL1",
+   "label": "the hook",
+   "type": "N",
+   "ms": 140,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "hand": [
+     44,
+     84
+    ],
+    "eyeL": [
+     56,
+     49
+    ],
+    "eyeR": [
+     76,
+     49
+    ],
+    "head": [
+     64,
+     30
+    ],
+    "bbox": [
+     23,
+     3,
+     110,
+     127
+    ]
+   },
+   "meridian2": "s6b 0.98-1.12 (x2 bust in the strum panel)"
+  },
+  {
+   "name": "PL2",
+   "id": "PL2",
+   "label": "the strum",
+   "type": "N key",
+   "ms": 220,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "hand": [
+     87,
+     116
+    ],
+    "eyeL": [
+     58,
+     50
+    ],
+    "eyeR": [
+     78,
+     50
+    ],
+    "head": [
+     66,
+     31
+    ],
+    "bbox": [
+     24,
+     2,
+     112,
+     127
+    ]
+   },
+   "meridian2": "s6b 1.12-1.34 (x2 bust in the strum panel)"
+  }
+ ]
+}

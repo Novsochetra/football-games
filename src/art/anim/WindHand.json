@@ -1,0 +1,366 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "WindHand",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "bust": {
+  "scale": 2,
+  "pivot": "chest"
+ },
+ "notes": "No.10 front BUST at 2x figure scale (bustkit: X = 2x - 64, Y = 2y - 2 from Idle Front; same palette, 1 px outline). The bust runs off the bottom edge by design (the frame crops it at mid-chest, never a hem). contact null; pelvis = chest = the sternum (64,86) = the bust pivot (default anchor). palm = the working hand (his RIGHT hand, screen-left of his midline): WH1/WH2 open palm centre, WH3 the arm's-length fist (fist = palm), WH4/WH4b the fist on the sternum (fist = palm), WH5 the palm-up cupped palm (the mini tornado's base), WH6 the palm under the lips (mouth = the pursed \"o\" the blow leaves), WH7 the palm offered toward the lens on the blow line. eyeL / eyeR = screen-left / screen-right eye centres; head = skull centre; bbox measured on the art. Points are pixel indices (studioAnim adds 0.5). GALE v2 shot 2: WH1 0.00, WH2 0.28, WH3 0.50, WH4 0.75, then WH4b/WH4 alternating every 0.12 s to 1.60 (x3); shot 9: WH4 0.00, WH4b 0.12, WH5 0.25, WH6 0.55, WH7 0.80 (x2). Studio: Sochetra / WindHand / Front, layer Art (Side/Back views blank).",
+ "frames": [
+  {
+   "name": "WH1",
+   "id": "WH1",
+   "label": "open palm at the lens",
+   "type": "N (key, hardest drawing: review at x4 first)",
+   "ms": 280,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     50,
+     84
+    ],
+    "eyeL": [
+     56,
+     51
+    ],
+    "eyeR": [
+     76,
+     51
+    ],
+    "head": [
+     64,
+     30
+    ],
+    "bbox": [
+     21,
+     0,
+     107,
+     127
+    ]
+   },
+   "gale": "GALE 2: 0.00-0.28 (x3)"
+  },
+  {
+   "name": "WH2",
+   "id": "WH2",
+   "label": "fingers curling",
+   "type": "N",
+   "ms": 220,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     50,
+     85
+    ],
+    "eyeL": [
+     56,
+     51
+    ],
+    "eyeR": [
+     76,
+     51
+    ],
+    "head": [
+     64,
+     30
+    ],
+    "bbox": [
+     20,
+     0,
+     107,
+     127
+    ]
+   },
+   "gale": "GALE 2: 0.28-0.50 (x3)"
+  },
+  {
+   "name": "WH3",
+   "id": "WH3",
+   "label": "fist at arm's length",
+   "type": "N (key: the clench)",
+   "ms": 250,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     50,
+     84
+    ],
+    "fist": [
+     50,
+     84
+    ],
+    "eyeL": [
+     56,
+     51
+    ],
+    "eyeR": [
+     76,
+     51
+    ],
+    "head": [
+     64,
+     30
+    ],
+    "bbox": [
+     19,
+     0,
+     107,
+     127
+    ]
+   },
+   "gale": "GALE 2: 0.50-0.75 (x3)"
+  },
+  {
+   "name": "WH4",
+   "id": "WH4",
+   "label": "fist to the chest",
+   "type": "N (key)",
+   "ms": 120,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     58,
+     91
+    ],
+    "fist": [
+     58,
+     91
+    ],
+    "eyeL": [
+     56,
+     53
+    ],
+    "eyeR": [
+     76,
+     53
+    ],
+    "head": [
+     64,
+     32
+    ],
+    "bbox": [
+     22,
+     2,
+     107,
+     127
+    ]
+   },
+   "gale": "GALE 2: 0.75-0.87, then WH4/WH4b alternate every 0.12 s to 1.60 (x3); GALE 9: 0.00-0.12 (x2)"
+  },
+  {
+   "name": "WH4b",
+   "id": "WH4b",
+   "label": "tremble",
+   "type": "V of WH4 (tremble)",
+   "ms": 120,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     59,
+     92
+    ],
+    "fist": [
+     59,
+     92
+    ],
+    "eyeL": [
+     56,
+     53
+    ],
+    "eyeR": [
+     76,
+     53
+    ],
+    "head": [
+     64,
+     32
+    ],
+    "bbox": [
+     22,
+     2,
+     107,
+     127
+    ]
+   },
+   "gale": "GALE 2: from 0.87 alternating; GALE 9: 0.12-0.25 (x2)"
+  },
+  {
+   "name": "WH5",
+   "id": "WH5",
+   "label": "palm up",
+   "type": "N",
+   "ms": 300,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     56,
+     99
+    ],
+    "eyeL": [
+     56,
+     51
+    ],
+    "eyeR": [
+     76,
+     51
+    ],
+    "head": [
+     64,
+     30
+    ],
+    "bbox": [
+     22,
+     0,
+     110,
+     127
+    ]
+   },
+   "gale": "GALE 9: 0.25-0.55 (x2)"
+  },
+  {
+   "name": "WH6",
+   "id": "WH6",
+   "label": "the blow",
+   "type": "N (key: the blow)",
+   "ms": 250,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     56,
+     72
+    ],
+    "mouth": [
+     62,
+     62
+    ],
+    "eyeL": [
+     54,
+     52
+    ],
+    "eyeR": [
+     74,
+     52
+    ],
+    "head": [
+     62,
+     31
+    ],
+    "bbox": [
+     21,
+     3,
+     110,
+     127
+    ]
+   },
+   "gale": "GALE 9: 0.55-0.80 (x2)"
+  },
+  {
+   "name": "WH7",
+   "id": "WH7",
+   "label": "palm offered",
+   "type": "N",
+   "ms": 250,
+   "pelvis": [
+    64,
+    86
+   ],
+   "contact": null,
+   "anchors": {
+    "chest": [
+     64,
+     86
+    ],
+    "palm": [
+     44,
+     81
+    ],
+    "eyeL": [
+     56,
+     50
+    ],
+    "eyeR": [
+     76,
+     50
+    ],
+    "head": [
+     64,
+     29
+    ],
+    "bbox": [
+     15,
+     3,
+     110,
+     127
+    ]
+   },
+   "gale": "GALE 9: 0.80-1.05 (x2)"
+  }
+ ]
+}

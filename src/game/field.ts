@@ -21,6 +21,9 @@ import { gauntletRender, gauntletReset, gauntletResult, gauntletUpdate, warmGaun
 import { drawNo7Boxed, no7, no7Final, warmNo7, type No7Key } from '../art/no7';
 import { HEX as MT, LAYOUT, PATH, crossStitch, needleEye, threadLine, type XZ } from '../cinematic/meridian/common';
 import { THREAD_NOTES } from '../engine/audio';
+import { longshot2Render, longshot2Reset, longshot2Result, longshot2Update, warmLongshot2 } from './longshot2';
+import { through2Render, through2Reset, through2Result, through2Update, warmThrough2 } from './through2';
+import { gauntlet2Render, gauntlet2Reset, gauntlet2Result, gauntlet2Update, warmGauntlet2 } from './gauntlet2';
 
 const K = 0.42;
 const RUN: [number, Pose][] = [
@@ -29,7 +32,7 @@ const RUN: [number, Pose][] = [
 const runPose = (t: number) => poseAt(RUN, t % 0.4, (x) => x);
 
 /** One shared mapping: each special's aura / command-window mote ramp. */
-export const AURA_RAMP: Record<SpecialId, RampName> = { zenith: 'aura', crescent: 'crimson', gale: 'cobalt', solo: 'uv', meridian: 'jade' };
+export const AURA_RAMP: Record<SpecialId, RampName> = { zenith: 'aura', crescent: 'crimson', gale: 'cobalt', solo: 'uv', meridian: 'jade', gale2: 'cobalt', meridian2: 'jade', solo2: 'uv' };
 
 /** Through ball (MERIDIAN THREAD): No.10 is drawn from the studio Dribble cycle / Celebrate as box-filtered caches, never a puppet. */
 const DRIBBLE: No10Key[] = ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8'];
@@ -107,7 +110,10 @@ export class Field {
       warmNo7(this.env, NO7_RUN, FIELD_SCALE);
       warmNo7(this.env, ['Celebrate.C1', 'Celebrate.C2', 'Point.Q2'], RESULT_SCALE);
     }
+    if (def.scenario === 'gauntlet2') warmGauntlet2(this.env);
     if (def.scenario === 'gauntlet') warmGauntlet(this.env);
+    if (def.scenario === 'longshot2') warmLongshot2(this.env);
+    if (def.scenario === 'through2') warmThrough2(this.env);
   }
 
   reset() {
@@ -158,7 +164,10 @@ export class Field {
     // Parked off the pitch: only 'through' and 'gauntlet' field the extra two defenders (and set their own kits).
     this.defC = { kit: RIVAL_KIT_B, x: -500, z: 244, facing: -1, pose: POSES.stand, h: 0 };
     this.defD = { kit: RIVAL_KIT_B, x: -500, z: 272, facing: -1, pose: POSES.stand, h: 0 };
+    if (this.special.scenario === 'gauntlet2') gauntlet2Reset(this);
     if (this.special.scenario === 'gauntlet') gauntletReset(this);
+    if (this.special.scenario === 'longshot2') longshot2Reset(this);
+    if (this.special.scenario === 'through2') through2Reset(this);
     if (this.special.scenario === 'through') {
       // MERIDIAN THREAD's D3 (near centre-back) and D4 (near-side full-back, the offside line).
       this.defC = { kit: RIVAL_KIT_C, x: LAYOUT.d3.x, z: LAYOUT.d3.z, facing: -1, pose: POSES.stand, h: 0 };
@@ -173,7 +182,10 @@ export class Field {
   }
 
   showResult() {
+    if (this.special.scenario === 'gauntlet2') return gauntlet2Result(this, this.env);
     if (this.special.result === 'breakthrough') return this.showBreakthrough();
+    if (this.special.scenario === 'longshot2') return longshot2Result(this, this.env);
+    if (this.special.scenario === 'through2') return through2Result(this, this.env);
     this.mode = 'result';
     this.t = 0;
     this.score = 1;
@@ -227,7 +239,10 @@ export class Field {
   }
 
   update(dt: number) {
+    if (this.special.scenario === 'gauntlet2') return gauntlet2Update(this, this.env, dt);
     if (this.special.scenario === 'gauntlet') return gauntletUpdate(this, this.env, dt);
+    if (this.special.scenario === 'longshot2') return longshot2Update(this, this.env, dt);
+    if (this.special.scenario === 'through2') return through2Update(this, this.env, dt);
     const sdt = dt * this.timeScale;
     this.t += sdt;
     const { rng, parts } = this.env;
@@ -568,7 +583,10 @@ export class Field {
   }
 
   render(time: number) {
+    if (this.special.scenario === 'gauntlet2') return gauntlet2Render(this, this.env, time, (t) => this.drawScoreboard(t));
     if (this.special.scenario === 'gauntlet') return gauntletRender(this, this.env, time, (t) => this.drawScoreboard(t));
+    if (this.special.scenario === 'longshot2') return longshot2Render(this, this.env, time, (t) => this.drawScoreboard(t));
+    if (this.special.scenario === 'through2') return through2Render(this, this.env, time, (t) => this.drawScoreboard(t));
     const env = this.env;
     const { ctx, cam, fx } = env;
     const zoom = this.mode === 'result' ? 1.15 : 1.3;

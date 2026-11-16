@@ -1,0 +1,186 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "HammerCock",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Side view, facing east (No.10 is right-footed: near/right leg kicks, far/left leg plants). GALE never mirrors, so there is no west strip. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). GALE v2 HAMMER COCK on the Strike canvas (same registration as Strike F5a-F7): ground row 102, contact = the plant (far/left) toe-tip column (76,102) with the plant boot rows 89-102 pixel-identical to Strike F5a (the toe outline is 1 px further right, as shipped); ball = the 12 px ball guide at rest (83,96), never drawn. boot = the raised kicking boot's instep = the pressure-orb centre (HC1/HC2 (33,55), 12 px above the hip line; R 10 canvas px = 20 world px at x2); heel = its heel; kickToe = its toe tip; fistN / fistF = near (right) / far (left) fist centres; HCs: boot = the trailing boot, streakTail -> streakHead = the one tapered whip band (1 px at the tail, 5 px at the head). head = skull point, eye = the side eye, bbox = [x0,y0,x1,y1] measured on the art. GALE v2 shot 4: F5a 0.42, HC1 0.48, HC2 0.68, HC1 0.88, HC2 1.08, HC1 1.28, HCs 1.44, Strike F6 1.50 (x2). Studio: Sochetra / HammerCock / Side, layer Art (Front/Back views blank).",
+ "frames": [
+  {
+   "name": "HC1",
+   "id": "HC1",
+   "label": "the hammer cocked (key)",
+   "type": "N (key)",
+   "ms": 200,
+   "pelvis": [
+    60,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     33,
+     55
+    ],
+    "heel": [
+     43,
+     60
+    ],
+    "kickToe": [
+     32,
+     49
+    ],
+    "fistN": [
+     46,
+     36
+    ],
+    "head": [
+     78,
+     24
+    ],
+    "eye": [
+     81,
+     34
+    ],
+    "bbox": [
+     30,
+     13,
+     98,
+     102
+    ]
+   },
+   "gale": "GALE 4: 0.48-0.68, 0.88-1.08, 1.28-1.44 (x2; zoom 1.1 -> 2.4; orb on boot)"
+  },
+  {
+   "name": "HC2",
+   "id": "HC2",
+   "label": "tremble",
+   "type": "V of HC1 (tremble)",
+   "ms": 200,
+   "pelvis": [
+    60,
+    67
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     33,
+     55
+    ],
+    "heel": [
+     43,
+     60
+    ],
+    "kickToe": [
+     32,
+     49
+    ],
+    "fistN": [
+     46,
+     35
+    ],
+    "head": [
+     78,
+     24
+    ],
+    "eye": [
+     81,
+     34
+    ],
+    "bbox": [
+     30,
+     13,
+     98,
+     102
+    ]
+   },
+   "gale": "GALE 4: 0.68-0.88, 1.08-1.28"
+  },
+  {
+   "name": "HCs",
+   "id": "HCs",
+   "label": "the whip (smear)",
+   "type": "N (smear)",
+   "ms": 60,
+   "pelvis": [
+    60,
+    66
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     83,
+     96
+    ],
+    "boot": [
+     38,
+     74
+    ],
+    "heel": [
+     46,
+     72
+    ],
+    "kickToe": [
+     29,
+     74
+    ],
+    "fistN": [
+     40,
+     42
+    ],
+    "fistF": [
+     89,
+     43
+    ],
+    "streakTail": [
+     31,
+     55
+    ],
+    "streakHead": [
+     30,
+     69
+    ],
+    "head": [
+     75,
+     23
+    ],
+    "eye": [
+     78,
+     32
+    ],
+    "bbox": [
+     27,
+     11,
+     94,
+     102
+    ]
+   },
+   "gale": "GALE 4: 1.44-1.50 (then Strike F6 1.50-1.80)"
+  }
+ ]
+}

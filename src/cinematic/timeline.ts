@@ -58,6 +58,91 @@ export interface Shot {
 
 export const STEP = 1 / 60;
 
+/** A full-frame event counted by the FlashBudget guard. */
+export interface FlashEvent {
+  /** Global cinematic time (s) of the rising edge. */
+  t: number;
+  kind: 'flash' | 'impact' | 'iso' | 'fullFrame';
+  /** True when the guard clamped it (a 4th event inside one 1 s window). */
+  clamped: boolean;
+}
+
+/**
+ * FlashBudget: the v2 set's single photosensitivity guard (GALE HAMMER v2 §10.1 item 6; MERIDIAN and SOLO import it
+ * unchanged). After each rendered frame it records the rising edges of fx.flash >= 0.3, fx.impact >= 0.5,
+ * fx.iso >= 0.5 and fx.fullFrame over a rolling 60-frame (1 s) window of the cinematic clock. Runtime: once a window
+ * holds LIMIT events, any further event is clamped (flash / impact / iso set to 0 for as long as that signal stays up)
+ * until the window clears. Dev builds console.assert the unclamped count. `events` is the list capture tools print.
+ * Only specials registered with flashBudget: true run it, so the shipped specials are untouched.
+ */
+export class FlashBudget {
+  static readonly LIMIT = 3;
+  static readonly WINDOW = 60;
+  static readonly THRESH = { flash: 0.3, impact: 0.5, iso: 0.5 } as const;
+  events: FlashEvent[] = [];
+  private prev = { flash: false, impact: false, iso: false, fullFrame: false };
+  private held = { flash: false, impact: false, iso: false };
+  private lastFrame = -1;
+  /** The impact / iso stage signature of the last frame: a stage change while the signal stays up is a new event. */
+  private sig = { impact: '', iso: '' };
+  /** Accepted (unclamped) event frames inside the rolling window. */
+  private window: number[] = [];
+
+  reset() {
+    this.events = [];
+    this.prev = { flash: false, impact: false, iso: false, fullFrame: false };
+    this.held = { flash: false, impact: false, iso: false };
+    this.lastFrame = -1;
+    this.window = [];
+    this.sig = { impact: '', iso: '' };
+  }
+
+  /** Call after a frame is rendered (before the post pass reads fx). `gt` = global cinematic time. */
+  observe(fx: FxState, gt: number) {
+    const frame = Math.round(gt / STEP);
+    if (frame !== this.lastFrame) {
+      if (frame < this.lastFrame || frame > this.lastFrame + 2) {
+        // A seek: the history no longer applies.
+        this.prev = { flash: false, impact: false, iso: false, fullFrame: false };
+        this.held = { flash: false, impact: false, iso: false };
+        this.window = [];
+        this.events = this.events.filter((e) => Math.round(e.t / STEP) < frame - FlashBudget.WINDOW);
+      }
+      this.window = this.window.filter((f) => f > frame - FlashBudget.WINDOW);
+      const up = {
+        flash: fx.flash >= FlashBudget.THRESH.flash,
+        impact: fx.impact >= FlashBudget.THRESH.impact,
+        iso: fx.iso >= FlashBudget.THRESH.iso,
+        fullFrame: fx.fullFrame,
+      };
+      // A two-stage impact (stage A -> stage B, or GALE's weather map -> negative print) counts as two events.
+      const sig = { impact: `${fx.impA}|${fx.impB}|${fx.impThresh}`, iso: `${fx.isoBands}|${fx.isoInvert}|${fx.isoMix}` };
+      const restage = { flash: false, impact: up.impact && sig.impact !== this.sig.impact, iso: up.iso && sig.iso !== this.sig.iso, fullFrame: false };
+      this.sig = sig;
+      for (const kind of ['flash', 'impact', 'iso', 'fullFrame'] as const) {
+        if (!up[kind]) {
+          if (kind !== 'fullFrame') this.held[kind] = false;
+        } else if (!this.prev[kind] || restage[kind]) {
+          const clamped = this.window.length >= FlashBudget.LIMIT;
+          this.events.push({ t: frame * STEP, kind, clamped });
+          if (clamped) {
+            if (kind !== 'fullFrame') this.held[kind] = true;
+          } else this.window.push(frame);
+        }
+      }
+      if (import.meta.env.DEV) {
+        const raw = this.events.filter((e) => Math.round(e.t / STEP) > frame - FlashBudget.WINDOW).length;
+        console.assert(raw <= FlashBudget.LIMIT, `FlashBudget: ${raw} full-frame events in 1 s at ${gt.toFixed(2)} s`);
+      }
+      this.prev = up;
+      this.lastFrame = frame;
+    }
+    if (this.held.flash) fx.flash = 0;
+    if (this.held.impact) fx.impact = 0;
+    if (this.held.iso) fx.iso = 0;
+  }
+}
+
 export class Cinematic {
   idx = 0;
   t = 0;
@@ -66,7 +151,12 @@ export class Cinematic {
   /** Cues of the current shot that already fired (each cue fires exactly once per shot entry). */
   private fired: boolean[] = [];
 
-  constructor(public readonly title: string, public readonly shots: Shot[], private env: Env) {}
+  /** The photosensitivity guard (only for specials registered with flashBudget: true). */
+  readonly budget: FlashBudget | null;
+
+  constructor(public readonly title: string, public readonly shots: Shot[], private env: Env, o: { flashBudget?: boolean } = {}) {
+    this.budget = o.flashBudget ? new FlashBudget() : null;
+  }
 
   get total() {
     return this.shots.reduce((a, s) => a + s.dur, 0);
@@ -152,6 +242,7 @@ export class Cinematic {
     ctx.beginPath();
     this.shot.render(this.env, Math.min(this.t, this.shot.dur));
     ctx.restore();
+    this.budget?.observe(this.env.fx, this.globalTime);
   }
 
   /** Jump to a global time: re-init the containing shot and fast-forward silently. */

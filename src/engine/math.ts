@@ -36,6 +36,10 @@ export const ease = {
     const c4 = TAU / 3;
     return t === 0 ? 0 : t === 1 ? 1 : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
   },
+  // Sine eases (added for the v2 camera tables: MERIDIAN v2's outSine / inSine / inOutSine keys).
+  inSine: (t: number) => 1 - Math.cos((t * Math.PI) / 2),
+  outSine: (t: number) => Math.sin((t * Math.PI) / 2),
+  inOutSine: (t: number) => -(Math.cos(Math.PI * t) - 1) / 2,
 };
 
 /** Deterministic PRNG (mulberry32) so seeking a shot reproduces it exactly. */

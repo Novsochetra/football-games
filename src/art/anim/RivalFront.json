@@ -1,0 +1,705 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Rivals",
+  "animation": "RivalFront",
+  "view": "Front",
+  "fps": 5,
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "p": "#ffffff",
+  "q": "#d6deec",
+  "r": "#828caa",
+  "t": "#28beaa",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "v": "#c89646",
+  "w": "#96622c",
+  "x": "#5a361e",
+  "y": "#464e5c",
+  "z": "#2a2e3a",
+  "G": "#161620",
+  "B": "#5ae6d2",
+  "C": "#146e6e"
+ },
+ "kitSwaps": {
+  "A": {},
+  "B": {
+   "s": "#b06e4a",
+   "u": "#74422c",
+   "v": "#463c3c",
+   "w": "#282022",
+   "x": "#120c0e"
+  },
+  "C": {
+   "s": "#8c5c40",
+   "u": "#5c3a28",
+   "v": "#342c30",
+   "w": "#1c161a",
+   "x": "#0c080a"
+  },
+  "D_opt": {
+   "s": "#ecb492",
+   "u": "#b0765c",
+   "v": "#ec8040",
+   "w": "#c45426",
+   "x": "#7a2e18"
+  }
+ },
+ "notes": "SPOTLIGHT SOLO v2 RIVAL FRONT (the wall of defenders, front view toward the lens, full body; Rivals project, RIVAL_KIT letters). Frames 1-4 (RF1-RF4) are the standard body, drawn in kit A; B and C are tone-for-tone hex swaps in code (B = RIVAL_KIT_B: s #b06e4a u #74422c v #463c3c w #282022 x #120c0e; C = RIVAL_KIT_C: s #8c5c40 u #5c3a28 v #342c30 w #1c161a x #0c080a; source hex: s #e8ac84 u #aa6e56 v #c89646 w #96622c x #5a361e). Frames 5-8 (RF1T-RF4T) are the same four poses drawn on THE TOWER's body (defender D, MERIDIAN v2's TowerIdle model: ~1.3x bulk at the same 98 px height, buzz cut, heavy brow, square jaw, the captain's armband on his LEFT upper arm = screen-right, black gloves; RIVAL_KIT, no swap). Front view, never mirrored (no west strip). Registration = Stand Front: body centre x 64, soles on row 102. contact = the outer row-102 sole pixel of the planted boot (RF1/RF3/RF1T/RF3T: the screen-left boot; RF2/RF4/RF2T/RF4T: the left-most pixel of the planted screen-right boot, the other foot lifted or stepped back); contactL / contactR / soleL / soleR = the row-102 sole runs when both boots are down (soleRun / plantSole when one is). head = skull centre, chest = sternum, eyeL / eyeR (eyesCovered on RF4/RF4T: the forearm / glove across them); fistL / fistR, gloveL / gloveR (the Tower), knee / bootSole / stud1-3 (RF2 raised boot), elbow / wrist / fist / glove / hand (the blinded fend), mouth, chin. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Shot 2a: RF3 0.00 (STOMP 1, in unison), RF1 0.25-0.65 (1 px code breath), RF2 0.65 (and the cut-in frame), RF3 0.80 (STOMP 2), RF1 1.10-1.60; 2c: RF4 2.40-2.80 (lit hard white). D uses the T frames in 2a / 2c. Studio: Rivals / RivalFront / Front, layer Art (Side/Back blank).",
+ "frames": [
+  {
+   "name": "RF1",
+   "id": "RF1",
+   "label": "hunched glare",
+   "type": "N (key)",
+   "ms": 200,
+   "pelvis": [
+    64,
+    66
+   ],
+   "contact": [
+    38,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     23
+    ],
+    "chest": [
+     64,
+     47
+    ],
+    "eyeL": [
+     58,
+     28
+    ],
+    "eyeR": [
+     70,
+     28
+    ],
+    "chin": [
+     64,
+     37
+    ],
+    "contactL": [
+     38,
+     102
+    ],
+    "contactR": [
+     90,
+     102
+    ],
+    "soleL": [
+     41.5,
+     102
+    ],
+    "soleR": [
+     86.5,
+     102
+    ],
+    "bbox": [
+     34,
+     10,
+     94,
+     102
+    ]
+   },
+   "com": [
+    64.2,
+    54.4
+   ],
+   "solo2": "2 / 0.25-0.65, 1.10-1.60 (with a 1 px code breath); A (RIVAL_KIT), B / C by tone-for-tone swaps"
+  },
+  {
+   "name": "RF2",
+   "id": "RF2",
+   "label": "stomp load",
+   "type": "N",
+   "ms": 200,
+   "pelvis": [
+    73,
+    62
+   ],
+   "contact": [
+    83,
+    102
+   ],
+   "anchors": {
+    "head": [
+     79,
+     17
+    ],
+    "chest": [
+     76,
+     44
+    ],
+    "eyeL": [
+     73,
+     22
+    ],
+    "eyeR": [
+     85,
+     22
+    ],
+    "knee": [
+     56,
+     63
+    ],
+    "fistL": [
+     42,
+     57
+    ],
+    "fistR": [
+     101,
+     57
+    ],
+    "bootSole": [
+     57,
+     84
+    ],
+    "stud1": [
+     55,
+     84
+    ],
+    "stud2": [
+     57,
+     84
+    ],
+    "stud3": [
+     59,
+     84
+    ],
+    "plantSole": [
+     86.5,
+     102
+    ],
+    "soleRun": [
+     83,
+     102,
+     90,
+     102
+    ],
+    "bbox": [
+     38,
+     4,
+     106,
+     102
+    ]
+   },
+   "bootLift": 17,
+   "com": [
+    74.9,
+    48.7
+   ],
+   "solo2": "2 / 0.65 (and on the cut-in frame); A (RIVAL_KIT), B / C by tone-for-tone swaps"
+  },
+  {
+   "name": "RF3",
+   "id": "RF3",
+   "label": "the stomp (shout)",
+   "type": "N (key)",
+   "ms": 200,
+   "pelvis": [
+    64,
+    69
+   ],
+   "contact": [
+    35,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     25
+    ],
+    "chest": [
+     64,
+     50
+    ],
+    "eyeL": [
+     58,
+     30
+    ],
+    "eyeR": [
+     70,
+     30
+    ],
+    "mouth": [
+     64,
+     38
+    ],
+    "chin": [
+     64,
+     42
+    ],
+    "contactL": [
+     35,
+     102
+    ],
+    "contactR": [
+     90,
+     102
+    ],
+    "soleL": [
+     39.0,
+     102
+    ],
+    "soleR": [
+     86.5,
+     102
+    ],
+    "bbox": [
+     32,
+     12,
+     96,
+     102
+    ]
+   },
+   "com": [
+    64.0,
+    56.1
+   ],
+   "solo2": "2 / 0.00, 0.80 (STOMP 1 / STOMP 2 with the crowd); A (RIVAL_KIT), B / C by tone-for-tone swaps"
+  },
+  {
+   "name": "RF4",
+   "id": "RF4",
+   "label": "blinded",
+   "type": "N",
+   "ms": 200,
+   "pelvis": [
+    63,
+    65
+   ],
+   "contact": [
+    80,
+    102
+   ],
+   "anchors": {
+    "head": [
+     60,
+     22
+    ],
+    "chest": [
+     61,
+     47
+    ],
+    "eyeL": [
+     56,
+     27
+    ],
+    "eyeR": [
+     68,
+     27
+    ],
+    "fist": [
+     74,
+     26
+    ],
+    "hand": [
+     80,
+     35
+    ],
+    "elbow": [
+     53,
+     32
+    ],
+    "wrist": [
+     68,
+     26
+    ],
+    "fistEnd": [
+     79,
+     26
+    ],
+    "handWrist": [
+     80,
+     41
+    ],
+    "handElbow": [
+     86,
+     56
+    ],
+    "mouth": [
+     62,
+     35
+    ],
+    "chin": [
+     62,
+     38
+    ],
+    "plantSole": [
+     83.5,
+     102
+    ],
+    "soleRun": [
+     80,
+     102,
+     87,
+     102
+    ],
+    "bbox": [
+     39,
+     9,
+     90,
+     102
+    ]
+   },
+   "eyesCovered": true,
+   "com": [
+    63.9,
+    51.5
+   ],
+   "solo2": "2c / 2.40-2.80 (lit hard white by the footlight; his shadow climbs them); A (RIVAL_KIT), B / C by tone-for-tone swaps"
+  },
+  {
+   "name": "RF1T",
+   "id": "RF1T",
+   "label": "the Tower: hunched glare",
+   "type": "N on the Tower body (re-proportioned from RF1)",
+   "ms": 200,
+   "pelvis": [
+    63,
+    68
+   ],
+   "contact": [
+    34,
+    102
+   ],
+   "anchors": {
+    "head": [
+     63,
+     21
+    ],
+    "chest": [
+     63,
+     47
+    ],
+    "eyeL": [
+     58,
+     22
+    ],
+    "eyeR": [
+     68,
+     22
+    ],
+    "gloveL": [
+     40,
+     67
+    ],
+    "gloveR": [
+     87,
+     67
+    ],
+    "elbowL": [
+     36,
+     53
+    ],
+    "elbowR": [
+     91,
+     53
+    ],
+    "contactL": [
+     34,
+     102
+    ],
+    "contactR": [
+     93,
+     102
+    ],
+    "soleL": [
+     34.5,
+     102
+    ],
+    "soleR": [
+     92.5,
+     102
+    ],
+    "bbox": [
+     30,
+     9,
+     96,
+     102
+    ]
+   },
+   "variantOf": "RF1",
+   "com": [
+    63.4,
+    55.9
+   ],
+   "solo2": "2 / 0.25-0.65, 1.10-1.60 (with a 1 px code breath); D only (the Tower)"
+  },
+  {
+   "name": "RF2T",
+   "id": "RF2T",
+   "label": "the Tower: stomp load",
+   "type": "N on the Tower body (re-proportioned from RF2)",
+   "ms": 200,
+   "pelvis": [
+    66,
+    66
+   ],
+   "contact": [
+    80,
+    102
+   ],
+   "anchors": {
+    "head": [
+     69,
+     17
+    ],
+    "chest": [
+     68,
+     45
+    ],
+    "eyeL": [
+     64,
+     18
+    ],
+    "eyeR": [
+     74,
+     18
+    ],
+    "knee": [
+     45,
+     70
+    ],
+    "gloveL": [
+     35,
+     61
+    ],
+    "gloveR": [
+     99,
+     68
+    ],
+    "elbowL": [
+     41,
+     49
+    ],
+    "elbowR": [
+     97,
+     54
+    ],
+    "contactL": [
+     80,
+     102
+    ],
+    "contactR": [
+     93,
+     102
+    ],
+    "soleL": [
+     81.0,
+     102
+    ],
+    "soleR": [
+     92.5,
+     102
+    ],
+    "bbox": [
+     28,
+     5,
+     106,
+     102
+    ]
+   },
+   "variantOf": "RF2",
+   "com": [
+    66.7,
+    53.5
+   ],
+   "solo2": "2 / 0.65 (and on the cut-in frame); D only (the Tower)"
+  },
+  {
+   "name": "RF3T",
+   "id": "RF3T",
+   "label": "the Tower: the stomp",
+   "type": "N on the Tower body (re-proportioned from RF3)",
+   "ms": 200,
+   "pelvis": [
+    63,
+    71
+   ],
+   "contact": [
+    28,
+    102
+   ],
+   "anchors": {
+    "head": [
+     63,
+     23
+    ],
+    "chest": [
+     63,
+     50
+    ],
+    "eyeL": [
+     58,
+     24
+    ],
+    "eyeR": [
+     68,
+     24
+    ],
+    "gloveL": [
+     32,
+     68
+    ],
+    "gloveR": [
+     95,
+     68
+    ],
+    "elbowL": [
+     34,
+     55
+    ],
+    "elbowR": [
+     93,
+     55
+    ],
+    "contactL": [
+     28,
+     102
+    ],
+    "contactR": [
+     94,
+     102
+    ],
+    "soleL": [
+     28.5,
+     102
+    ],
+    "soleR": [
+     93.5,
+     102
+    ],
+    "bbox": [
+     25,
+     11,
+     102,
+     102
+    ]
+   },
+   "variantOf": "RF3",
+   "com": [
+    63.0,
+    57.6
+   ],
+   "solo2": "2 / 0.00, 0.80 (STOMP 1 / STOMP 2 with the crowd); D only (the Tower)"
+  },
+  {
+   "name": "RF4T",
+   "id": "RF4T",
+   "label": "the Tower: blinded",
+   "type": "N on the Tower body (re-proportioned from RF4)",
+   "ms": 200,
+   "pelvis": [
+    63,
+    68
+   ],
+   "contact": [
+    78,
+    102
+   ],
+   "anchors": {
+    "head": [
+     61,
+     20
+    ],
+    "chest": [
+     61,
+     47
+    ],
+    "eyeL": [
+     57,
+     21
+    ],
+    "eyeR": [
+     67,
+     21
+    ],
+    "fist": [
+     86,
+     18
+    ],
+    "hand": [
+     81,
+     37
+    ],
+    "elbow": [
+     47,
+     23
+    ],
+    "wrist": [
+     73,
+     17
+    ],
+    "glove": [
+     79,
+     17
+    ],
+    "gloveEnd": [
+     85,
+     17
+    ],
+    "squint": [
+     67,
+     23
+    ],
+    "mouth": [
+     62,
+     29
+    ],
+    "handWrist": [
+     81,
+     44
+    ],
+    "handElbow": [
+     86,
+     54
+    ],
+    "contactL": [
+     78,
+     102
+    ],
+    "contactR": [
+     91,
+     102
+    ],
+    "soleL": [
+     79.0,
+     102
+    ],
+    "soleR": [
+     90.5,
+     102
+    ],
+    "bbox": [
+     33,
+     8,
+     93,
+     102
+    ]
+   },
+   "variantOf": "RF4",
+   "eyesCovered": true,
+   "com": [
+    63.0,
+    50.5
+   ],
+   "solo2": "2c / 2.40-2.80 (lit hard white by the footlight; his shadow climbs them); D only (the Tower)"
+  }
+ ]
+}

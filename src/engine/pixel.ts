@@ -219,6 +219,51 @@ export class BallSpin {
 
 const ballBufs = new Map<number, PixelBuffer>();
 
+// The truncated icosahedron's 32 faces (MERIDIAN v2's seam glow): 12 pentagons on the ICO vertices and 20 hexagons on
+// the icosahedron's face centres, each with its plane distance (unit circumradius ball): a point's panel is the face
+// whose plane its ray meets first, argmax(n·c / d); a seam pixel is one where the best two faces nearly tie.
+const PANELS: { c: number[]; d: number }[] = (() => {
+  const out: { c: number[]; d: number }[] = [];
+  const adj = ICO.map((v) => ICO.map((w) => v[0] * w[0] + v[1] * w[1] + v[2] * w[2]));
+  const ed = Math.max(...adj[0].filter((x) => x < 0.999));
+  const d5 = 2 / 3 + ed / 3;
+  for (const v of ICO) out.push({ c: v, d: d5 });
+  for (let i = 0; i < 12; i++)
+    for (let j = i + 1; j < 12; j++)
+      for (let k = j + 1; k < 12; k++) {
+        if (Math.abs(adj[i][j] - ed) > 1e-6 || Math.abs(adj[j][k] - ed) > 1e-6 || Math.abs(adj[i][k] - ed) > 1e-6) continue;
+        const c = [0, 1, 2].map((q) => ICO[i][q] + ICO[j][q] + ICO[k][q]);
+        const l = Math.hypot(c[0], c[1], c[2]);
+        out.push({ c: c.map((q) => q / l), d: (1 + 2 * ed) / l });
+      }
+  return out;
+})();
+const BALL_JADE: RGB = [47, 224, 138], BALL_MINT: RGB = [150, 255, 200];
+
+/**
+ * True when the ball-local direction (lx, ly, lz) lies on a panel seam at pixel radius r (about 1 px wide): the ring
+ * just outside a dark pentagon patch (`best` = the largest ICO dot, the patch test is best > 0.925) or a boundary
+ * between two faces of the truncated icosahedron (the best two plane hits nearly tie).
+ */
+function onSeam(lx: number, ly: number, lz: number, r: number, best: number): boolean {
+  if (best > 0.925 - 0.42 / Math.max(2, r)) return true;
+  let b1 = -1e9, b2 = -1e9;
+  for (const f of PANELS) {
+    const v = (f.c[0] * lx + f.c[1] * ly + f.c[2] * lz) / f.d;
+    if (v > b1) {
+      b2 = b1;
+      b1 = v;
+    } else if (v > b2) b2 = v;
+  }
+  return b1 - b2 < 0.6 / Math.max(2, r);
+}
+
+/** Options for renderBall (MERIDIAN THREAD v2). */
+export interface RenderBallOpts {
+  /** 0..1: the panel seams lit jade (mint on the lit side), only at r >= 10 (smaller balls have no room for seams). */
+  seamGlow?: number;
+}
+
 /**
  * 'fire' = white-hot/orange (ZENITH METEOR); 'crimson' = silver core with crimson seams (CRIMSON CRESCENT);
  * 'cobalt' = ice core with cyan/cobalt panels and a navy outline (GALE HAMMER).
@@ -289,10 +334,13 @@ function ballOutline(h: number, palette: BallPalette) {
  * heat 0..1 blends it into a white-hot core with glowing seams.
  * squash (optional): see BallSquash. Without it (or with sx = sy = 1, dent = 0) the ball is the round ball.
  */
-export function renderBall(r: number, spin: BallSpin, heat = 0, outline = true, palette: BallPalette = 'fire', squash?: BallSquash): HTMLCanvasElement {
+export function renderBall(
+  r: number, spin: BallSpin, heat = 0, outline = true, palette: BallPalette = 'fire', squash?: BallSquash, o: RenderBallOpts = {},
+): HTMLCanvasElement {
+  const seam = Math.round(r) >= 10 ? clamp(o.seamGlow ?? 0) : 0;
   if (squash) {
     const sx = Math.max(0.2, q02(squash.sx)), sy = Math.max(0.2, q02(squash.sy)), dent = clamp(q02(squash.dent ?? 0), 0, 0.9);
-    if (sx !== 1 || sy !== 1 || dent !== 0) return renderSquashedBall(r, spin, heat, outline, palette, sx, sy, dent);
+    if (sx !== 1 || sy !== 1 || dent !== 0) return renderSquashedBall(r, spin, heat, outline, palette, sx, sy, dent, seam);
   }
   r = Math.max(2, Math.round(r));
   const size = r * 2 + 4;
@@ -321,7 +369,9 @@ export function renderBall(r: number, spin: BallSpin, heat = 0, outline = true, 
       }
       const lam = (nx * L[0] + ny * L[1] + nz * L[2]) / ll;
       const patch = best > 0.925;
-      buf.data[y * size + x] = packRGB(ballColor(lam, patch, h, palette));
+      let col = ballColor(lam, patch, h, palette);
+      if (seam > 0 && !patch && onSeam(lx, ly, lz, r, best)) col = seamColor(col, lam, seam);
+      buf.data[y * size + x] = packRGB(col);
     }
   }
   if (outline) buf.outline(ballOutline(h, palette));
@@ -329,7 +379,15 @@ export function renderBall(r: number, spin: BallSpin, heat = 0, outline = true, 
 }
 
 /** renderBall's squashed path: ellipsoid normals for the light, unit-sphere "material" coordinates for the panels. */
-function renderSquashedBall(r0: number, spin: BallSpin, heat: number, outline: boolean, palette: BallPalette, sx: number, sy: number, dent: number): HTMLCanvasElement {
+/** A seam pixel lit jade (mint where the light falls), mixed over the panel colour by `k`. */
+function seamColor(col: RGB, lam: number, k: number): RGB {
+  const c = lam > 0.3 ? BALL_MINT : BALL_JADE;
+  return [col[0] + (c[0] - col[0]) * k, col[1] + (c[1] - col[1]) * k, col[2] + (c[2] - col[2]) * k];
+}
+
+function renderSquashedBall(
+  r0: number, spin: BallSpin, heat: number, outline: boolean, palette: BallPalette, sx: number, sy: number, dent: number, seam = 0,
+): HTMLCanvasElement {
   const r = Math.max(2, Math.round(r0));
   const ax = r * sx, ay = r * sy;
   const size = Math.ceil(Math.max(ax, ay)) * 2 + 4;
@@ -372,7 +430,9 @@ function renderSquashedBall(r0: number, spin: BallSpin, heat: number, outline: b
       }
       const nl = Math.hypot(nx, ny, nz) || 1;
       const lam = (nx * L[0] + ny * L[1] + nz * L[2]) / (nl * ll);
-      buf.data[y * size + x] = packRGB(ballColor(lam, best > 0.925, h, palette));
+      let col = ballColor(lam, best > 0.925, h, palette);
+      if (seam > 0 && best <= 0.925 && onSeam(lx, ly, lz, r, best)) col = seamColor(col, lam, seam);
+      buf.data[y * size + x] = packRGB(col);
     }
   }
   if (outline) buf.outline(ballOutline(h, palette));

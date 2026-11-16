@@ -1,0 +1,279 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "back",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "SnapBack",
+  "view": "Back",
+  "fps": 5,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "SPOTLIGHT SOLO v2 SNAPBACK (No.10, back view, full body; shot 2 crops it at the waist). Back view, never mirrored (no west strip); his right = screen-right. Registration = Stand Back: body centre x 64, soles on row 102. contact = the outer (screen-left) sole pixel (48,102) of the planted LEFT boot, which keeps the Stand Back a pixels on all four frames (soleRun = its row-102 run, plantSole = its centre); the RIGHT sole (76,89) is on the ball beyond his right foot. ball = the ball guide (78,95), never drawn, ballUnder (drawn before the sprite). The snap arm is his RIGHT arm (screen-right): elbow, wrist, hand (palm centre), tip (the highest fingertip); SB2 knot = the pinch (thumb tip on the middle fingertip: the crash-zoom target); SB3 gap = the 3 px notch between the flicked thumb (thumbTip) and the index (the snap spark and the light rain; deliberately empty pixels). Points are pixel indices (studioAnim adds 0.5). Strip order = studio frame order SB1 SB2 SB3 SB0 (SB0 was appended as studio frame 4); PLAY ORDER is SB0 SB1 SB2 SB3. Shot 2 (x3.4): SB0 0.95-1.10, SB1 1.10-1.30, SB2 1.30-1.60 (crash zoom on the hand 1.40-1.55), SB3 1.60-1.80 (the snap), SB3 again 2.40-2.80 as the rimmed silhouette / longShadow source. Studio: Sochetra / SnapBack / Back, layer Art (Front/Side blank).",
+ "frames": [
+  {
+   "name": "SB1",
+   "id": "SB1",
+   "label": "the arm rises (open hand)",
+   "type": "N",
+   "ms": 200,
+   "pelvis": [
+    62,
+    64
+   ],
+   "contact": [
+    48,
+    102
+   ],
+   "anchors": {
+    "hand": [
+     90,
+     22
+    ],
+    "head": [
+     62,
+     18
+    ],
+    "ball": [
+     78,
+     95
+    ],
+    "sole": [
+     76,
+     89
+    ],
+    "tip": [
+     91,
+     16
+    ],
+    "wrist": [
+     91,
+     27
+    ],
+    "elbow": [
+     89,
+     37
+    ],
+    "plantSole": [
+     51.0,
+     102
+    ],
+    "soleRun": [
+     48,
+     102,
+     54,
+     102
+    ],
+    "bbox": [
+     39,
+     5,
+     95,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "com": [
+    62.9,
+    48.3
+   ],
+   "solo2": "2 / 1.10-1.30 (after the SB0 breakdown 0.95-1.10) / x3.4 (cropped at the waist; the crowd hushes as the arm rises)"
+  },
+  {
+   "name": "SB2",
+   "id": "SB2",
+   "label": "fingers set (the pinch)",
+   "type": "N (key)",
+   "ms": 300,
+   "pelvis": [
+    62,
+    64
+   ],
+   "contact": [
+    48,
+    102
+   ],
+   "anchors": {
+    "hand": [
+     83,
+     10
+    ],
+    "tip": [
+     84,
+     3
+    ],
+    "head": [
+     62,
+     19
+    ],
+    "ball": [
+     78,
+     95
+    ],
+    "sole": [
+     76,
+     89
+    ],
+    "knot": [
+     80,
+     7
+    ],
+    "plantSole": [
+     51.0,
+     102
+    ],
+    "soleRun": [
+     48,
+     102,
+     54,
+     102
+    ],
+    "bbox": [
+     39,
+     3,
+     88,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "com": [
+    62.2,
+    47.3
+   ],
+   "solo2": "2 / 1.30-1.60 / x3.4 (the crash zoom 1.40-1.55 lands on this hand against the far-left floodlight glare)"
+  },
+  {
+   "name": "SB3",
+   "id": "SB3",
+   "label": "the snap (3 px gap)",
+   "type": "N (key; THE SNAP)",
+   "ms": 200,
+   "pelvis": [
+    62,
+    64
+   ],
+   "contact": [
+    48,
+    102
+   ],
+   "anchors": {
+    "hand": [
+     85,
+     12
+    ],
+    "tip": [
+     83,
+     5
+    ],
+    "head": [
+     62,
+     19
+    ],
+    "ball": [
+     78,
+     95
+    ],
+    "sole": [
+     76,
+     89
+    ],
+    "thumbTip": [
+     77,
+     11
+    ],
+    "gap": [
+     80,
+     8
+    ],
+    "plantSole": [
+     51.0,
+     102
+    ],
+    "soleRun": [
+     48,
+     102,
+     54,
+     102
+    ],
+    "bbox": [
+     39,
+     5,
+     89,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "com": [
+    62.2,
+    47.7
+   ],
+   "solo2": "2 / 1.60-1.80 (the snap, g 3.2), 2.40-2.80 (silhouette with a 2 px white-hot rim under the crane-rush; the longShadow `sil`) / x3.4"
+  },
+  {
+   "name": "SB0",
+   "id": "SB0",
+   "label": "the arm starts to rise (limp hand)",
+   "type": "N (added breakdown)",
+   "ms": 150,
+   "pelvis": [
+    62,
+    64
+   ],
+   "contact": [
+    48,
+    102
+   ],
+   "anchors": {
+    "hand": [
+     92,
+     46
+    ],
+    "head": [
+     62,
+     18
+    ],
+    "ball": [
+     78,
+     95
+    ],
+    "sole": [
+     76,
+     89
+    ],
+    "elbow": [
+     86,
+     48
+    ],
+    "wrist": [
+     91,
+     43
+    ],
+    "plantSole": [
+     51.0,
+     102
+    ],
+    "soleRun": [
+     48,
+     102,
+     54,
+     102
+    ],
+    "bbox": [
+     39,
+     5,
+     97,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "com": [
+    61.7,
+    50.3
+   ],
+   "solo2": "2 / 0.95-1.10 (studio frame 4, appended; play order SB0 SB1 SB2 SB3) / x3.4 (cropped at the waist)"
+  }
+ ]
+}

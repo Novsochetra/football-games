@@ -1,7 +1,7 @@
 // SHOT 4 — ASCENT: the camera rides the ball up out of the stadium, past the floodlights,
 // punches through the cloud layer, and decelerates into a starfield as the moon rises.
 // No.10 rockets up from below, chasing it (hand-drawn jump frames: leap, then the
-// knee-drive / rise-float pair looping to the end of the shot; he gathers into the tuck
+// knee-lift / rise-float pair looping to the end of the shot; he gathers into the tuck
 // only in shot 5, so the action never rewinds across the cut).
 
 import type { Shot } from '../timeline';

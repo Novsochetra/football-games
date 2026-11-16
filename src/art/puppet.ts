@@ -193,6 +193,17 @@ export const POSES = {
   faceDown: P({ torso: 0, head: -24 * D, thighN: 4 * D, kneeN: 22 * D, thighF: -6 * D, kneeF: 34 * D, armN: 162 * D, elbowN: 18 * D, armF: 146 * D, elbowF: 30 * D, spin: 1.5 }),
   // Keeper crouched wide for the one-on-one: low, legs spread, arms spread low.
   gkSpread: P({ torso: 16 * D, head: -12 * D, thighN: 42 * D, kneeN: 52 * D, footN: -8 * D, thighF: -32 * D, kneeF: 46 * D, armN: 76 * D, elbowN: 10 * D, armF: 62 * D, elbowF: 12 * D }),
+  // ---- SPOTLIGHT SOLO v2 (joint angles only; the shots set spin / h at runtime; falls stay safe: nothing lands on a head)
+  // A airborne after the step-over cut: hips turned against the shoulders, legs crossed, arms flung (the shot spins him).
+  corkscrew: P({ torso: -14 * D, head: 24 * D, thighN: 34 * D, kneeN: 36 * D, footN: -12 * D, thighF: 52 * D, kneeF: 12 * D, footF: -6 * D, armN: 154 * D, elbowN: 22 * D, armF: -128 * D, elbowF: 34 * D }),
+  // D (the Tower) folding forward to 95 deg over No.10: knees bent, arms spread down round him (the smother).
+  smother: P({ torso: 95 * D, head: -36 * D, thighN: 30 * D, kneeN: 54 * D, footN: -6 * D, thighF: -12 * D, kneeF: 48 * D, armN: 34 * D, elbowN: 14 * D, armF: -22 * D, elbowF: 16 * D }),
+  // D pitched forward 70 deg over C's leg: arms reaching down for the turf, the trailing leg up behind him.
+  tumble: P({ torso: 70 * D, head: -30 * D, thighN: 46 * D, kneeN: 40 * D, footN: -10 * D, thighF: -64 * D, kneeF: 34 * D, footF: 10 * D, armN: 62 * D, elbowN: 12 * D, armF: 40 * D, elbowF: 10 * D }),
+  // D's knees buckling inward at the crack (a 2-frame leg pose, legs in the picture plane like wideBlock, torso still
+  // bent over): 1, the knees snap in toward each other; 2 (kneeBuckle2), they fold and the hips drop (the shot lowers h 8 px).
+  kneeBuckle: P({ torso: 58 * D, head: -20 * D, thighN: -6 * D, kneeN: -41 * D, thighF: 6 * D, kneeF: 41 * D, armN: 40 * D, elbowN: 10 * D, armF: -40 * D, elbowF: 10 * D }),
+  kneeBuckle2: P({ torso: 70 * D, head: -24 * D, thighN: -20 * D, kneeN: -72 * D, thighF: 20 * D, kneeF: 72 * D, armN: 30 * D, elbowN: 12 * D, armF: -30 * D, elbowF: 12 * D }),
   // Bicycle kick (CRIMSON CRESCENT). Authored facing right; the hero faces AWAY from goal
   // (facing -1 on the field), so negative spin tips him backward over his own head.
   bikePlant: P({ torso: -14 * D, head: -34 * D, thighN: 10 * D, kneeN: 40 * D, thighF: -10 * D, kneeF: 30 * D, armN: 40 * D, elbowN: 30 * D, armF: -40 * D, elbowF: 30 * D }),
@@ -232,6 +243,22 @@ export const POSES = {
   sitWrongWay: P({ torso: -18 * D, head: 12 * D, thighN: 86 * D, kneeN: 64 * D, footN: -6 * D, thighF: 78 * D, kneeF: 88 * D, armN: -44 * D, elbowN: 0, armF: -32 * D, elbowF: 10 * D }),
   // The gag: head tipped up and one arm pointing up and away, toward the far side where the ball never went.
   lookFar: P({ torso: -6 * D, head: -26 * D, thighN: 6 * D, kneeN: 6 * D, thighF: -6 * D, kneeF: 8 * D, armN: 142 * D, elbowN: 4 * D, armF: 12 * D, elbowF: 30 * D }),
+  // ---- GALE HAMMER v2 (gkPunch and netTangle are GALE's alone in the set)
+  // The wall of three jumping as one: airborne, knees tucked 30-40 deg, arms out at shoulder height (linked).
+  wallJump: P({ torso: 6 * D, head: -8 * D, thighN: 40 * D, kneeN: 72 * D, footN: 20 * D, thighF: 24 * D, kneeF: 64 * D, footF: 20 * D, armN: 74 * D, elbowN: 18 * D, armF: 66 * D, elbowF: 22 * D }),
+  // The double-fist punch: both arms straight forward at shoulder height, fists together, torso forward 10 deg, knees bent.
+  gkPunch: P({ torso: 10 * D, head: -6 * D, thighN: 30 * D, kneeN: 44 * D, footN: -8 * D, thighF: -12 * D, kneeF: 40 * D, armN: 90 * D, elbowN: 0, armF: 86 * D, elbowF: 2 * D }),
+  // Folded backward like a sail by the thunder: torso arched back ~70 deg, arms flung forward, legs trailing forward.
+  gkFold: P({ torso: -70 * D, head: 40 * D, thighN: 62 * D, kneeN: 22 * D, footN: -10 * D, thighF: 74 * D, kneeF: 30 * D, armN: 118 * D, elbowN: 12 * D, armF: 100 * D, elbowF: 20 * D }),
+  // Tangled in the side netting: sprawled, one arm hooked up into the net, legs crossed, head down (draw the hip lower).
+  netTangle: P({ torso: -28 * D, head: -30 * D, thighN: 70 * D, kneeN: 40 * D, footN: -10 * D, thighF: 92 * D, kneeF: 28 * D, armN: 168 * D, elbowN: 64 * D, armF: -40 * D, elbowF: 20 * D, spin: -1.05 }),
+  // ---- MERIDIAN THREAD v2
+  // The fear pose: head tipped right back looking straight up (the mouth hangs open in the shot's face crop), arms limp
+  // at the sides, knees soft, the chest lifted a little. Never a joke: no pointing, no '?'.
+  craneUp: P({ torso: -10 * D, head: -58 * D, thighN: 6 * D, kneeN: 10 * D, thighF: -6 * D, kneeF: 12 * D, armN: -6 * D, elbowN: 8 * D, armF: 6 * D, elbowF: 10 * D }),
+  // The keeper lashed and plucked away (shot 8): twisting, arms flung back and up, legs split; the shot applies the
+  // 1.5-turn spin at runtime (PuppetCache.draw rot).
+  plucked: P({ torso: -34 * D, head: 32 * D, thighN: 74 * D, kneeN: 14 * D, footN: -10 * D, thighF: -52 * D, kneeF: 34 * D, footF: 12 * D, armN: -148 * D, elbowN: 22 * D, armF: 164 * D, elbowF: 30 * D }),
 };
 
 // Skeleton dimensions (units; standing hero ~100u tall).

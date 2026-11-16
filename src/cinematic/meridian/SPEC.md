@@ -56,7 +56,7 @@ Grafts from the other two pitches, kept only where they fit the thread and ink i
 - The name was checked by web search (Nov 2026): no anime or game move is called "Meridian Thread".
   The nearest names are "Meridian Sweep" (Mabinogi) and "Meridian Touch" (Where Winds Meet). Re-check
   before shipping.
-- It is not a Captain Tsubasa move. Never use the word "drive" (names, captions, code). It is not a
+- It is not a Captain Tsubasa move. Never use the banned d-word (names, captions, code). It is not a
   one-two combination. The ball never knocks a defender down: it beats them by missing them.
 
 ## Identity: the five-skill set
@@ -791,7 +791,7 @@ the strum.
   amplitude-modulated by a 70 Hz square: the zipper teeth.
 - **`duck(depth, dur)`**: a gain envelope on the crowd bus (30 ms down, hold, 0.25 s release).
   - If GALE HAMMER's `crowdBus` has landed, reuse it. Otherwise add one that `crowd()` connects to.
-  - It is driven from cinematic time, so seek and replay are exact.
+  - It is computed from cinematic time, so seek and replay are exact.
 
 **Reused:** `boom`, `kick`, `crack`, `whoosh`, `shing`, `crowd`, `strain`, `whistle`, `blip`.
 **Not used:** `timeStop`, `roar`, `rumble`, `crackle`, the muffle low-pass, and GALE HAMMER's air

@@ -1,0 +1,433 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "DragBack",
+  "view": "Side",
+  "fps": 6,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "SPOTLIGHT SOLO v2 DRAGBACK = the ENCORE ending (shot 10, the owner's choice (B): the drag-back past the seated keeper, GOAL stamped by drop beams, result goal). No.10 side view facing east, right-footed (the near/right leg plays the ball). Not mirrored (no west strip; the sleeve \"10\" reads facing east). Registration = the v1 SoleLift canvas: contact = the LEFT (far) toe-tip column x 70 on turf row 102 on all six frames (as SoleLift F1-F6: on DB1-DB4 the toe tip itself is drawn at (70-71, 98-101) above the cleat line; on DB4b/DB4c the heel is up and the tip sits on row 102), so pinning the canvas once keeps the planted foot still. ball = the 12 px ball guide (turf ball centre on row 96), never drawn, ballUnder; boot = the touching surface (bootPart: DB1-DB2 the sole on the ball, DB3-DB4 the inside of the end-on boot); bootCentre (DB4) = the swung-through boot; knee (DB3) = the near knee over the end-on boot; toeNear / toeFar / heelNear / heelFar = the feet; heel (DB4b/DB4c) = the near heel landed on row 102; handNear / handFar = open palm centres (handFanNear / handFanFar = with the fingers); shoulder = the near shoulder joint; head = skull point; eye = the eye pixel (on the keeper DB1-DB2, then the net). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). Shot 10 (shot-local, 150 BPM, g 16.4-18.0): DB1 0.00 (the crowd's 4th stomp), DB2 0.15, DB3 0.30, DB4 0.40 (beat 3: the touch, hit-stop, the ball rolling past the keeper) - 0.70, DB4b 0.70-0.95 (the net bellies 0.80; G / O / A / L stamped 0.80 / 0.90 / 1.00 / 1.10), DB4c 0.95-1.20 then the FREEZE from 1.20 under GOAL and the name card. DB4 is the shot-10 pulse Chorus source. Studio: Sochetra / DragBack / Side, layer Art (Front/Back blank).",
+ "frames": [
+  {
+   "name": "DB1",
+   "id": "DB1",
+   "label": "sole roll",
+   "type": "N (key)",
+   "ms": 150,
+   "pelvis": [
+    69,
+    67
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     100,
+     96
+    ],
+    "head": [
+     71,
+     21
+    ],
+    "eye": [
+     79,
+     29
+    ],
+    "boot": [
+     100,
+     89
+    ],
+    "toeNear": [
+     103.9,
+     88.2
+    ],
+    "toeFar": [
+     70,
+     100
+    ],
+    "heelNear": [
+     88,
+     90.3
+    ],
+    "heelFar": [
+     54,
+     101
+    ],
+    "bbox": [
+     49,
+     8,
+     105,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "bootPart": "sole",
+   "com": [
+    71.6,
+    53.8
+   ],
+   "solo2": "10 / 0.00-0.15 (the crowd's 4th stomp, g 16.4) / side, x2-x3"
+  },
+  {
+   "name": "DB2",
+   "id": "DB2",
+   "label": "the drag",
+   "type": "N",
+   "ms": 150,
+   "pelvis": [
+    66,
+    69
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     86,
+     96
+    ],
+    "head": [
+     73,
+     22
+    ],
+    "eye": [
+     77,
+     31
+    ],
+    "boot": [
+     87,
+     90
+    ],
+    "handNear": [
+     51,
+     62
+    ],
+    "toeNear": [
+     90.8,
+     88.5
+    ],
+    "toeFar": [
+     70,
+     100
+    ],
+    "heelNear": [
+     75.1,
+     91.7
+    ],
+    "heelFar": [
+     54,
+     101
+    ],
+    "bbox": [
+     45,
+     10,
+     92,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "bootPart": "sole",
+   "com": [
+    69.3,
+    55.6
+   ],
+   "solo2": "10 / 0.15-0.30"
+  },
+  {
+   "name": "DB3",
+   "id": "DB3",
+   "label": "the corner (the set)",
+   "type": "N (key; the corner of the V)",
+   "ms": 100,
+   "pelvis": [
+    67,
+    71
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     86,
+     96
+    ],
+    "head": [
+     73,
+     25
+    ],
+    "eye": [
+     77,
+     33
+    ],
+    "boot": [
+     81,
+     96
+    ],
+    "knee": [
+     84,
+     83
+    ],
+    "toeNear": [
+     81,
+     100.5
+    ],
+    "toeFar": [
+     70,
+     100
+    ],
+    "heelNear": [
+     73.8,
+     101.5
+    ],
+    "heelFar": [
+     54,
+     101
+    ],
+    "bbox": [
+     45,
+     13,
+     92,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "bootPart": "inside (end-on boot, east face)",
+   "com": [
+    68.8,
+    57.5
+   ],
+   "solo2": "10 / 0.30-0.40"
+  },
+  {
+   "name": "DB4",
+   "id": "DB4",
+   "label": "the push (follow-through)",
+   "type": "N (key; THE PUSH, the follow-through)",
+   "ms": 300,
+   "pelvis": [
+    74,
+    66
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     104,
+     96
+    ],
+    "head": [
+     76,
+     20
+    ],
+    "eye": [
+     83,
+     28
+    ],
+    "boot": [
+     101,
+     94
+    ],
+    "bootCentre": [
+     97,
+     93
+    ],
+    "handNear": [
+     53,
+     59
+    ],
+    "handFar": [
+     103,
+     41
+    ],
+    "handFanNear": [
+     52,
+     59
+    ],
+    "handFanFar": [
+     104,
+     40
+    ],
+    "bbox": [
+     46,
+     7,
+     109,
+     102
+    ]
+   },
+   "ballUnder": true,
+   "bootPart": "inside (end-on boot, east face; the boot has swung through past the DB3 ball)",
+   "heelLiftF": 3,
+   "bootLift": 4,
+   "com": [
+    75.2,
+    52.5
+   ],
+   "solo2": "10 / 0.40 (beat 3, g 16.8) - 0.70"
+  },
+  {
+   "name": "DB4b",
+   "id": "DB4b",
+   "label": "ta-da (arms open)",
+   "type": "N (added: the hold / freeze pose)",
+   "ms": 250,
+   "pelvis": [
+    80,
+    69
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "head": [
+     76,
+     21
+    ],
+    "eye": [
+     84,
+     29
+    ],
+    "heel": [
+     94,
+     102
+    ],
+    "handNear": [
+     49,
+     40
+    ],
+    "handFar": [
+     105,
+     35
+    ],
+    "shoulder": [
+     72,
+     43
+    ],
+    "handFanNear": [
+     47,
+     38
+    ],
+    "handFanFar": [
+     106,
+     32
+    ],
+    "toeNear": [
+     109,
+     96
+    ],
+    "toeFar": [
+     70,
+     101
+    ],
+    "heelNear": [
+     94,
+     102
+    ],
+    "heelFar": [
+     57,
+     92
+    ],
+    "bbox": [
+     41,
+     8,
+     112,
+     102
+    ]
+   },
+   "com": [
+    79.2,
+    52.8
+   ],
+   "solo2": "10 / 0.70-0.95 (the ball rolls into the net; GOAL stamped 0.80-1.10), then DB4c 0.95-1.20 and the freeze on DB4c"
+  },
+  {
+   "name": "DB4c",
+   "id": "DB4c",
+   "label": "ta-da settle (the poster freeze)",
+   "type": "N (added settle; the poster freeze)",
+   "ms": 250,
+   "pelvis": [
+    80,
+    69
+   ],
+   "contact": [
+    70,
+    102
+   ],
+   "anchors": {
+    "head": [
+     76,
+     21
+    ],
+    "eye": [
+     84,
+     29
+    ],
+    "heel": [
+     94,
+     102
+    ],
+    "handNear": [
+     49,
+     41
+    ],
+    "handFar": [
+     105,
+     36
+    ],
+    "shoulder": [
+     72,
+     43
+    ],
+    "handFanNear": [
+     47,
+     39
+    ],
+    "handFanFar": [
+     106,
+     33
+    ],
+    "toeNear": [
+     109,
+     96
+    ],
+    "toeFar": [
+     70,
+     101
+    ],
+    "heelNear": [
+     94,
+     102
+    ],
+    "heelFar": [
+     57,
+     92
+    ],
+    "bbox": [
+     41,
+     9,
+     112,
+     102
+    ]
+   },
+   "com": [
+    79.3,
+    53.4
+   ],
+   "solo2": "10 / 0.95-1.20, then the FREEZE from 1.20 (the ONE of bar 11) under the name card (DB4b plays 0.70-0.95)"
+  }
+ ]
+}

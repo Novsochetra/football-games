@@ -27,7 +27,7 @@ interface Def {
 }
 
 const LOAD: [string, number] = ['load', 0], CROUCH: [string, number] = ['crouch', 1], PUSH: [string, number] = ['push', 2];
-const LEAP: [string, number] = ['leap', 4], KNEE: [string, number] = ['knee drive', 5], FLOAT: [string, number] = ['rise float', 6];
+const LEAP: [string, number] = ['leap', 4], KNEE: [string, number] = ['knee lift', 5], FLOAT: [string, number] = ['rise float', 6];
 
 const R = (anim: string, view: StripView, ...frames: string[]): Ref => ({ anim, view, frames });
 const side = (anim: string, frames: string[], jump: [string, number], ...more: Ref[]): Def => ({ view: 'side', refs: [R(anim, 'side', ...frames), ...more], jump });

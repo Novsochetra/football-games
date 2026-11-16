@@ -4,7 +4,7 @@ Special-shot scenes for No.10. The review page has a picker for each special:
 
 - **ZENITH METEOR** (sky volley, set up by a dribble)
 - **CRIMSON CRESCENT** (bicycle kick, set up by a high cross from No.7)
-- **GALE HAMMER** (long-range power shot from 30 m; a tier below Zenith Meteor)
+- **GALE HAMMER** (long-range power shot from 30 m: the air-pressure super shot that shoves the goal)
 - **MERIDIAN THREAD** (no-look outside-of-the-boot through pass to No.7)
 - **SPOTLIGHT SOLO** (special dribble past four defenders, on the beat)
 
@@ -61,22 +61,27 @@ Total runtime about 17 s at 1×.
 
 ## GALE HAMMER
 
-From 30 m out No.10 hits the ball so hard it never touches the grass again: it skims on three cushions
-of crushed air that stamp rings into the turf, and it outruns its own sound, so the thunder arrives late
-and flings the defenders. Ice white, electric cyan and cobalt; 6 shots, 11.3 s. Brief:
-`docs/skills/GALE_HAMMER.md` (copy in `src/cinematic/gale/SPEC.md`).
+From 30 m out the keeper laughs and beckons. No.10 grabs the wind out of the stadium, hammers the ball through
+the sound barrier, and when the keeper punches it to a dead stop, the thunder catches up and hammers it again,
+tearing the keeper away and shoving the whole goal off its pegs. A storm night in ice white, electric cyan,
+cobalt and navy; 9 shots, 16.7 s. Brief: `docs/skills/v2/GALE_HAMMER_v2.md` (copy in `src/cinematic/gale2/SPEC.md`).
 
 | # | Shot | What happens |
 |---|------|--------------|
-| 1 | Cut-in | An oval window springs open on his eyes; the title springs out to the three-note air tune |
-| 2 | The load | Run-up and plant, then the slow-motion inhale: the pressure lens pinches the stadium, his eyes in a dew drop on the ball |
-| 3 | Squash | Macro: the ball squashes flat on the laces; the camera is blasted back to his follow-through and hop; the world goes muffled |
-| 4 | Air steps | The ball's scene: three air steps, a jump-blocking defender, the late boom flings him, the stadium sound slams back |
-| 5 | Pressure front | The keeper is swept; the ball slips in almost silently, then the pressure front balloons the net |
-| 6 | Footprints of air | Back view: three ring footprints to the net, the late thunder, GOAL!, the palm blow, name card |
+| 1 | Thirty metres | The keeper's dare; the wall of three locks arms; the 30 M counter rushes past; No.10 traps the ball and the gust blows the counter away |
+| 2 | Grab the wind | He closes his fist on the wind; a ring of air pops out of the stadium |
+| 3 | Eye of the storm | The camera punches through a hurricane wall into the calm eye, where he stands in the storm |
+| 4 | The inhale | The stadium is sucked toward the ball in three lurches; the plant |
+| 5 | Hammer | Hammer 1: the ball is crushed on the laces, the weather-map impact frame, the hit-stop |
+| 6 | Sound barrier | The ball's ride, the vapour halo, the detonation that flings the wall, the chase to the keeper |
+| 7 | Dead stop | The keeper punches the ball to a dead stop; the thunder wall rolls in |
+| 8 | Thunder hammer | Hammer 2: the keeper is torn away, the goal is shoved off its line, GOAL!, the wind wipe |
+| 9 | Return the wind | No.10 blows the storm back out of his palm; name card |
 
-New engine pieces: the pressure lens post effect, muffle/dry/crowd audio buses with new sounds,
-a squashable cobalt ball, the `'longshot'` field scenario, and `src/art/no10.ts` (No.10 library frames).
+New engine pieces (shared with the v2 set): composable post passes (iso/weather-map print, streak), the
+FlashBudget photosensitivity guard (at most 3 full-frame events per second), camera shove/buffet, the shared
+puppet cache and name card, wind particles, the tilted pitch projector, and the `'longshot2'` field scenario
+(`src/game/longshot2.ts`). The v1 film (6 shots) stays in `src/cinematic/gale/` but is no longer registered.
 
 ## MERIDIAN THREAD
 
@@ -138,7 +143,7 @@ as `src/art/hero_jump_side.png` + `src/art/hero_jump.json` (frame names, holds, 
 
 | # | Frame | ms | # | Frame | ms |
 |---|---|---|---|---|---|
-| 1 | load | 100 | 6 | knee drive | 100 |
+| 1 | load | 100 | 6 | knee lift | 100 |
 | 2 | crouch | 130 | 7 | rise float (loops with 6) | 100 |
 | 3 | push | 60 | 8 | pre-tuck | 80 |
 | 4 | take-off | 60 | 9 | tuck | 100 |
@@ -180,7 +185,8 @@ src/
   cinematic/specials.ts    registry: name, move type, field scenario, shots
   cinematic/zenith/        the 8 shots of ZENITH METEOR
   cinematic/crescent/      the 8 shots of CRIMSON CRESCENT (+ SPEC.md)
-  cinematic/gale/          the 6 shots of GALE HAMMER (+ SPEC.md)
+  cinematic/gale2/         the 9 shots of GALE HAMMER (+ SPEC.md); cinematic/gale/ is the retired v1
+  cinematic/meridian2/, solo2/  MERIDIAN THREAD v2 and SPOTLIGHT SOLO v2 (wip, preview build only)
   cinematic/meridian/      the 6 shots of MERIDIAN THREAD (+ SPEC.md)
   cinematic/solo/          the 7 shots of SPOTLIGHT SOLO (+ SPEC.md)
   game/     field play (dribble → command window) and the top-level flow

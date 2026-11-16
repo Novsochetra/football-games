@@ -1,0 +1,276 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "side",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "Loft",
+  "view": "Side",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "MERIDIAN v2 OUTSIDE LOFT (No.10, side, facing east; right-footed: the near/right leg kicks with the OUTSIDE of the boot, ankle turned IN, sole tipped to the camera; the far/left leg plants). Not mirrored (no west strip). Registration = the Trivela canvas (= GALE Strike canvas): world origin originDx +56 from the AP1/Run canvas. contact = the plant (far/left) toe column (76,102) on all six frames (flat LF1-LF2, rolling onto the toe LF3, up on the toe LF4/LF4b; the same pixel as Trivela T5/T8a/T8b). ball = the 12 px ball guide (90,96) on LF1-LF2 (never drawn). boot = the outside-of-the-boot point: LF2 (85,99) = the little-toe face on the ball rim at contact (the game places the ball touching it), LF3 (100,58) the smear's leading edge, LF4/LF4b (94,42) the raised boot at shoulder height (sole to the camera); outside = the same outside-face point (LF1s (48,94): low behind the plant in the swing); toe_n = the kicking toe tip (LF4/LF4b); knee_n = the near knee at contact (LF2); fist = the far fist raised above the crown (LF4/LF4b); head = skull centre (head AWAY on every frame: mop and ear, no eye); sleeve10 = the near sleeve \"10\" glyph origin. Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 3 (shot-local, on-screen): AP1 0.00, AP3 0.10 (Approach strip), LF1 0.22-0.46 (x2.4, rate 0.3 = the breath), LF1s 0.46-0.50 (replaces Trivela T5), LF2 0.50-0.66 (the hit-stop 0.03), LF3 0.66-0.72, LF4 0.72, LF4b/LF4 every 0.2 s (LF4 1.12), LF4b 1.32-1.58, then Trivela T8a 1.58-1.62 (bridge) and T8b 1.62. LF4b -> T8a seam: the 1.45-1.59 crash punch-in zoomAbout target = the CURRENT frame's head + originDx (LF4/LF4b (49,21) -> T8a (72,17) -> T8b (71,17)), eased LF4b -> T8a over 1.50-1.58 (outCubic) so the head stays centred. Shot 4: LF4 as a 0.4x boxed cache (wide). Studio layer: Art only (numbers in Art; no Num/Ball layer). The ball is never drawn in a frame: the game draws it at ball/boot/forehead. Studio: Sochetra / Loft / Side (Front/Back views blank).",
+ "frames": [
+  {
+   "name": "LF1",
+   "id": "LF1",
+   "label": "plant, head away",
+   "type": "N key",
+   "ms": 240,
+   "pelvis": [
+    58,
+    68
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     90,
+     96
+    ],
+    "head": [
+     51,
+     23
+    ],
+    "sleeve10": [
+     48,
+     41
+    ],
+    "bbox": [
+     25,
+     9,
+     83,
+     102
+    ]
+   },
+   "originDx": 56,
+   "meridian2": "s3 0.22-0.46 (x2.4 (rate 0.3: the breath))"
+  },
+  {
+   "name": "LF1s",
+   "id": "LF1s",
+   "label": "swing, low behind the plant",
+   "type": "N (added)",
+   "ms": 40,
+   "pelvis": [
+    60,
+    68
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     90,
+     96
+    ],
+    "outside": [
+     48,
+     94
+    ],
+    "head": [
+     52,
+     23
+    ],
+    "sleeve10": [
+     49,
+     43
+    ],
+    "bbox": [
+     31,
+     9,
+     84,
+     102
+    ]
+   },
+   "originDx": 56,
+   "meridian2": "s3 0.46-0.50 (x2.4 (replaces Trivela T5))"
+  },
+  {
+   "name": "LF2",
+   "id": "LF2",
+   "label": "contact: outside scoop under the ball",
+   "type": "N key",
+   "ms": 160,
+   "pelvis": [
+    66,
+    69
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "ball": [
+     90,
+     96
+    ],
+    "boot": [
+     85,
+     99
+    ],
+    "outside": [
+     85,
+     99
+    ],
+    "knee_n": [
+     82,
+     75
+    ],
+    "head": [
+     56,
+     24
+    ],
+    "sleeve10": [
+     56,
+     43
+    ],
+    "bbox": [
+     33,
+     11,
+     87,
+     102
+    ]
+   },
+   "originDx": 56,
+   "meridian2": "s3 0.50-0.66 (x2.4 (hit-stop 0.03))"
+  },
+  {
+   "name": "LF3",
+   "id": "LF3",
+   "label": "release smear",
+   "type": "N (smear)",
+   "ms": 60,
+   "pelvis": [
+    64,
+    65
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "boot": [
+     100,
+     58
+    ],
+    "outside": [
+     100,
+     58
+    ],
+    "head": [
+     51,
+     21
+    ],
+    "sleeve10": [
+     50,
+     41
+    ],
+    "bbox": [
+     27,
+     7,
+     105,
+     102
+    ]
+   },
+   "originDx": 56,
+   "meridian2": "s3 0.66-0.72 (x2.4)"
+  },
+  {
+   "name": "LF4",
+   "id": "LF4",
+   "label": "the monument (poster)",
+   "type": "N key",
+   "ms": 200,
+   "pelvis": [
+    66,
+    63
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "boot": [
+     94,
+     42
+    ],
+    "outside": [
+     94,
+     42
+    ],
+    "toe_n": [
+     97,
+     38
+    ],
+    "fist": [
+     79,
+     11
+    ],
+    "head": [
+     49,
+     21
+    ],
+    "bbox": [
+     26,
+     7,
+     99,
+     102
+    ]
+   },
+   "originDx": 56,
+   "meridian2": "s3 0.72, 1.12 (x2.4 (alternating with LF4b every 0.2 s)); s4 0.00-1.00 (0.4x box cache (wide))"
+  },
+  {
+   "name": "LF4b",
+   "id": "LF4b",
+   "label": "the monument, updraft",
+   "type": "V of LF4",
+   "ms": 200,
+   "pelvis": [
+    66,
+    63
+   ],
+   "contact": [
+    76,
+    102
+   ],
+   "anchors": {
+    "boot": [
+     94,
+     42
+    ],
+    "outside": [
+     94,
+     42
+    ],
+    "toe_n": [
+     97,
+     38
+    ],
+    "fist": [
+     79,
+     11
+    ],
+    "head": [
+     49,
+     21
+    ],
+    "bbox": [
+     26,
+     4,
+     99,
+     102
+    ]
+   },
+   "originDx": 56,
+   "meridian2": "s3 0.92, 1.32-1.58 (x2.4 (holds into the 1.45-1.59 crash punch-in; swaps to T8a at 1.58, zoom ~2.2, head-locked))"
+  }
+ ]
+}

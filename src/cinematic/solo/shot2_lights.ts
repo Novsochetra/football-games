@@ -986,7 +986,7 @@ export const shotLights: Shot = {
     // 0.55: an awed "ooooh" as the phone lights come on. ooh() goes through the crowd bus, which the 0.40 duck holds
     // at 0.5 until 1.00, so 0.6 here is the brief's ooh(0.3) net level: the hush, then the ooh rising out of it.
     { at: 0.55, fn: (env) => env.sfx.ooh(0.6) },
-    // 0.80: SPOT ON (right-foot touch); the lamp hum starts (HUM[2] state, driven from update).
+    // 0.80: SPOT ON (right-foot touch); the lamp hum starts (HUM[2] state, fed from update).
     { at: SPOT_T, fn: (env) => (env.sfx.spotOn(1.0), env.sfx.tom(TOMS.F2)) },
     { at: FOOTFALL_T[2], fn: (env) => env.sfx.scuff(0.12) },
     // 1.00: the pickup 8th (left foot) on the beat-snap.

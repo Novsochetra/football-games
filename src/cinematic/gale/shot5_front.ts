@@ -23,7 +23,7 @@
 //              droplets shakes off the bar and the top of the net; he lies flat, then lifts his head to look at it.
 //   1.37       navy blink (the last 2 frames).
 //
-// The net is drawn with this shot's own perspective mesh (1 px lines at any zoom) driven by netExhale() — the
+// The net is drawn with this shot's own perspective mesh (1 px lines at any zoom) animated by netExhale() — the
 // same bulge / dimple / knock envelope as drawGoal, which at this scale would draw 4 px mesh lines.
 
 import type { Env, Shot } from '../timeline';

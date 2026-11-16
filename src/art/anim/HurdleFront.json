@@ -1,0 +1,98 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "HurdleFront",
+  "view": "Front",
+  "fps": 4,
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "SPOTLIGHT SOLO v2 HURDLE FRONT (No.10, front, airborne over B's slide; the money frame IN THE BEAM). Front view, never mirrored (no west strip). Airborne: contact null, sits on pelvis (64,66) (body centre x 64 registration). bootTrail = the lowest pixel of the trailing (screen-right) boot: B's studs pass 8 px under it; bootLead = the lead (screen-left) boot, kneeTrail, hemTrail = the trailing shorts-leg hem centre; handL / handR = the open hands (screen-left / right); eyeL / eyeR + pupilL / pupilR (eyes up at the ball); head; chest; num = chest \"10\" box. Points are pixel indices (studioAnim adds 0.5). Shot 6: HF1 1.20-1.60 (x2.4, inside the 0.03 time freeze); a Chorus source (solid two-value silhouette). Studio: Sochetra / HurdleFront / Front, layer Art (Side/Back blank).",
+ "frames": [
+  {
+   "name": "HF1",
+   "id": "HF1",
+   "label": "the hurdle from the front (in the beam)",
+   "type": "N (key)",
+   "ms": 400,
+   "pelvis": [
+    64,
+    66
+   ],
+   "contact": null,
+   "anchors": {
+    "head": [
+     64,
+     17
+    ],
+    "eyeL": [
+     60,
+     28
+    ],
+    "eyeR": [
+     69,
+     28
+    ],
+    "chest": [
+     65,
+     48
+    ],
+    "bootTrail": [
+     87,
+     82
+    ],
+    "bootLead": [
+     41,
+     75
+    ],
+    "pupilL": [
+     61,
+     28
+    ],
+    "pupilR": [
+     68,
+     28
+    ],
+    "handL": [
+     30,
+     24
+    ],
+    "handR": [
+     98,
+     24
+    ],
+    "kneeTrail": [
+     78,
+     82
+    ],
+    "hemTrail": [
+     70,
+     71
+    ],
+    "num": [
+     62,
+     45,
+     69,
+     51
+    ],
+    "bbox": [
+     22,
+     2,
+     106,
+     82
+    ]
+   },
+   "com": [
+    63.2,
+    41.5
+   ],
+   "solo2": "6 / 1.20-1.60 / x2.4 (the front money frame, inside the 0.03 freeze)"
+  }
+ ]
+}

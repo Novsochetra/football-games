@@ -1,0 +1,89 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "back",
+ "facing": "east",
+ "ground": null,
+ "studio": {
+  "project": "Rivals",
+  "animation": "TowerCrane",
+  "view": "Back",
+  "layers": [
+   "Art"
+  ]
+ },
+ "palette": {
+  "a": "#180411",
+  "n": "#000000",
+  "k": "#370e22",
+  "p": "#ffffff",
+  "q": "#d6deec",
+  "r": "#828caa",
+  "t": "#28beaa",
+  "s": "#e8ac84",
+  "u": "#aa6e56",
+  "v": "#c89646",
+  "w": "#96622c",
+  "x": "#5a361e",
+  "y": "#464e5c",
+  "z": "#2a2e3a",
+  "G": "#161620",
+  "B": "#5ae6d2",
+  "C": "#146e6e"
+ },
+ "notes": "THE TOWER CRANE (Rivals project): head and shoulders from behind-below, three-quarter, looking straight up at the Sky Eye; a CROP frame cut by the canvas bottom (shoulders fill the bottom rows). Used at x3 as an ink silhouette with a jade rim (reads from the contour alone), 1 px code tremble. contact null; pelvis = head = the skull centre (TC1 (64,91), TC1b (64,90): the shoulders risen one breath, the head 1 px). Points are pixel indices (studioAnim adds 0.5; contact lands on the bottom edge of row 102). bbox = [x0,y0,x1,y1] measured on the art. Shot 6a: TC1 0.00, TC1b 0.25, TC1 0.50 (alternating every 0.25 s to 0.70). Palette: Rivals 17. Studio layer: Art only. Studio: Rivals / TowerCrane / Back (Front/Side views blank).",
+ "frames": [
+  {
+   "name": "TC1",
+   "id": "TC1",
+   "label": "crane (looking up)",
+   "type": "N",
+   "ms": 250,
+   "pelvis": [
+    64,
+    91
+   ],
+   "contact": null,
+   "anchors": {
+    "head": [
+     64,
+     91
+    ],
+    "bbox": [
+     32,
+     71,
+     96,
+     127
+    ]
+   },
+   "crop": true,
+   "meridian2": "s6a 0.00, 0.50 (0.00-0.70 if TC1b is not drawn) (x3 ink silhouette + jade rim, 1 px code tremble)"
+  },
+  {
+   "name": "TC1b",
+   "id": "TC1b",
+   "label": "crane, breath",
+   "type": "V of TC1 (optional)",
+   "ms": 250,
+   "pelvis": [
+    64,
+    90
+   ],
+   "contact": null,
+   "anchors": {
+    "head": [
+     64,
+     90
+    ],
+    "bbox": [
+     32,
+     70,
+     96,
+     127
+    ]
+   },
+   "crop": true,
+   "meridian2": "s6a 0.25-0.50 (x3 (optional))"
+  }
+ ]
+}

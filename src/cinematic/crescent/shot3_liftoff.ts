@@ -48,7 +48,7 @@ const A_END = anim(DUR);
 const T_AIR = 0.54; // BK4: off the turf
 const KEYS: [number, string][] = [[0, 'BK1'], [PLANT, 'BK2'], [0.44, 'BK3'], [T_AIR, 'BK4'], [0.72, 'BK5'], [0.92, 'BK6'], [1.18, 'BK7']];
 // Planted contact pixels (world x of the contact pixel's bottom centre, on the turf line). BK1 stands on
-// the far toe with the plant knee driven up in front; the plant boot stamps straight down a step ahead
+// the far toe with the plant knee thrust up in front; the plant boot stamps straight down a step ahead
 // (BK2, flat: the crater is cut under it) and rolls onto its toe tip without the toe moving (BK3: the
 // toe pixel x 76 is the same world point in BK2 and BK3). Ground frames pivot their spin on the contact.
 const C1X = 296, C2X = 285, C3X = C2X - 4 * S3;

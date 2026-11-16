@@ -15,15 +15,23 @@ import { POSES, P, WINGER_KIT, joints, renderPuppet, type Pose } from './puppet'
 const D = Math.PI / 180;
 
 interface Def7 {
-  anim: 'Run' | 'Receive' | 'Point' | 'Celebrate';
+  anim: 'Run' | 'Receive' | 'Point' | 'Celebrate' | 'Header';
   frames: string[];
   /** Puppet fallback pose (facing east). */
   pose: Pose;
+  /** A studio stand-in tried before the puppet (MERIDIAN v2: Header -> the Receive half-volley R5 / R6). */
+  alt?: { anim: 'Run' | 'Receive' | 'Point' | 'Celebrate' | 'Header'; frames: string[] };
 }
 
 const RECEIVE_TOUCH = P({ torso: 8 * D, head: 26 * D, thighN: 34 * D, kneeN: 30 * D, footN: 18 * D, thighF: -6 * D, kneeF: 22 * D, armN: -30 * D, elbowN: 30 * D, armF: 40 * D, elbowF: 30 * D });
 const RECEIVE_PLANT = P({ torso: 4 * D, head: 20 * D, thighN: -40 * D, kneeN: 90 * D, footN: 10 * D, thighF: 10 * D, kneeF: 24 * D, armN: 30 * D, elbowN: 20 * D, armF: -60 * D, elbowF: 20 * D });
 const POINT_REACH = P({ ...POSES.stand, armN: 92 * D, elbowN: 4 * D, head: -4 * D });
+// MERIDIAN v2 Header puppet poses (the last resort only: the Receive half-volley stands in first).
+const HEAD_PUSH = P({ torso: 30 * D, head: -20 * D, thighN: 30 * D, kneeN: 40 * D, thighF: -34 * D, kneeF: 20 * D, footF: 20 * D, armN: -60 * D, elbowN: 20 * D, armF: -40 * D, elbowF: 20 * D });
+const HEAD_FLY = P({ torso: 0, head: -24 * D, thighN: -6 * D, kneeN: 12 * D, thighF: -12 * D, kneeF: 18 * D, armN: -70 * D, elbowN: 10 * D, armF: -80 * D, elbowF: 10 * D, spin: 1.45 });
+const HEAD_HIT = P({ ...HEAD_FLY, head: 10 * D, armN: -20 * D, armF: -30 * D });
+const HEAD_SLIDE = P({ torso: 0, head: -40 * D, thighN: 0, kneeN: 30 * D, thighF: -10 * D, kneeF: 40 * D, armN: 120 * D, elbowN: 40 * D, armF: 100 * D, elbowF: 40 * D, spin: 1.5 });
+const HALF_VOLLEY = { anim: 'Receive', frames: ['R6', 'R5'] } as const;
 
 /** Every No.7 frame MERIDIAN THREAD schedules (MOTION_LIBRARY §4). */
 export const NO7 = {
@@ -50,6 +58,16 @@ export const NO7 = {
   // Result view.
   'Celebrate.C1': { anim: 'Celebrate', frames: ['C1'], pose: POSES.celebrate },
   'Celebrate.C2': { anim: 'Celebrate', frames: ['C2', 'C1'], pose: P({ ...POSES.celebrate, armN: 180 * D, head: -26 * D }) },
+  // MERIDIAN v2: the flying header (strip No7Header; fallback the first-time half-volley on Receive R5 / R6, then the
+  // puppet). H1 push-off (ground), H1b take-off, H2 full flight, H3 contact, H3b hit-stop hold, H4 follow-through,
+  // H5 belly slide.
+  'Header.H1': { anim: 'Header', frames: ['H1'], pose: HEAD_PUSH, alt: { anim: 'Receive', frames: ['R5'] } },
+  'Header.H1b': { anim: 'Header', frames: ['H1b', 'H1'], pose: HEAD_PUSH, alt: { anim: 'Receive', frames: ['R5'] } },
+  'Header.H2': { anim: 'Header', frames: ['H2'], pose: HEAD_FLY, alt: { ...HALF_VOLLEY, frames: ['R5'] } },
+  'Header.H3': { anim: 'Header', frames: ['H3'], pose: HEAD_HIT, alt: { ...HALF_VOLLEY, frames: ['R6'] } },
+  'Header.H3b': { anim: 'Header', frames: ['H3b', 'H3'], pose: HEAD_HIT, alt: { ...HALF_VOLLEY, frames: ['R6'] } },
+  'Header.H4': { anim: 'Header', frames: ['H4'], pose: HEAD_FLY, alt: { ...HALF_VOLLEY, frames: ['R6'] } },
+  'Header.H5': { anim: 'Header', frames: ['H5'], pose: HEAD_SLIDE, alt: { ...HALF_VOLLEY, frames: ['R6'] } },
 } satisfies Record<string, Def7>;
 
 export type No7Key = keyof typeof NO7;
@@ -63,18 +81,28 @@ export function no7Anim(name: Def7['anim']): StudioAnim | null {
   return null;
 }
 
-/** The studio frame for `key`, or null (then the puppet stands in). */
-export function no7(key: No7Key): { a: StudioAnim; i: number } | null {
+/**
+ * The studio frame for `key`, or null (then the puppet stands in). `ref` 0 = the library frame itself, 1 = the
+ * listed studio stand-in (Def7.alt).
+ */
+export function no7(key: No7Key): { a: StudioAnim; i: number; ref: number } | null {
   const d: Def7 = NO7[key];
   const a = no7Anim(d.anim);
-  if (!a) return null;
-  const i = findFrame(a, ...d.frames);
-  return i >= 0 ? { a, i } : null;
+  if (a) {
+    const i = findFrame(a, ...d.frames);
+    if (i >= 0) return { a, i, ref: 0 };
+  }
+  if (d.alt) {
+    const b = no7Anim(d.alt.anim);
+    const j = b ? findFrame(b, ...d.alt.frames) : -1;
+    if (b && j >= 0) return { a: b, i: j, ref: 1 };
+  }
+  return null;
 }
 
-/** True when No.7's studio frame for `key` is exported. */
+/** True when No.7's studio frame for `key` (the library frame, not a stand-in) is exported. */
 export function no7Final(key: No7Key): boolean {
-  return !!no7(key);
+  return no7(key)?.ref === 0;
 }
 
 // ---------------------------------------------------------------- puppet fallback

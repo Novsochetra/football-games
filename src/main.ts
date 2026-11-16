@@ -17,10 +17,13 @@ import { visibleSpecials, type SpecialId } from './cinematic/specials';
 
 const BLURBS: Record<SpecialId, string> = {
   solo: 'Four defenders wall off the box. The floodlights crash off, one follow-spot finds No.10, and his feet play a drum solo: a step-over, a sole lift over a slide tackle, an elastico and a nutmeg, every touch on the beat, every beat leaving a violet print of light.',
+  solo2: 'Four giants stomp at No.10 and the whole stadium stomps with them. He raises his arm and SNAPS: the floodlights blow out, and in the black only the ball and his eyes glow. Then he goes: every skill rips the turf open with ultraviolet light, the strobe photographs each defender mid-defeat, and at the end the crowd stomps on his beat, the stadium slams back on and he taps it past the fallen keeper.',
   zenith: 'No.10 flicks the ball into the sky, leaps after it, and volleys it down from in front of the full moon like a falling star.',
   crescent: 'Back to goal, No.10 flips upside down under a high cross. The stadium turns over with him, and his boot carves a crescent of crimson fire that carries the ball into the net.',
-  gale: 'From 30 m out, No.10 hits the ball so hard it never touches the grass again. It skims on cushions of crushed air, the world goes quiet, and the thunder only arrives after the ball has gone past.',
+  gale: 'The keeper laughs at No.10 from 30 m. He grabs the wind out of the stadium, hammers the ball through the sound barrier, and when the keeper stops it dead, the thunder catches up and smashes it in, shoving the whole goal off its line.',
+  gale2: 'The keeper laughs at No.10 from 30 m. He grabs the wind out of the stadium, hammers the ball through the sound barrier, and when the keeper stops it dead, the thunder catches up and smashes it in, shoving the whole goal off its line.',
   meridian: 'No.10 looks one way and passes the other. Without looking, he rolls the ball with the outside of his boot through three needle-eye gaps into No.7\'s stride. The stadium drains to manga ink, and when No.7 touches the ball the colour washes back along the thread.',
+  meridian2: 'No.10 taps under his eye and draws a line across the sky to his friend. Without looking, he lofts the ball with the outside of his boot into a great jade arc, 26 m up at floodlight height. An eye of light opens in the night, the biggest defender grabs the thread, and No.10 strums the air: TWANG. The needle falls onto No.7\'s run and he scores with a flying header while the net rings like a harp.',
 };
 
 async function boot() {
@@ -192,8 +195,29 @@ async function boot() {
     else special.start(i);
   };
 
+  // FlashBudget (v2 set): red ticks under the scrubber where the photosensitivity guard had to clamp an event.
+  const flashMarks = document.createElement('div');
+  flashMarks.style.cssText = 'position:absolute;height:3px;pointer-events:none';
+  scrub.parentElement!.style.position = 'relative';
+  scrub.parentElement!.appendChild(flashMarks);
+  let flashSeen = -1;
   const ui = {
     sync() {
+      const ev = special.budget?.events ?? [];
+      if (ev.length !== flashSeen) {
+        flashSeen = ev.length;
+        flashMarks.style.left = `${scrub.offsetLeft}px`;
+        flashMarks.style.top = `${scrub.offsetTop + scrub.offsetHeight - 2}px`;
+        flashMarks.style.width = `${scrub.offsetWidth}px`;
+        flashMarks.replaceChildren(
+          ...ev.filter((e) => e.clamped).map((e) => {
+            const m = document.createElement('i');
+            m.style.cssText = `position:absolute;top:0;width:2px;height:3px;background:#ff3030;left:${(100 * e.t) / special.total}%`;
+            m.title = `FlashBudget clamped a ${e.kind} event at ${e.t.toFixed(2)} s`;
+            return m;
+          }),
+        );
+      }
       const inSpecial = game.phase === 'special';
       const gt = inSpecial ? special.globalTime : 0;
       if (document.activeElement !== scrub) scrub.value = String(gt);
@@ -268,6 +292,21 @@ async function boot() {
     select: selectSpecial,
     play() {
       paused = false;
+    },
+    /** FlashBudget (v2 specials): the full-frame events recorded so far ({ t, kind, clamped }); [] for the others. */
+    flashEvents() {
+      return special.budget?.events.map((e) => ({ ...e })) ?? [];
+    },
+    /**
+     * MERIDIAN v2's halftone check: toneProbe(true) makes every halftone (fx.tone) impact frame also measure the share of
+     * the frame inside the threshold band (PostFX.toneProbe); toneEvents() returns [{ t, frac }] (frac <= 0.25 to pass).
+     */
+    toneProbe(on = true) {
+      PostFX.toneProbe = on;
+      if (on) PostFX.toneLog = [];
+    },
+    toneEvents() {
+      return PostFX.toneLog.map((e) => ({ ...e }));
     },
   };
 

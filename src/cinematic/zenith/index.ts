@@ -6,7 +6,7 @@
 //  4 Ascent      chase the ball up through the clouds; No.10 leaps after it
 //  5 Zenith      time stops before the full moon; somersault volley
 //  6 Descent     meteor falls on the stadium; defenders blown away
-//  7 Keeper      the keeper's gloves burn, he is driven back and blasted
+//  7 Keeper      the keeper's gloves burn, he is forced back and blasted
 //  8 Net         the net stretches to tearing point — GOAL
 
 import type { Shot } from '../timeline';

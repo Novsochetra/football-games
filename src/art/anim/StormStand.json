@@ -1,0 +1,322 @@
+{
+ "frameW": 128,
+ "frameH": 128,
+ "view": "front",
+ "facing": "east",
+ "ground": 102,
+ "studio": {
+  "project": "Sochetra",
+  "animation": "StormStand",
+  "view": "Front",
+  "layers": [
+   "Art"
+  ]
+ },
+ "notes": "Front view (toward the camera), not mirrored (no west strip). Registration = Stand Front: body centre x 64, soles on row 102; contact = [64, 102] (centre between the planted boots; contactL / contactR = the outer sole pixels (38,102)/(90,102), soleL / soleR = sole centres); the boots are pixel-identical on all four frames. eyeL / eyeR = screen-left / screen-right eye (SS3/SS3b: the 2x2 lit iris centres (60,28)/(68,28) under the hard lids: the ice/cyan glow and anamorphic streaks are code on these points); chest = sternum; hands = [screen-left x, y, screen-right x, y] fist centres (also handL / handR); num = chest \"10\" box. Points are pixel indices (studioAnim adds 0.5). GALE v2 shot 3: SS1/SS2 alternating every 0.1 s 0.00-1.55, then SS3 1.55, SS3b 1.65, SS3 1.75, SS3b 1.85, SS3 1.95-2.00 (x2; the hair and hem keep flapping through the lit-eye hold). Studio: Sochetra / StormStand / Front, layer Art (Side/Back views blank).",
+ "frames": [
+  {
+   "name": "SS1",
+   "id": "SS1",
+   "label": "eye of the storm (key)",
+   "type": "N (key)",
+   "ms": 100,
+   "pelvis": [
+    64,
+    66
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     18
+    ],
+    "eyeL": [
+     60,
+     29
+    ],
+    "eyeR": [
+     69,
+     29
+    ],
+    "chest": [
+     64,
+     46
+    ],
+    "contactL": [
+     38,
+     102
+    ],
+    "contactR": [
+     90,
+     102
+    ],
+    "handL": [
+     39.7,
+     63.1
+    ],
+    "handR": [
+     88.1,
+     63.1
+    ],
+    "hands": [
+     39.7,
+     63.1,
+     88.1,
+     63.1
+    ],
+    "soleL": [
+     41.3,
+     100.8
+    ],
+    "soleR": [
+     86.7,
+     100.8
+    ],
+    "num": [
+     62,
+     45,
+     69,
+     51
+    ],
+    "bbox": [
+     34,
+     1,
+     94,
+     102
+    ]
+   },
+   "gale": "GALE 3: 0.00-1.55 alternating with SS2 every 0.1 s (x2)"
+  },
+  {
+   "name": "SS2",
+   "id": "SS2",
+   "label": "updraft flap b",
+   "type": "V of SS1",
+   "ms": 100,
+   "pelvis": [
+    64,
+    66
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     18
+    ],
+    "eyeL": [
+     60,
+     29
+    ],
+    "eyeR": [
+     69,
+     29
+    ],
+    "chest": [
+     64,
+     46
+    ],
+    "contactL": [
+     38,
+     102
+    ],
+    "contactR": [
+     90,
+     102
+    ],
+    "handL": [
+     39.5,
+     62.1
+    ],
+    "handR": [
+     88.4,
+     62.1
+    ],
+    "hands": [
+     39.5,
+     62.1,
+     88.4,
+     62.1
+    ],
+    "soleL": [
+     41.3,
+     100.8
+    ],
+    "soleR": [
+     86.7,
+     100.8
+    ],
+    "num": [
+     62,
+     45,
+     69,
+     51
+    ],
+    "bbox": [
+     34,
+     2,
+     94,
+     102
+    ]
+   },
+   "gale": "GALE 3: loop partner of SS1"
+  },
+  {
+   "name": "SS3",
+   "id": "SS3",
+   "label": "head up, eyes lit",
+   "type": "V of SS1 (eyes lit)",
+   "ms": 100,
+   "pelvis": [
+    64,
+    66
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     17
+    ],
+    "eyeL": [
+     60,
+     28
+    ],
+    "eyeR": [
+     68,
+     28
+    ],
+    "chest": [
+     64,
+     46
+    ],
+    "contactL": [
+     38,
+     102
+    ],
+    "contactR": [
+     90,
+     102
+    ],
+    "handL": [
+     39.7,
+     63.1
+    ],
+    "handR": [
+     88.1,
+     63.1
+    ],
+    "hands": [
+     39.7,
+     63.1,
+     88.1,
+     63.1
+    ],
+    "soleL": [
+     41.3,
+     100.8
+    ],
+    "soleR": [
+     86.7,
+     100.8
+    ],
+    "num": [
+     62,
+     45,
+     69,
+     51
+    ],
+    "bbox": [
+     34,
+     0,
+     94,
+     102
+    ]
+   },
+   "gale": "GALE 3: 1.55-1.65, 1.75-1.85, 1.95-2.00, alternating with SS3b every 0.1 s (x2; eyes ignite at zoom 1.42; the cyclone bursts outward 1.62-1.85); 0.45 s of lit eyes in all"
+  },
+  {
+   "name": "SS3b",
+   "id": "SS3b",
+   "label": "eyes lit, flap b",
+   "type": "V of SS3 (flap phase b)",
+   "ms": 100,
+   "pelvis": [
+    64,
+    66
+   ],
+   "contact": [
+    64,
+    102
+   ],
+   "anchors": {
+    "head": [
+     64,
+     17
+    ],
+    "eyeL": [
+     60,
+     28
+    ],
+    "eyeR": [
+     68,
+     28
+    ],
+    "chest": [
+     64,
+     46
+    ],
+    "contactL": [
+     38,
+     102
+    ],
+    "contactR": [
+     90,
+     102
+    ],
+    "handL": [
+     39.7,
+     63.1
+    ],
+    "handR": [
+     88.1,
+     63.1
+    ],
+    "hands": [
+     39.7,
+     63.1,
+     88.1,
+     63.1
+    ],
+    "soleL": [
+     41.3,
+     100.8
+    ],
+    "soleR": [
+     86.7,
+     100.8
+    ],
+    "num": [
+     62,
+     45,
+     69,
+     51
+    ],
+    "bbox": [
+     34,
+     1,
+     94,
+     102
+    ]
+   },
+   "gale": "GALE 3: 1.65-1.75, 1.85-1.95, alternating with SS3 every 0.1 s (the SS1/SS2 flap rhythm carried through the burst)"
+  }
+ ]
+}
